@@ -30,10 +30,27 @@
       <p style="margin: 0">While building, run <code>npm run dev</code> and open <b style="color: #ff9455">http://localhost:5530</b> instead.</p>
     </div>
     <script>
-      // Opened straight from the folder, the JSX source cannot run: say what to open instead.
+      // Catch errors from the very start, before React exists, so a failed start can say why.
+      window.addEventListener('error', function (e) { window.__bootError = window.__bootError || (e.error && e.error.stack) || e.message })
+      window.addEventListener('unhandledrejection', function (e) { window.__bootError = window.__bootError || String(e.reason && (e.reason.stack || e.reason)) })
       setTimeout(function () {
-        if (location.protocol === 'file:' && !document.getElementById('root').firstChild) {
-          document.getElementById('opened-source').hidden = false
+        if (document.getElementById('root').firstChild) return
+        var box = document.getElementById('opened-source')
+        if (window.__bootError) {
+          // the built app ran but crashed: show the error and a way out
+          box.innerHTML = '<h1 style="margin:0 0 16px;color:#fff;font-size:34px;line-height:1.05">orbit couldn't start.</h1>' +
+            '<p style="margin:0 0 12px">Old sample data saved in this browser is the usual cause. Clearing it keeps your login.</p>' +
+            '<pre style="white-space:pre-wrap;color:#ff9455;font-size:12px;border:1px solid #333;border-radius:10px;padding:12px"></pre>' +
+            '<button id="boot-clear" style="font:inherit;padding:10px 18px;border-radius:99px;border:0;cursor:pointer">Clear sample data and reload</button>'
+          box.querySelector('pre').textContent = String(window.__bootError).slice(0, 600)
+          box.querySelector('#boot-clear').onclick = function () {
+            try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('unstuck:') === 0) localStorage.removeItem(k) }) } catch (err) {}
+            location.reload()
+          }
+          box.hidden = false
+        } else if (location.protocol === 'file:') {
+          // opened straight from the folder: the JSX source cannot run, so say what to open instead
+          box.hidden = false
         }
       }, 1500)
     </script>

@@ -1,13 +1,16 @@
 // Who this tab is. sessionStorage is per tab, so two tabs can be two students:
 // that is how the live room is demoed before real sign-in exists.
 import { useSyncExternalStore } from 'react'
+import { PEOPLE } from './seed.js'
 
 const KEY = 'unstuck:me'
 const listeners = new Set()
 
 export function getMe() {
   try {
-    return sessionStorage.getItem(KEY) || 'meera'
+    const id = sessionStorage.getItem(KEY)
+    // an id from older sample data falls back to the default student
+    return PEOPLE.some((p) => p.id === id) ? id : 'meera'
   } catch {
     return 'meera'
   }

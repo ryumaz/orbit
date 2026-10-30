@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Burst from '../glyph/Burst'
 import { Brand } from '../components/Shell'
 import { Spark } from '../components/Spark'
@@ -10,6 +10,9 @@ import { useAccount } from '../lib/account'
 export default function Join({ mode }) {
   const signup = mode === 'signup'
   const { session } = useAccount()
+  const [params] = useSearchParams()
+  // only same-site paths, never another site
+  const next = /^\/[a-z0-9/_-]*$/i.test(params.get('next') ?? '') ? params.get('next') : '/home'
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -18,7 +21,7 @@ export default function Join({ mode }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (session) navigate('/home', { replace: true })
+    if (session) navigate(next, { replace: true })
   }, [session, navigate])
 
   const submit = async (e) => {
@@ -85,7 +88,7 @@ export default function Join({ mode }) {
 
           <p className="m-0 text-[12px] dim">
             {signup ? 'Already have an account? ' : 'New to orbit? '}
-            <Link to={signup ? '/login' : '/join'} className="link">{signup ? 'Log in' : 'Make an account'}</Link>
+            <Link to={`${signup ? '/login' : '/join'}${next !== '/home' ? `?next=${next}` : ''}`} className="link">{signup ? 'Log in' : 'Make an account'}</Link>
           </p>
         </form>
         <Link to="/" className="link auth-back text-[12px]">← Back to the home page</Link>

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Halftone from '../glyph/Halftone'
-import { Spark } from '../components/Spark'
+import ProfileCard, { CARD_COLORS, ShareProfile } from '../components/ProfileCard'
 import { useAccount } from '../lib/account'
 import { supabase, friendly } from '../lib/supabase'
+import { refreshMembers } from '../lib/members'
+import { uploadAvatar, removeAvatar } from '../lib/avatar'
 
 // Widely spoken languages, searchable. Anything else can be typed in.
 const LANGS = [
@@ -30,13 +31,20 @@ function browserLangs() {
 }
 const LANG_SUGGESTIONS = [...new Set([...browserLangs(), ...LANGS])]
 const SKILLS = [
-  'Maths', 'Physics', 'Python', 'React', 'SQL', 'Exam prep',
-  'Guitar', 'Singing', 'Cooking', 'Baking', 'Valorant', 'Chess',
-  'Yoga', 'Home workouts', 'Japanese', 'English speaking', 'Drawing', 'Video editing', 'Budgeting',
+  'Maths', 'Physics', 'Python', 'Guitar', 'Cooking', 'Valorant', 'Chess', 'Yoga', 'Drawing', 'English speaking',
+  'Calculus', 'Statistics', 'Chemistry', 'Biology', 'Economics', 'Accounting', 'History', 'Essay writing', 'Exam prep', 'Public speaking',
+  'JavaScript', 'React', 'SQL', 'Java', 'C++', 'Git', 'Excel', 'Data analysis', 'Machine learning', 'Web design', 'Figma',
+  'Free Fire', 'BGMI', 'Minecraft', 'Fortnite', 'League of Legends', 'Speedrunning',
+  'Piano', 'Singing', 'Drums', 'Ukulele', 'Music production',
+  'Baking', 'Indian cooking', 'Meal prep', 'Coffee',
+  'Home workouts', 'Running', 'Calisthenics', 'Dance', 'Cricket', 'Football', 'Swimming',
+  'Spanish', 'Japanese', 'French', 'German', 'Korean', 'Hindi',
+  'Painting', 'Photography', 'Video editing', 'Animation', 'Calligraphy',
+  'Budgeting', 'Investing basics', 'CV writing', 'Interview prep', 'Knitting',
 ]
-const FIELDS = ['name', 'bio', 'city', 'langs', 'teaches', 'learns']
+const FIELDS = ['name', 'handle', 'bio', 'city', 'langs', 'teaches', 'learns', 'card_color']
 const pick = (p) => Object.fromEntries(FIELDS.map((k) => [k, p[k]]))
-const tidy = (f) => ({ ...f, name: f.name.trim(), bio: f.bio.trim(), city: f.city.trim() })
+const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: f.bio.trim(), city: f.city.trim() })
 
 // The member's own profile: a live preview of their card, and the form that edits it.
 export default function Me() {
@@ -54,10 +62,13 @@ export default function Me() {
   const save = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) return setStatus({ ok: false, text: 'Your name can’t be empty.' })
+    if (!/^[a-z0-9_]{3,20}$/.test(form.handle)) return setStatus({ ok: false, text: 'Usernames are 3 to 20 letters, numbers or _.' })
     setBusy(true)
     const { error } = await supabase.from('profiles').update(tidy(form)).eq('id', user.id)
     setBusy(false)
+    if (error?.code === '23505') return setStatus({ ok: false, text: `@${form.handle} is taken. Try another.` })
     if (error) return setStatus({ ok: false, text: friendly(error) })
+    refreshMembers()
     await reload()
     setStatus({ ok: true, text: 'Saved. This is what members see now.' })
   }
@@ -76,17 +87,40 @@ export default function Me() {
 
       <div className="me-grid">
         <div className="stack">
-          <article className="idcard" aria-label="Your card, preview">
-            <div className="idcard-top"><span>{form.teaches[0] ?? 'New member'}{form.city.trim() && ` · ${form.city.trim()}`}</span><Spark /></div>
-            <Halftone shape="bust" bg="#000" cells={34} className="idcard-portrait" />
-            <h3>{form.name.trim() || 'Your name'}</h3>
-            <p className="quote">{form.bio.trim() || 'one line about you'}</p>
-            <dl className="idcard-stats">
-              <div><dt>Taught</dt><dd>0</dd></div>
-              <div><dt>Learned</dt><dd>0</dd></div>
-              <div><dt>Credits</dt><dd>{balance}</dd></div>
-            </dl>
-          </article>
+          <ProfileCard
+            name={form.name.trim()}
+            bio={form.bio.trim()}
+            city={form.city.trim()}
+            teaches={form.teaches}
+            avatarUrl={profile.avatar_url}
+            color={form.card_color}
+            stats={[['Taught', 0], ['Learned', 0], ['Credits', balance]]}
+            label="Your card, preview"
+          />
+
+          <section className="card grid gap-5" aria-label="Photo and colour">
+            <PhotoPicker uid={user.id} url={profile.avatar_url} onDone={async () => { refreshMembers(); await reload() }} />
+            <div className="grid gap-2">
+              <p className="label m-0">Card colour</p>
+              <div role="radiogroup" aria-label="Card colour" className="swatches">
+                {Object.entries(CARD_COLORS).map(([key, c]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.card_color === key}
+                    aria-label={c.label}
+                    title={c.label}
+                    className="swatch"
+                    style={{ '--sw': c.bg }}
+                    onClick={() => set('card_color')(key)}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <ShareProfile handle={profile.handle} name={profile.name} />
 
           <section className="card grid gap-3 text-[12.5px]" aria-labelledby="h-account">
             <h2 id="h-account" className="label m-0">Account</h2>
@@ -101,6 +135,23 @@ export default function Me() {
             <div className="grid gap-1.5">
               <label htmlFor="me-name" className="label">Name</label>
               <input id="me-name" className="input" required maxLength={40} autoComplete="name" value={form.name} onChange={(e) => set('name')(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <label htmlFor="me-handle" className="label">Username <span className="dim">· your link is orbit.voids.wtf/u/{form.handle || '…'}</span></label>
+              <div className="handle-input">
+                <span aria-hidden="true">@</span>
+                <input
+                  id="me-handle"
+                  className="input"
+                  required
+                  minLength={3}
+                  maxLength={20}
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={form.handle}
+                  onChange={(e) => set('handle')(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                />
+              </div>
             </div>
             <div className="grid gap-1.5">
               <label htmlFor="me-bio" className="label">One line about you <span className="dim">· {form.bio.length}/160</span></label>
@@ -142,7 +193,11 @@ export default function Me() {
 // Type and press Enter, or tap a suggestion (they filter as you type). Tap a tag to remove it.
 function TagField({ id, value, onChange, placeholder, suggestions = SKILLS, max = 12 }) {
   const [text, setText] = useState('')
+  const [all, setAll] = useState(false)
   const has = (t) => value.some((x) => x.toLowerCase() === t.toLowerCase())
+  const q = text.trim().toLowerCase()
+  const options = suggestions.filter((s) => !has(s) && (!q || s.toLowerCase().includes(q)))
+  const shown = all ? options : options.slice(0, 10)
   const add = (raw) => {
     const t = raw.trim().replace(/\s+/g, ' ').slice(0, 30)
     if (!t || has(t) || value.length >= max) return
@@ -177,13 +232,59 @@ function TagField({ id, value, onChange, placeholder, suggestions = SKILLS, max 
         disabled={value.length >= max}
       />
       <div className="flex flex-wrap gap-1.5">
-        {suggestions
-          .filter((s) => !has(s) && (!text.trim() || s.toLowerCase().includes(text.trim().toLowerCase())))
-          .slice(0, 10)
-          .map((s) => (
+        {shown.map((s) => (
           <button key={s} type="button" className="chip chip-sm" onClick={() => add(s)}>+ {s}</button>
         ))}
+        {options.length > 10 && (
+          <button type="button" className="chip chip-sm chip-more" aria-expanded={all} onClick={() => setAll(!all)}>
+            {all ? 'Less' : `More · ${options.length - 10}`}
+          </button>
+        )}
       </div>
+    </div>
+  )
+}
+
+// Pick a photo; it is cropped, shrunk and saved straight away.
+function PhotoPicker({ uid, url, onDone }) {
+  const input = useRef(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const run = async (job) => {
+    setBusy(true)
+    setError('')
+    try {
+      await job()
+      await onDone()
+    } catch (e) {
+      setError(friendly(e))
+    }
+    setBusy(false)
+  }
+  return (
+    <div className="grid gap-2">
+      <p className="label m-0">Photo</p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn btn-light btn-sm" disabled={busy} onClick={() => input.current?.click()}>
+          {busy ? 'Saving…' : url ? 'Change photo' : 'Add a photo'}
+        </button>
+        {url && (
+          <button type="button" className="btn btn-line btn-sm" disabled={busy} onClick={() => run(() => removeAvatar(uid, url))}>Remove</button>
+        )}
+      </div>
+      <input
+        ref={input}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (file) run(() => uploadAvatar(uid, file, url))
+        }}
+      />
+      {error && <p role="alert" className="m-0 text-[12px] text-amber">{error}</p>}
+      <p className="m-0 text-[11px] dim">Cropped square and saved right away. Anyone with your link can see it.</p>
     </div>
   )
 }

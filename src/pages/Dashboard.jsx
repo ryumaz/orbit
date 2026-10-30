@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import Halftone from '../glyph/Halftone'
 import { Spark } from '../components/Spark'
+import { ShareProfile } from '../components/ProfileCard'
 import { useAccount } from '../lib/account'
 import { stamp } from '../lib/time'
 
@@ -86,6 +87,7 @@ export default function Dashboard() {
         </div>
 
         <div className="stack">
+          <ShareProfile handle={profile.handle} name={profile.name} title="Share your profile with friends" />
           <TagBlock id="h-teach" title="You teach" tags={profile.teaches} empty="Nothing yet. What could you explain to someone in twenty minutes?" />
           <TagBlock id="h-learn" title="You want to learn" tags={profile.learns} empty="Nothing yet. Add a few and orbit will show who can teach them." find />
 

@@ -233,3 +233,36 @@
   background: rgba(14, 14, 13, .9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--line);
 }
 @media (min-width: 960px) { .save-bar { bottom: 20px; } }
+
+/* ---------- profile card colours, photo, sharing ---------- */
+.idcard { background: var(--card-bg, var(--color-chalk)); color: var(--card-ink, #000); }
+.idcard::before { background: currentColor; }
+.idcard .quote { color: inherit; opacity: .82; }
+.idcard-stats { border-top-color: color-mix(in srgb, currentColor 18%, transparent); }
+.idcard-stats dt { color: inherit; opacity: .6; }
+.idcard-photo { object-fit: cover; }
+.avatar-photo { object-fit: cover; padding: 0; }
+.top-avatar { display: inline-flex; border-radius: 50%; text-decoration: none; }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.swatch { width: 34px; height: 34px; border-radius: 50%; background: var(--sw); border: 2px solid var(--line-strong); cursor: pointer; padding: 0; }
+.swatch[aria-checked="true"] { border-color: #000; box-shadow: 0 0 0 2px var(--color-chalk), 0 0 18px rgba(155, 130, 255, .55); }
+.handle-input { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.handle-input > span { color: var(--color-ash); font-size: 15px; }
+.chip-more { border-style: dashed; color: var(--color-ash); }
+.share { display: grid; gap: 12px; }
+.share-link { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border: 1px solid var(--line-strong); border-radius: 99px; font-size: 12px; }
+.share-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member-card { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* ---------- public profile ---------- */
+.public-main { max-width: var(--maxw); margin-inline: auto; padding: 28px var(--gutter) calc(64px + var(--safe-b)); }
+.public-grid { display: grid; gap: 36px; }
+.public-grid .idcard { justify-self: center; width: 100%; }
+.public-facts { margin: 0; display: grid; gap: 10px; font-size: 13px; }
+.public-facts div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 12px; }
+.public-facts dt { color: var(--color-ash); }
+.public-facts dd { margin: 0; }
+@media (min-width: 900px) {
+  .public-grid { grid-template-columns: 380px minmax(0, 1fr); gap: 64px; align-items: start; }
+  .public-grid .idcard { position: sticky; top: 28px; }
+}

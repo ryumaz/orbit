@@ -4,6 +4,7 @@ import { useMe } from '../lib/me'
 import { useAccount } from '../lib/account'
 import Icon from './Icons'
 import { Spark, initials } from './Spark'
+import { MemberAvatar } from './ProfileCard'
 
 export function Brand({ compact = false }) {
   return (
@@ -101,8 +102,8 @@ export function AppShell({ children }) {
               <span className="dot-num">{balance}</span>
               <Spark />
             </Link>
-            <Link to={youTo} className="avatar" aria-label={`Your profile, ${name}`}>
-              {initials(name)}
+            <Link to={youTo} className="top-avatar" aria-label={`Your profile, ${name}`}>
+              {live ? <MemberAvatar name={name} url={account.profile.avatar_url} /> : <span className="avatar">{initials(name)}</span>}
             </Link>
           </div>
         </header>
@@ -110,7 +111,7 @@ export function AppShell({ children }) {
           {sample && (
             <p className="sample-note">
               <span className="pill pill-quiet">sample</span>
-              These mentors are sample data while booking real members is being built.
+              Real members are listed first; the rest are sample mentors while orbit grows.
               {pathname.startsWith('/sessions') && ` You're viewing the demo as ${person.name}.`}
             </p>
           )}

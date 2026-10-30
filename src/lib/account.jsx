@@ -20,7 +20,7 @@ export function AccountProvider({ children }) {
   const load = useCallback(async () => {
     if (!uid) return setData({ uid, loading: false })
     const [p, l] = await Promise.all([
-      supabase.from('profiles').select('name, bio, langs, teaches, learns, city, created_at').eq('id', uid).single(),
+      supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, created_at').eq('id', uid).single(),
       supabase.from('ledger').select('id, amount, type, note, created_at').order('created_at'),
     ])
     const rows = l.data ?? []

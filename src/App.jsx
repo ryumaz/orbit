@@ -10,6 +10,7 @@ import Credits from './pages/Credits'
 import Join from './pages/Join'
 import Dashboard from './pages/Dashboard'
 import Me from './pages/Me'
+import PublicProfile from './pages/PublicProfile'
 import { RequireAccount } from './lib/account'
 import './app.css'
 
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/home" element={<RequireAccount><AppShell><Dashboard /></AppShell></RequireAccount>} />
         <Route path="/me" element={<RequireAccount><AppShell><Me /></AppShell></RequireAccount>} />
         <Route path="/account" element={<Navigate to="/home" replace />} />
+        <Route path="/u/:handle" element={<PublicProfile />} />
         <Route path="/find" element={<AppShell><Find /></AppShell>} />
         <Route path="/people/:id" element={<AppShell><Profile /></AppShell>} />
         <Route path="/sessions" element={<AppShell><Sessions /></AppShell>} />

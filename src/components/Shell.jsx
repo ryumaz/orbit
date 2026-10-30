@@ -1,10 +1,11 @@
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useStore, balanceOf, heldOf, getPerson, resetDemo } from '../lib/store'
 import { useMe } from '../lib/me'
 import { useAccount } from '../lib/account'
 import Icon from './Icons'
 import { Spark, initials } from './Spark'
 import { MemberAvatar } from './ProfileCard'
+import LogOut from './LogOut'
 
 export function Brand({ compact = false }) {
   return (
@@ -36,7 +37,6 @@ export function AppShell({ children }) {
   const s = useStore()
   const me = useMe()
   const account = useAccount()
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   const live = account.live
   const person = getPerson(me)
@@ -48,11 +48,6 @@ export function AppShell({ children }) {
   const nav = live ? LIVE_NAV : [...DEMO_NAV, [youTo, 'me', 'You']]
   const title = pathname.startsWith('/people') ? 'Profile' : nav.find(([to]) => pathname.startsWith(to))?.[2] ?? ''
   const sample = live && SAMPLE.some((p) => pathname.startsWith(p))
-
-  const logOut = async () => {
-    await account.signOut()
-    navigate('/', { replace: true })
-  }
 
   return (
     <div className="shell">
@@ -77,8 +72,7 @@ export function AppShell({ children }) {
           </p>
           {live ? (
             <p className="m-0 dim">
-              {name} ·{' '}
-              <button type="button" className="link" onClick={logOut}>Log out</button>
+              {name} · <LogOut />
             </p>
           ) : (
             <p className="m-0 dim">

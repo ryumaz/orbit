@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import ProfileCard, { CARD_COLORS, ShareProfile } from '../components/ProfileCard'
 import { useAccount } from '../lib/account'
 import { supabase, friendly } from '../lib/supabase'
 import { refreshMembers } from '../lib/members'
 import { uploadAvatar, removeAvatar } from '../lib/avatar'
+import PhotoCropper from '../components/PhotoCropper'
+import LogOut from '../components/LogOut'
 
 // Widely spoken languages, searchable. Anything else can be typed in.
 const LANGS = [
@@ -48,8 +49,7 @@ const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: 
 
 // The member's own profile: a live preview of their card, and the form that edits it.
 export default function Me() {
-  const { profile, user, balance, reload, signOut } = useAccount()
-  const navigate = useNavigate()
+  const { profile, user, balance, reload } = useAccount()
   const [form, setForm] = useState(() => pick(profile))
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState(null)
@@ -71,11 +71,6 @@ export default function Me() {
     refreshMembers()
     await reload()
     setStatus({ ok: true, text: 'Saved. This is what members see now.' })
-  }
-
-  const logOut = async () => {
-    await signOut()
-    navigate('/', { replace: true })
   }
 
   return (
@@ -125,7 +120,7 @@ export default function Me() {
           <section className="card grid gap-3 text-[12.5px]" aria-labelledby="h-account">
             <h2 id="h-account" className="label m-0">Account</h2>
             <p className="m-0 break-all">{user.email}</p>
-            <button type="button" className="btn btn-line btn-sm self-start" onClick={logOut}>Log out</button>
+            <div><LogOut className="btn btn-line btn-sm" confirmClass="btn btn-light btn-sm" /></div>
           </section>
         </div>
 
@@ -245,11 +240,12 @@ function TagField({ id, value, onChange, placeholder, suggestions = SKILLS, max 
   )
 }
 
-// Pick a photo; it is cropped, shrunk and saved straight away.
+// Pick a photo, fit it in the cropper, and it is saved straight away.
 function PhotoPicker({ uid, url, onDone }) {
   const input = useRef(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [picked, setPicked] = useState(null)
   const run = async (job) => {
     setBusy(true)
     setError('')
@@ -280,11 +276,24 @@ function PhotoPicker({ uid, url, onDone }) {
         onChange={(e) => {
           const file = e.target.files?.[0]
           e.target.value = ''
-          if (file) run(() => uploadAvatar(uid, file, url))
+          if (!file) return
+          if (!file.type.startsWith('image/')) return setError('Pick an image file (JPG, PNG or WebP).')
+          setError('')
+          setPicked(file)
         }}
       />
+      {picked && (
+        <PhotoCropper
+          file={picked}
+          onCancel={() => setPicked(null)}
+          onSave={async (blob) => {
+            setPicked(null)
+            await run(() => uploadAvatar(uid, blob, url))
+          }}
+        />
+      )}
       {error && <p role="alert" className="m-0 text-[12px] text-amber">{error}</p>}
-      <p className="m-0 text-[11px] dim">Cropped square and saved right away. Anyone with your link can see it.</p>
+      <p className="m-0 text-[11px] dim">You choose the crop. Anyone with your link can see it.</p>
     </div>
   )
 }

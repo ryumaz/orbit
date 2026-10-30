@@ -266,3 +266,16 @@
   .public-grid { grid-template-columns: 380px minmax(0, 1fr); gap: 64px; align-items: start; }
   .public-grid .idcard { position: sticky; top: 28px; }
 }
+
+/* ---------- photo cropper, log out confirm ---------- */
+.idcard-photo { aspect-ratio: 1; }
+.crop-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.crop-dialog { width: min(100%, 400px); display: grid; gap: 16px; padding: 20px; border-radius: 20px; background: var(--color-raise); border: 1px solid var(--line-strong); }
+.crop-view { position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 14px; background: #000; touch-action: none; cursor: grab; user-select: none; display: grid; place-items: center; }
+.crop-view:active { cursor: grabbing; }
+.crop-view:focus-visible { outline: 2px solid var(--color-violet); outline-offset: 3px; }
+.crop-view img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; pointer-events: none; }
+.crop-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(0, 0, 0, .45); border: 1.5px dashed rgba(241, 240, 236, .7); pointer-events: none; }
+.crop-zoom { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.crop-zoom input { width: 100%; accent-color: var(--color-violet); }
+.logout-ask { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px; }

@@ -69,6 +69,12 @@ export function AccountProvider({ children }) {
   // any orbit page. A ring only counts if it matches one of my open sessions with that person.
   const [incomingCall, setIncomingCall] = useState(null)
   const [declined, setDeclined] = useState(null) // { sid, at } when the other person said no
+  // the session whose call I'm in right now: no ringing for that one
+  const activeCall = useRef(null)
+  const setActiveCall = useCallback((sid) => {
+    activeCall.current = sid
+    if (sid) setIncomingCall((c) => (c?.sid === sid ? null : c))
+  }, [])
   const sessionsRef = useRef([])
   sessionsRef.current = data.sessions ?? []
   useEffect(() => {
@@ -79,6 +85,7 @@ export function AccountProvider({ children }) {
         const s = sessionsRef.current.find((x) => x.id === payload.sid)
         const otherId = s && (s.mentor_id === uid ? s.learner_id : s.mentor_id)
         if (!s || otherId !== payload.from || !['accepted', 'live'].includes(s.status)) return
+        if (activeCall.current === s.id) return
         setIncomingCall((c) => (c?.sid === s.id ? { ...c, at: Date.now() } : { sid: s.id, from: payload.from, video: payload.video, session: s, at: Date.now() }))
       })
       .on('broadcast', { event: 'ring-stop' }, ({ payload }) => setIncomingCall((c) => (c?.sid === payload.sid ? null : c)))
@@ -139,6 +146,7 @@ export function AccountProvider({ children }) {
     act,
     incomingCall,
     dismissCall: () => setIncomingCall(null),
+    setActiveCall,
     declined,
     toInbox,
     signOut: () => supabase.auth.signOut(),

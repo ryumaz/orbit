@@ -65,9 +65,15 @@ export default function IncomingCall() {
           <span id="ring-desc" className="dim text-[11.5px]">{s.skill} · {incomingCall.video ? 'video call' : 'voice call'}</span>
         </div>
         <div className="ring-actions">
-          <button type="button" className="btn btn-light btn-sm" autoFocus onClick={() => answer(true)}>Video</button>
-          <button type="button" className="btn btn-line btn-sm" onClick={() => answer(false)}>Voice</button>
-          <button type="button" className="btn btn-sm ring-decline" onClick={decline} aria-label="Decline">Decline</button>
+          {incomingCall.video ? (
+            <>
+              <button type="button" className="btn btn-light btn-sm" autoFocus onClick={() => answer(true)}>Join with camera</button>
+              <button type="button" className="btn btn-line btn-sm" onClick={() => answer(false)}>Join, camera off</button>
+            </>
+          ) : (
+            <button type="button" className="btn btn-light btn-sm" autoFocus onClick={() => answer(false)}>Join</button>
+          )}
+          <button type="button" className="btn btn-sm ring-decline" onClick={decline}>Decline</button>
         </div>
       </div>
     </div>

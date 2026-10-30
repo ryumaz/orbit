@@ -119,7 +119,7 @@ export default function Whiteboard({ roomKey, live, me, readOnly = false, onConf
       clearTimeout(sendTimer.current)
       return go()
     }
-    sendTimer.current ??= setTimeout(go, 70)
+    sendTimer.current ??= setTimeout(go, 120)
   }
 
   const point = (e) => {
@@ -151,6 +151,8 @@ export default function Whiteboard({ roomKey, live, me, readOnly = false, onConf
     current.current = null
     changed()
     sendStroke(s, true)
+    // each message carries the whole line, so a second copy repairs a dropped one
+    setTimeout(() => live.sendBoard({ type: 'stroke', stroke: { ...s, pts: [...s.pts] }, at: lastAt.current }), 600)
   }
 
   const undo = () => {

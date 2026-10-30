@@ -107,6 +107,7 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     closePeer()
     otherId.current = to
     const conn = new RTCPeerConnection(ICE)
+    conn.createdAt = Date.now()
     pc.current = conn
     if (caller) {
       conn.addTransceiver('audio', { direction: 'sendrecv' })
@@ -118,7 +119,17 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
       remoteStream.current.addTrack(e.track)
       setRemote((r) => ({ ...r, stream: new MediaStream(remoteStream.current.getTracks()) }))
     }
-    conn.onicecandidate = (e) => e.candidate && send('signal', { to, from: selfId, kind: 'ice', data: e.candidate.toJSON() })
+    let batch = []
+    let batchTimer = null
+    conn.onicecandidate = (e) => {
+      if (!e.candidate) return
+      batch.push(e.candidate.toJSON())
+      batchTimer ??= setTimeout(() => {
+        send('signal', { to, from: selfId, kind: 'ices', data: batch })
+        batch = []
+        batchTimer = null
+      }, 150)
+    }
     // a dropped or failed call re-dials a few times before giving up
     let dropTimer
     const redial = () => {
@@ -132,10 +143,14 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
       if (selfId < to) setTimeout(() => offerRef.current?.(to), 800)
       else send('signal', { to, from: selfId, kind: 'retry' })
     }
+    const watchdog = setTimeout(() => {
+      if (pc.current === conn && conn.connectionState !== 'connected') redial()
+    }, selfId < to ? 10000 : 15000) // the caller re-dials first, so the two don't collide
     conn.onconnectionstatechange = () => {
       const st = conn.connectionState
       setRemote((r) => ({ ...r, state: st }))
       clearTimeout(dropTimer)
+      if (st === 'connected' || st === 'closed') clearTimeout(watchdog)
       if (st === 'connected') {
         retries.current = 0
         setError('')
@@ -173,13 +188,16 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
         await conn.setLocalDescription(await conn.createAnswer())
         send('signal', { to: from, from: selfId, kind: 'answer', data: conn.localDescription.toJSON() })
       } else if (kind === 'retry') {
-        if (inCallRef.current && selfId < from) offerRef.current?.(from)
+        // a connection younger than 5 s is already a fresh attempt
+        if (inCallRef.current && selfId < from && !(pc.current && Date.now() - pc.current.createdAt < 5000)) offerRef.current?.(from)
         return
       } else if (kind === 'answer') {
         await pc.current?.setRemoteDescription(data)
-      } else if (kind === 'ice') {
-        if (pc.current?.remoteDescription) await pc.current.addIceCandidate(data)
-        else queued.current.push(data)
+      } else if (kind === 'ice' || kind === 'ices') {
+        for (const c of kind === 'ice' ? [data] : data) {
+          if (pc.current?.remoteDescription) await pc.current.addIceCandidate(c).catch(() => {})
+          else queued.current.push(c)
+        }
         return
       }
       for (const c of queued.current.splice(0)) await pc.current?.addIceCandidate(c)

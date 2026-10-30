@@ -6,7 +6,11 @@ export const supabase = createClient(
   'https://nhgdwvzjivmlyvupnuwu.supabase.co',
   'sb_publishable__mx741w2B46tp2vncHclFw_MBkxUBMo',
   // hash routes would look like a login redirect, and we never use email links
-  { auth: { storageKey: 'orbit-auth', detectSessionInUrl: false } },
+  {
+    auth: { storageKey: 'orbit-auth', detectSessionInUrl: false },
+    // room traffic comes in bursts (call handshakes, whiteboard lines); allow more than the old default of 10 a second
+    realtime: { params: { eventsPerSecond: 50 } },
+  },
 )
 
 // Supabase's messages, said the way the rest of the site talks.

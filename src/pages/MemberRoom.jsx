@@ -21,7 +21,7 @@ const CODE = /code|coding|program|python|java|react|sql|c\+\+|c#|javascript|type
 // a timer, and the one button that pays the mentor.
 export default function MemberRoom() {
   const { id } = useParams()
-  const { user, profile, sessions, act, toInbox, declined, reviewed } = useAccount()
+  const { user, profile, sessions, act, toInbox, declined, reviewed, setActiveCall } = useAccount()
   const navigate = useNavigate()
   const [ending, setEnding] = useState(false)
   const [params, setParams] = useSearchParams()
@@ -70,6 +70,12 @@ export default function MemberRoom() {
       toInbox(otherKey, 'ring-stop', { sid: s.id })
     }
   }, [calling]) // eslint-disable-line react-hooks/exhaustive-deps
+  // while I'm in this call, rings for it are ignored
+  useEffect(() => {
+    setActiveCall(live.inCall && s ? s.id : null)
+    return () => setActiveCall(null)
+  }, [live.inCall, s?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // each new call starts a fresh ring (an earlier decline doesn't count)
   useEffect(() => {
     setRingStart(live.inCall ? Date.now() : 0)

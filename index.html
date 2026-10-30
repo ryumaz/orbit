@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <title>orbit</title>
+    <style>
+      html,
+      body {
+        background: #000;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Martian+Mono:wdth,wght@75..112.5,200..700&family=Reenie+Beanie&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <div
+      id="opened-source"
+      hidden
+      style="max-width: 640px; margin: 18vh auto 0; padding: 0 24px; color: #e8e4da; font: 16px/1.6 'Martian Mono', monospace"
+    >
+      <h1 style="margin: 0 0 16px; color: #fff; font-size: 40px; line-height: 1">This is the source file, not the app.</h1>
+      <p style="margin: 0 0 12px">To open orbit with a double-click, open <b style="color: #ff9455">orbit.html</b> in this folder. Run <code>npm run build</code> once to make it.</p>
+      <p style="margin: 0">While building, run <code>npm run dev</code> and open <b style="color: #ff9455">http://localhost:5530</b> instead.</p>
+    </div>
+    <script>
+      // Opened straight from the folder, the JSX source cannot run: say what to open instead.
+      setTimeout(function () {
+        if (location.protocol === 'file:' && !document.getElementById('root').firstChild) {
+          document.getElementById('opened-source').hidden = false
+        }
+      }, 1500)
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

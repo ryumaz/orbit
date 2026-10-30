@@ -1,0 +1,22 @@
+// 7×7 dot glyphs, the same family as the dot-matrix numbers.
+const GLYPHS = {
+  home: ['...#...', '..###..', '.#####.', '#######', '.#...#.', '.#...#.', '.#####.'],
+  find: ['.####..', '#....#.', '#....#.', '#....#.', '.####..', '.....#.', '......#'],
+  sessions: ['.....#.', '#######', '.....#.', '.......', '.#.....', '#######', '.#.....'],
+  credits: ['#####..', '.......', '###....', '.......', '######.', '.......', '####...'],
+  me: ['..###..', '..###..', '..###..', '.......', '.#####.', '#######', '#######'],
+}
+
+export default function Icon({ name, className = '' }) {
+  const dots = []
+  GLYPHS[name].forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      if (c === '#') dots.push(<circle key={`${x}-${y}`} cx={x * 3.2 + 1.6} cy={y * 3.2 + 1.6} r="1.22" />)
+    }),
+  )
+  return (
+    <svg viewBox="0 0 22.4 22.4" aria-hidden="true" className={`size-[22px] flex-none fill-current ${className}`}>
+      {dots}
+    </svg>
+  )
+}

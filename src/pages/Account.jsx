@@ -17,7 +17,7 @@ export default function Account() {
 
   if (!session || account.loading) return <p className="p-8 dim">Opening your account…</p>
 
-  const { profile, ledger, balance, error } = account
+  const { profile, ledger = [], balance = 0, error } = account
   const logOut = async () => {
     await supabase.auth.signOut()
     navigate('/', { replace: true })

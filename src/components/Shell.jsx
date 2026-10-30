@@ -81,7 +81,7 @@ export function AppShell({ children }) {
             </p>
           ) : (
             <p className="m-0 dim">
-              You are {person.name.replace(/.$/, '')}.{' '}
+              You are {person.name.replace(/\.$/, '')}.{' '}
               <Link to="/" state={{ to: 'students' }} className="link">Switch</Link>
               {account.session === null && <> · <Link to="/login" className="link">Log in</Link></>}
             </p>

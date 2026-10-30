@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, friendly } from './supabase'
+import { chime, systemNotify } from './notify'
 
 const AccountContext = createContext(null)
 
@@ -119,6 +120,64 @@ export function AccountProvider({ children }) {
     sending.current.delete(key)
   }, [uid])
 
+  // Notifications: compare each fresh list of sessions with the last one and announce
+  // what's new from my side. The first load only sets the baseline.
+  const [toasts, setToasts] = useState([])
+  const prevSessions = useRef(null)
+  useEffect(() => {
+    prevSessions.current = null
+    setToasts([])
+  }, [uid])
+  useEffect(() => {
+    const list = data.sessions
+    if (!list || !uid || data.uid !== uid) return
+    const prev = prevSessions.current
+    prevSessions.current = new Map(list.map((s) => [s.id, s]))
+    if (!prev) return
+    const name = (p) => p?.name.split(' ')[0] ?? 'Someone'
+    const fresh = []
+    for (const s of list) {
+      const before = prev.get(s.id)
+      if (s.mentor_id === uid && s.status === 'requested' && !before) {
+        fresh.push({ kind: 'request', s, who: s.learner, title: `${name(s.learner)} wants to learn ${s.skill}`, body: `${s.minutes} min · pays ${s.cost} credits${s.message ? ` · “${s.message}”` : ''}` })
+      }
+      if (!before) continue
+      if (s.learner_id === uid && before.status === 'requested' && s.status === 'accepted') {
+        fresh.push({ kind: 'accepted', s, who: s.mentor, title: `${name(s.mentor)} accepted`, body: `${s.skill} · ${s.cost} credits are on hold. Join the room when you're ready.` })
+      }
+      if (s.learner_id === uid && before.status === 'requested' && s.status === 'declined') {
+        fresh.push({ kind: 'declined', s, who: s.mentor, title: `${name(s.mentor)} can't do ${s.skill} right now`, body: 'Nothing was charged. Try someone else who teaches it.' })
+      }
+      if (s.end_by && s.end_by !== uid && before.end_by !== s.end_by) {
+        const from = s.end_by === s.mentor_id ? s.mentor : s.learner
+        fresh.push({ kind: 'end', s, who: from, title: `${name(from)} wants to end ${s.skill} early`, body: `${name(s.mentor)} keeps ${s.end_share}, ${name(s.learner)} gets ${s.cost - s.end_share} back. Agree or say no.` })
+      }
+      if (s.mentor_id === uid && before.status !== 'completed' && s.status === 'completed') {
+        fresh.push({ kind: 'paid', s, who: s.learner, title: `${name(s.learner)} said it worked`, body: `+${s.cost} credits are yours. Nice teaching.` })
+      }
+    }
+    if (!fresh.length) return
+    chime()
+    setToasts((t) => [...t, ...fresh.map((f) => ({ ...f, id: `${f.kind}-${f.s.id}-${Date.now()}` }))].slice(-4))
+    for (const f of fresh) {
+      systemNotify({
+        title: f.title,
+        body: f.body,
+        icon: f.who?.avatar_url,
+        onClick: () => {
+          location.hash = f.kind === 'request' || f.kind === 'declined' ? '#/sessions' : f.kind === 'paid' ? `#/review/${f.s.id}` : `#/s/${f.s.id}`
+        },
+      })
+    }
+  }, [data.sessions]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // the tab title shows how many requests are waiting for me: "(2) orbit"
+  useEffect(() => {
+    const waiting = (data.sessions ?? []).filter((s) => s.mentor_id === uid && s.status === 'requested').length
+    const base = document.title.replace(/^\(\d+\) /, '')
+    document.title = waiting ? `(${waiting}) ${base}` : base
+  }, [data.sessions, uid])
+
   // run a session action (accept, cancel, …) and refresh; returns an error text or null
   const act = useCallback(
     async (fn, args) => {
@@ -146,6 +205,8 @@ export function AccountProvider({ children }) {
     act,
     incomingCall,
     dismissCall: () => setIncomingCall(null),
+    toasts,
+    dismissToast: (id) => setToasts((t) => t.filter((x) => x.id !== id)),
     setActiveCall,
     declined,
     toInbox,

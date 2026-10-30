@@ -344,3 +344,18 @@
 .log-reviews .log-dot { background: var(--color-violet); }
 .log-row:has(.spark-svg) .log-dot { background: none; }
 .log-text { overflow-wrap: anywhere; }
+
+/* ---------- notifications ---------- */
+.toasts { position: fixed; z-index: 110; right: 16px; bottom: calc(var(--tabs-h) + var(--safe-b) + 14px); display: grid; gap: 10px; width: min(calc(100% - 32px), 380px); }
+@media (min-width: 960px) { .toasts { right: 24px; bottom: 24px; } }
+.toast-card {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; padding: 14px 40px 14px 14px; border-radius: 18px;
+  background: rgba(14, 14, 13, .97); border: 1px solid var(--line-strong); box-shadow: 0 20px 50px -18px rgba(0, 0, 0, .9);
+  animation: toastIn .35s var(--ease) both;
+}
+.toast-card b { font-weight: 500; font-size: 13.5px; }
+.toast-request, .toast-end { border-color: transparent; background-image: linear-gradient(rgba(14, 14, 13, .97), rgba(14, 14, 13, .97)), var(--spark); background-origin: border-box; background-clip: padding-box, border-box; }
+.toast-x { position: absolute; top: 8px; right: 10px; width: 26px; height: 26px; border: 0; border-radius: 50%; background: none; color: var(--color-ash); font-size: 18px; line-height: 1; cursor: pointer; }
+.toast-x:hover { color: var(--color-chalk); background: rgba(255, 255, 255, .06); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) { .toast-card { animation: none; } }

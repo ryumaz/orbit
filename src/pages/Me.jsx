@@ -7,6 +7,7 @@ import { refreshMembers } from '../lib/members'
 import { uploadAvatar, removeAvatar } from '../lib/avatar'
 import PhotoCropper from '../components/PhotoCropper'
 import LogOut from '../components/LogOut'
+import NotifySetting from '../components/NotifySetting'
 
 // Widely spoken languages, searchable. Anything else can be typed in.
 const LANGS = [
@@ -117,6 +118,8 @@ export default function Me() {
           </section>
 
           <ShareProfile handle={profile.handle} name={profile.name} />
+
+          <NotifySetting />
 
           <section className="card grid gap-3 text-[12.5px]" aria-labelledby="h-account">
             <h2 id="h-account" className="label m-0">Account</h2>

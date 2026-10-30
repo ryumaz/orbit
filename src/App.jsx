@@ -16,6 +16,7 @@ import Review from './pages/Review'
 import Activity from './pages/Activity'
 import { RequireAccount } from './lib/account'
 import IncomingCall from './components/IncomingCall'
+import Toasts from './components/Toasts'
 import './app.css'
 
 // the room carries the code editor, so it loads only when someone opens a room
@@ -35,6 +36,7 @@ export default function App() {
       <SparkDefs />
       <ScrollToTop />
       <IncomingCall />
+      <Toasts />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/join" element={<Join mode="signup" />} />

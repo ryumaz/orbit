@@ -29,7 +29,7 @@ const LIVE_NAV = [
   ['/me', 'me', 'You'],
 ]
 // pages that still run on the sample marketplace
-const SAMPLE = ['/find', '/sessions', '/people']
+const SAMPLE = ['/find', '/people']
 
 // Sidebar on desktop, top bar and thumb-reach tab bar on phones.
 // Logged in, it shows the member's real name and balance; logged out, the demo student.
@@ -41,9 +41,13 @@ export function AppShell({ children }) {
   const live = account.live
   const person = getPerson(me)
   const name = live ? account.profile.name : person.name
-  const incoming = live ? 0 : s.sessions.filter((x) => x.mentorId === me && x.status === 'requested').length
+  const incoming = live
+    ? account.sessions.filter((x) => x.mentor_id === account.user.id && x.status === 'requested').length
+    : s.sessions.filter((x) => x.mentorId === me && x.status === 'requested').length
   const balance = live ? account.balance : balanceOf(s, me)
-  const held = live ? 0 : heldOf(s, me)
+  const held = live
+    ? account.sessions.filter((x) => x.learner_id === account.user.id && ['accepted', 'live'].includes(x.status)).reduce((a, x) => a + x.cost, 0)
+    : heldOf(s, me)
   const youTo = live ? '/me' : `/people/${me}`
   const nav = live ? LIVE_NAV : [...DEMO_NAV, [youTo, 'me', 'You']]
   const title = pathname.startsWith('/people') ? 'Profile' : nav.find(([to]) => pathname.startsWith(to))?.[2] ?? ''
@@ -106,7 +110,6 @@ export function AppShell({ children }) {
             <p className="sample-note">
               <span className="pill pill-quiet">sample</span>
               Real members are listed first; the rest are sample mentors while orbit grows.
-              {pathname.startsWith('/sessions') && ` You're viewing the demo as ${person.name}.`}
             </p>
           )}
           {children}

@@ -155,7 +155,7 @@ function MemberCard({ m, hit, you }) {
         {m.teaches.map((k) => <span key={k} className={`tag ${k === hit ? 'hit' : ''}`}>{k}</span>)}
       </div>
       {m.langs.length > 0 && <div className="mentor-meta"><span>Speaks {joinAnd(m.langs)}</span></div>}
-      <Link to={`/u/${m.handle}`} className="btn btn-light btn-sm">
+      <Link to={`/u/${m.handle}${!you && hit ? `?skill=${encodeURIComponent(hit)}` : ''}`} className="btn btn-light btn-sm">
         <Spark /> {you ? 'See your public page' : `Learn ${hit ?? m.teaches[0]} from ${m.name.split(' ')[0]}`}
       </Link>
     </article>

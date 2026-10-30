@@ -8,6 +8,8 @@ import {
   balanceOf, heldOf, helpedCount, levelOf, nextLevelAt,
 } from '../lib/store'
 import { useMe } from '../lib/me'
+import { useAccount } from '../lib/account'
+import MySessions from './MySessions'
 import { ago } from '../lib/time'
 
 const firstName = (p) => p.name.split(' ')[0]
@@ -17,6 +19,12 @@ function greeting() {
 }
 
 export default function Sessions() {
+  const account = useAccount()
+  if (account.session && !account.live) return <p className="py-16 dim">Opening your sessions…</p>
+  return account.live ? <MySessions /> : <DemoSessions />
+}
+
+function DemoSessions() {
   const s = useStore()
   const me = useMe()
   const person = getPerson(me)

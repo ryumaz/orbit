@@ -279,3 +279,8 @@
 .crop-zoom { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
 .crop-zoom input { width: 100%; accent-color: var(--color-violet); }
 .logout-ask { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+/* ---------- booking ---------- */
+.rate-range { width: 100%; accent-color: var(--color-violet); }
+.room-hot-wrap { display: inline-flex; border-radius: 50%; padding: 1.5px; background: var(--spark); }
+.room-hot-wrap .avatar { background: #000; border-color: transparent; }

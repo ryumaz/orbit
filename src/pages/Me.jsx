@@ -43,7 +43,7 @@ const SKILLS = [
   'Painting', 'Photography', 'Video editing', 'Animation', 'Calligraphy',
   'Budgeting', 'Investing basics', 'CV writing', 'Interview prep', 'Knitting',
 ]
-const FIELDS = ['name', 'handle', 'bio', 'city', 'langs', 'teaches', 'learns', 'card_color']
+const FIELDS = ['name', 'handle', 'bio', 'city', 'langs', 'teaches', 'learns', 'card_color', 'rate']
 const pick = (p) => Object.fromEntries(FIELDS.map((k) => [k, p[k]]))
 const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: f.bio.trim(), city: f.city.trim() })
 
@@ -161,6 +161,13 @@ export default function Me() {
           <section className="block" aria-labelledby="h-teach">
             <div className="block-head"><h2 id="h-teach">I can teach</h2><span className="dim text-[11px]">{form.teaches.length}/12</span></div>
             <TagField id="me-teach" value={form.teaches} onChange={set('teaches')} placeholder="guitar chords, calculus, sourdough…" />
+          </section>
+
+          <section className="block grid gap-3" aria-labelledby="h-rate">
+            <div className="block-head"><h2 id="h-rate">Your price</h2><span className="flex items-center gap-1 text-[22px]"><span className="dot-num spark-text">{form.rate}</span></span></div>
+            <label htmlFor="me-rate" className="label">Credits for 30 minutes of your time <span className="dim">· 15 min costs {Math.ceil(form.rate / 2)}, 60 min costs {form.rate * 2}</span></label>
+            <input id="me-rate" type="range" min="2" max="40" step="1" value={form.rate} onChange={(e) => set('rate')(Number(e.target.value))} className="rate-range" />
+            <p className="m-0 text-[11.5px] dim">New here? Around 8 to 12 is typical. You can change it any time; booked sessions keep their price.</p>
           </section>
 
           <section className="block" aria-labelledby="h-learn">

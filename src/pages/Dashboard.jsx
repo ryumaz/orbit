@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import Halftone from '../glyph/Halftone'
 import { Spark } from '../components/Spark'
 import { ShareProfile } from '../components/ProfileCard'
-import { useAccount } from '../lib/account'
+import { useAccount, sessionView } from '../lib/account'
+import { MemberAvatar } from '../components/ProfileCard'
 import { stamp } from '../lib/time'
 
 function greeting() {
@@ -22,7 +23,9 @@ export function profileSteps(p) {
 
 // Home for a logged-in member: wallet, what to do next, and their real credits.
 export default function Dashboard() {
-  const { profile, ledger, balance } = useAccount()
+  const { profile, ledger, balance, sessions, user } = useAccount()
+  const open = sessions.filter((s) => ['requested', 'accepted', 'live'].includes(s.status))
+  const held = open.filter((s) => s.learner_id === user.id && s.status !== 'requested').reduce((a, s) => a + s.cost, 0)
   const first = profile.name.split(' ')[0]
   const steps = profileSteps(profile)
   const done = steps.filter(([, ok]) => ok).length
@@ -44,7 +47,7 @@ export default function Dashboard() {
             <p className="wallet-label m-0">Credits you can spend</p>
             <p className="wallet-num m-0">{balance}</p>
             <dl className="wallet-meta">
-              <div><dt>On hold</dt><dd>0</dd></div>
+              <div><dt>On hold</dt><dd>{held}</dd></div>
               <div><dt>Earned</dt><dd>{earned}</dd></div>
               <div><dt>Joined</dt><dd>{since}</dd></div>
             </dl>
@@ -76,13 +79,33 @@ export default function Dashboard() {
 
           <section className="block" aria-labelledby="h-sessions">
             <div className="block-head"><h2 id="h-sessions">Your sessions</h2></div>
-            <div className="empty">
-              <p className="scribble m-0">nothing booked yet.</p>
-              <p className="m-0">
-                Booking real members opens soon. Until then, the demo shows a whole session, from request to paid.{' '}
-                <Link to="/sessions" className="link">Open the demo</Link>
-              </p>
-            </div>
+            {open.length === 0 ? (
+              <div className="empty">
+                <p className="scribble m-0">nothing booked yet.</p>
+                <p className="m-0">
+                  Share your profile so friends can book you, or <Link to="/find" className="link">find someone to learn from</Link>.
+                </p>
+              </div>
+            ) : (
+              <ul className="past m-0 list-none p-0">
+                {open.slice(0, 5).map((s) => {
+                  const { teaching, other } = sessionView(s, user.id)
+                  const line = s.status === 'requested'
+                    ? teaching ? `${other.name.split(' ')[0]} wants ${s.skill}` : `You asked ${other.name.split(' ')[0]} for ${s.skill}`
+                    : teaching ? `Teach ${other.name.split(' ')[0]} ${s.skill}` : `${other.name.split(' ')[0]} is teaching you ${s.skill}`
+                  return (
+                    <li key={s.id}>
+                      <MemberAvatar name={other.name} url={other.avatar_url} />
+                      <b>{line}</b>
+                      <small>{s.minutes} min · {s.status === 'requested' ? (teaching ? 'waiting for you' : 'waiting for them') : 'room ready'}</small>
+                      <Link to={s.status === 'requested' ? '/sessions' : `/s/${s.id}`} className="link amt text-[11px]">
+                        {s.status === 'requested' ? (teaching ? 'Answer' : 'View') : 'Join'}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </section>
         </div>
 

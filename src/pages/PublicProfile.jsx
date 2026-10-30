@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Brand } from '../components/Shell'
 import { Spark } from '../components/Spark'
 import ProfileCard, { ShareProfile } from '../components/ProfileCard'
+import BookForm from '../components/BookForm'
 import { supabase } from '../lib/supabase'
 import { useAccount } from '../lib/account'
 import { joinAnd } from '../lib/time'
@@ -11,6 +12,7 @@ import { joinAnd } from '../lib/time'
 // Anyone can open it, logged in or not.
 export default function PublicProfile() {
   const { handle } = useParams()
+  const [params] = useSearchParams()
   const account = useAccount()
   const [state, setState] = useState({ loading: true })
 
@@ -106,13 +108,7 @@ export default function PublicProfile() {
                   <ShareProfile handle={p.handle} name={p.name} />
                 </>
               ) : account.session ? (
-                <div className="card card-hot grid gap-3">
-                  <p className="m-0 text-[14px]">Want to learn from {first}?</p>
-                  <p className="m-0 text-[12.5px] dim">
-                    Booking a session between members opens very soon: you'll request a time here, credits are held, and they move to {first} only when you say it worked.
-                  </p>
-                  <ShareProfile handle={p.handle} name={p.name} title={`Share ${first}'s profile`} />
-                </div>
+                account.live ? <BookForm p={p} initialSkill={params.get('skill')} /> : <p className="dim">Opening…</p>
               ) : (
                 <div className="card card-hot grid gap-3">
                   <p className="m-0 text-[15px]">Learn from {first} on orbit.</p>

@@ -56,6 +56,9 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
   const [local, setLocal] = useState({ stream: null, mic: true, cam: true, screen: false, speaking: false })
   const [remote, setRemote] = useState({ stream: null, mic: true, cam: true, screen: false, speaking: false, state: 'idle' })
   const [error, setError] = useState('')
+  const [remoteDoc, setRemoteDoc] = useState(null) // { text, at } from the other person
+  const docTimer = useRef(null)
+  const docPending = useRef(null)
 
   const channel = useRef(null)
   const pc = useRef(null)
@@ -151,6 +154,7 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     ch.on('broadcast', { event: 'chat' }, ({ payload }) => setMessages((m) => (m.some((x) => x.id === payload.id) ? m : [...m, payload])))
       .on('broadcast', { event: 'signal' }, ({ payload }) => onSignal(payload))
       .on('broadcast', { event: 'media' }, ({ payload }) => payload.from !== selfId && setRemote((r) => ({ ...r, ...payload.state })))
+      .on('broadcast', { event: 'doc' }, ({ payload }) => payload.from !== selfId && setRemoteDoc({ text: payload.text, at: payload.at }))
       .on('broadcast', { event: 'bye' }, ({ payload }) => payload.from === otherId.current && closePeer())
       .on('presence', { event: 'sync' }, () => {
         const next = {}
@@ -276,6 +280,16 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     }
   }
 
+  // send the shared document, at most every 120 ms while typing
+  const sendDoc = (text, at) => {
+    docPending.current = { text, at }
+    if (docTimer.current) return
+    docTimer.current = setTimeout(() => {
+      docTimer.current = null
+      send('doc', { from: selfId, ...docPending.current })
+    }, 120)
+  }
+
   const say = (text) => {
     const t = text.trim().slice(0, 500)
     if (!t) return
@@ -287,6 +301,9 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
   return {
     messages,
     say,
+    remoteDoc,
+    sendDoc,
+    peerHere: Object.keys(peers).length > 0,
     peers,
     inCall,
     local,

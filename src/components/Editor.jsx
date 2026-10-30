@@ -38,14 +38,20 @@ const ink = HighlightStyle.define([
 
 // Shared editor. Until the server exists, tabs in one browser share the
 // document through localStorage. The backend phase swaps this for Yjs.
-export default function Editor({ roomKey, initial, readOnly = false, label }) {
+export default function Editor({ roomKey, initial, readOnly = false, label, sync }) {
   const host = useRef(null)
+  const viewRef = useRef(null)
+  const lastAt = useRef(0) // time of the newest edit this editor has
+  const syncRef = useRef(sync)
+  syncRef.current = sync
 
   useEffect(() => {
     const key = `unstuck:doc:${roomKey}`
     let saved = null
     try {
-      saved = JSON.parse(localStorage.getItem(key))?.text ?? null
+      const stored = JSON.parse(localStorage.getItem(key))
+      saved = stored?.text ?? null
+      lastAt.current = stored?.at ?? 0
     } catch {
       saved = null
     }
@@ -61,8 +67,11 @@ export default function Editor({ roomKey, initial, readOnly = false, label }) {
         EditorView.contentAttributes.of({ 'aria-label': label }),
         EditorView.updateListener.of((u) => {
           if (!u.docChanged || u.transactions.some((tr) => tr.annotation(remote))) return
+          const at = Date.now()
+          lastAt.current = at
+          syncRef.current?.send(u.state.doc.toString(), at)
           try {
-            localStorage.setItem(key, JSON.stringify({ text: u.state.doc.toString(), at: Date.now() }))
+            localStorage.setItem(key, JSON.stringify({ text: u.state.doc.toString(), at }))
           } catch {
             /* storage full or blocked: keep editing locally */
           }
@@ -83,11 +92,36 @@ export default function Editor({ roomKey, initial, readOnly = false, label }) {
       view.dispatch({ changes: { from: 0, to: now.length, insert: text }, selection: { anchor: head }, annotations: remote.of(true) })
     }
     window.addEventListener('storage', onStorage)
+    viewRef.current = view
     return () => {
       window.removeEventListener('storage', onStorage)
+      viewRef.current = null
       view.destroy()
     }
   }, [roomKey, initial, readOnly, label])
+
+  // the other person's newer edits replace ours
+  const incoming = sync?.incoming
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view || !incoming || incoming.at <= lastAt.current) return
+    lastAt.current = incoming.at
+    const now = view.state.doc.toString()
+    if (incoming.text === now) return
+    const head = Math.min(view.state.selection.main.head, incoming.text.length)
+    view.dispatch({ changes: { from: 0, to: now.length, insert: incoming.text }, selection: { anchor: head }, annotations: remote.of(true) })
+    try {
+      localStorage.setItem(`unstuck:doc:${roomKey}`, JSON.stringify({ text: incoming.text, at: incoming.at }))
+    } catch {
+      /* ignore */
+    }
+  }, [incoming, roomKey])
+
+  // when the other person arrives, send them what we have (they keep whichever is newer)
+  const peerHere = sync?.peerHere
+  useEffect(() => {
+    if (peerHere && viewRef.current) syncRef.current?.send(viewRef.current.state.doc.toString(), lastAt.current)
+  }, [peerHere])
 
   return <div ref={host} className="h-full min-h-[420px]" />
 }

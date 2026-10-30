@@ -110,7 +110,7 @@ export default function PhotoCropper({ file, onCancel, onSave }) {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          onWheel={(e) => img && zoomTo(zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08))}
+          onWheel={(e) => img && zoomTo(zoom * Math.exp(-e.deltaY * 0.0015))}
           onKeyDown={onKeyDown}
         >
           {img ? (

@@ -23,10 +23,11 @@ export function AccountProvider({ children }) {
 
   const load = useCallback(async () => {
     if (!uid) return setData({ uid, loading: false })
-    const [p, l, s] = await Promise.all([
+    const [p, l, s, rv] = await Promise.all([
       supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, created_at').eq('id', uid).single(),
       supabase.from('ledger').select('id, amount, type, note, session_id, created_at').order('created_at'),
       supabase.from('sessions').select(SESSION_FIELDS).order('created_at', { ascending: false }).limit(100),
+      supabase.from('reviews').select('session_id, stars').eq('reviewer_id', uid),
     ])
     const rows = l.data ?? []
     setData({
@@ -37,6 +38,7 @@ export function AccountProvider({ children }) {
       ledger: rows,
       balance: rows.reduce((a, r) => a + r.amount, 0),
       sessions: s.data ?? [],
+      myReviews: rv.data ?? [],
     })
   }, [uid])
 
@@ -129,6 +131,8 @@ export function AccountProvider({ children }) {
     ledger: data.ledger ?? [],
     balance: data.balance ?? 0,
     sessions: data.sessions ?? [],
+    reviewed: new Set((data.myReviews ?? []).map((r) => r.session_id)),
+    myReviews: data.myReviews ?? [],
     loading,
     live: Boolean(session) && !loading && Boolean(data.profile),
     reload: load,

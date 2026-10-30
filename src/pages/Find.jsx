@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Spark, initials } from '../components/Spark'
 import { MemberAvatar, CARD_COLORS } from '../components/ProfileCard'
+import { SparkRating } from '../components/SparkStars'
 import { useStore, PEOPLE, helpedCount, levelOf } from '../lib/store'
 import { useMe } from '../lib/me'
 import { useAccount } from '../lib/account'
@@ -147,6 +148,7 @@ function MemberCard({ m, hit, you }) {
         <h3>
           <Link to={`/u/${m.handle}`}>{m.name}</Link>
           <small>@{m.handle}{m.city && ` · ${m.city}`}</small>
+          {m.reviews > 0 && <small className="flex items-center gap-1.5"><SparkRating value={Number(m.rating)} size={11} /> {Number(m.rating).toFixed(1)} · {m.reviews}</small>}
         </h3>
         <span className="pill pill-quiet">{you ? 'You' : 'Member'}</span>
       </div>

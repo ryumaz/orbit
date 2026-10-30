@@ -27,6 +27,7 @@ const LIVE_NAV = [
   ['/find', 'find', 'Learn something'],
   ['/sessions', 'sessions', 'Sessions'],
   ['/credits', 'credits', 'Credits'],
+  ['/activity', 'activity', 'Activity'],
   ['/me', 'me', 'You'],
 ]
 // pages that still run on the sample marketplace

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import ProfileCard, { CARD_COLORS, ShareProfile } from '../components/ProfileCard'
 import { useAccount } from '../lib/account'
 import { supabase, friendly } from '../lib/supabase'
@@ -120,6 +121,7 @@ export default function Me() {
           <section className="card grid gap-3 text-[12.5px]" aria-labelledby="h-account">
             <h2 id="h-account" className="label m-0">Account</h2>
             <p className="m-0 break-all">{user.email}</p>
+            <Link to="/activity" className="link self-start text-[12px]">See your activity log</Link>
             <div><LogOut className="btn btn-line btn-sm" confirmClass="btn btn-light btn-sm" /></div>
           </section>
         </div>

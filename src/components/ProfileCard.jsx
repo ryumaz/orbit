@@ -82,9 +82,6 @@ export function ShareProfile({ handle, name, title = 'Share your profile' }) {
             Share…
           </button>
         )}
-        <a className="btn btn-line btn-sm" href={`https://wa.me/?text=${encodeURIComponent(`${text}: ${url}`)}`} target="_blank" rel="noopener noreferrer">
-          WhatsApp
-        </a>
         <Link to={`/u/${handle}`} className="link text-[12px]">See it as a visitor</Link>
       </div>
     </section>

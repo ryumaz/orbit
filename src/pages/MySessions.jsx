@@ -6,6 +6,7 @@ import { Tracker } from '../components/Shell'
 import { useAccount, sessionView } from '../lib/account'
 import { ago } from '../lib/time'
 import { useConfirm } from '../components/Confirm'
+import { EndDialog, EndProposal } from '../components/EndEarly'
 
 const OPEN = ['requested', 'accepted', 'live']
 const first = (p) => p?.name.split(' ')[0] ?? 'They'
@@ -13,7 +14,8 @@ export const stageOfReal = (s) => ({ requested: 0, accepted: 1, live: 2, complet
 
 // Real sessions for a logged-in member: requests to answer, rooms to join, history.
 export default function MySessions() {
-  const { user, sessions, act } = useAccount()
+  const { user, profile, sessions, act, reviewed } = useAccount()
+  const [endingFor, setEndingFor] = useState(null)
   const [notice, setNotice] = useState(null)
   const [confirm, dialog] = useConfirm()
   const uid = user.id
@@ -23,9 +25,9 @@ export default function MySessions() {
   const asked = sessions.filter((s) => s.learner_id === uid && s.status === 'requested')
   const past = sessions.filter((s) => !OPEN.includes(s.status))
 
-  const run = async (fn, s, ok) => {
-    const r = await act(fn, { sid: s.id })
-    setNotice(r.error ? { ok: false, text: r.error } : { ok: true, text: ok, id: s.id })
+  const run = async (fn, s, ok, extra = {}) => {
+    const r = await act(fn, { sid: s.id, ...extra })
+    setNotice(r.error ? { ok: false, text: r.error } : { ok: true, text: typeof ok === 'function' ? ok(r.data) : ok, id: s.id })
   }
 
   return (
@@ -57,29 +59,36 @@ export default function MySessions() {
 
           {running.map((s) => {
             const { teaching, other } = sessionView(s, uid)
+            const mentor = teaching ? profile : s.mentor
+            const learner = teaching ? s.learner : profile
             return (
               <article key={s.id} className="need card-hot">
                 <p className="need-kicker"><Spark /> {s.status === 'live' ? 'Room is live' : 'Room is ready'} · {s.cost} on hold · {s.minutes} min</p>
                 <h3>{teaching ? `Teach ${first(other)} ${s.skill}` : `${first(other)} is teaching you ${s.skill}`}</h3>
                 {s.message && <p className="problem">“{s.message}”</p>}
                 <Tracker stage={stageOfReal(s)} />
+                <EndProposal
+                  s={s}
+                  uid={uid}
+                  mentor={mentor}
+                  learner={learner}
+                  onCounter={() => setEndingFor(s)}
+                  onWithdraw={() => run('withdraw_end', s, 'Proposal withdrawn.')}
+                  onAnswer={async (agree) => {
+                    if (agree) {
+                      const ok = await confirm({
+                        title: 'Agree to end early?',
+                        body: `${first(mentor)} keeps ${s.end_share} and ${first(learner)} gets ${s.cost - s.end_share} back. This is final.`,
+                        yes: 'Agree and end',
+                      })
+                      if (!ok) return
+                    }
+                    run('answer_end', s, agree ? 'Ended by agreement.' : 'You said no. The session carries on.', { agree })
+                  }}
+                />
                 <div className="need-actions">
                   <Link to={`/s/${s.id}`} className="btn btn-light">Join the room</Link>
-                  <button
-                    type="button"
-                    className="btn btn-line"
-                    onClick={async () => {
-                      const ok = await confirm({
-                        title: 'Cancel this session?',
-                        body: `${s.cost} credits go back to ${teaching ? first(other) : 'you'}.`,
-                        yes: 'Cancel session',
-                        danger: true,
-                      })
-                      if (ok) run('cancel_session', s, `Cancelled. ${s.cost} credits went back.`)
-                    }}
-                  >
-                    Cancel
-                  </button>
+                  {!s.end_by && <button type="button" className="btn btn-line" onClick={() => setEndingFor(s)}>End early</button>}
                 </div>
               </article>
             )
@@ -129,15 +138,23 @@ export default function MySessions() {
               {past.map((s) => {
                 const { teaching, other } = sessionView(s, uid)
                 const done = s.status === 'completed'
+                const early = s.status === 'ended'
+                const kept = done ? s.cost : early ? s.mentor_share : 0
                 const line = done
                   ? teaching ? `You taught ${first(other)} ${s.skill}` : `${first(other)} taught you ${s.skill}`
-                  : `${s.status === 'declined' ? 'Declined' : 'Cancelled'} · ${s.skill} with ${first(other)}`
+                  : early
+                    ? `Ended early · ${s.skill} with ${first(other)}`
+                    : `${s.status === 'declined' ? 'Declined' : 'Cancelled'} · ${s.skill} with ${first(other)}`
+                const canRate = (done || early) && !reviewed.has(s.id)
                 return (
                   <li key={s.id}>
                     <MemberAvatar name={other.name} url={other.avatar_url} />
                     <b>{line}</b>
                     <small>{ago(new Date(s.ended_at ?? s.created_at).getTime())}{s.message && ` · “${s.message}”`}</small>
-                    <span className={`amt ${done && teaching ? 'spark-text' : 'dim'}`}>{done ? `${teaching ? '+' : '−'}${s.cost}` : '±0'}</span>
+                    <span className="amt grid justify-items-end gap-0.5">
+                      <span className={kept && teaching ? 'spark-text' : 'dim'}>{kept ? `${teaching ? '+' : '−'}${kept}` : '±0'}</span>
+                      {canRate && <Link to={`/review/${s.id}`} className="link text-[11px]">Rate</Link>}
+                    </span>
                   </li>
                 )
               })}
@@ -145,6 +162,19 @@ export default function MySessions() {
           </section>
         </div>
       </div>
+      {endingFor && (
+        <EndDialog
+          s={endingFor}
+          uid={uid}
+          mentor={endingFor.mentor_id === uid ? profile : endingFor.mentor}
+          learner={endingFor.learner_id === uid ? profile : endingFor.learner}
+          onClose={() => setEndingFor(null)}
+          onSend={async (share) => {
+            await run('propose_end', endingFor, (d) => (d === 'ended' ? 'Ended. The credits moved.' : 'Proposal sent. Nothing moves until they agree.'), { share })
+            setEndingFor(null)
+          }}
+        />
+      )}
       {dialog}
     </>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Editor from '../components/Editor'
 import { Brand, Tracker } from '../components/Shell'
 import { Spark } from '../components/Spark'
@@ -7,6 +7,7 @@ import { MemberAvatar } from '../components/ProfileCard'
 import { CallPanel, Chat, Notes } from '../components/RoomParts'
 import Whiteboard from '../components/Whiteboard'
 import { useConfirm } from '../components/Confirm'
+import { EndDialog, EndProposal } from '../components/EndEarly'
 import { useAccount, sessionView } from '../lib/account'
 import { useLiveRoom } from '../lib/call'
 import { stageOfReal } from './MySessions'
@@ -20,7 +21,9 @@ const CODE = /code|coding|program|python|java|react|sql|c\+\+|c#|javascript|type
 // a timer, and the one button that pays the mentor.
 export default function MemberRoom() {
   const { id } = useParams()
-  const { user, profile, sessions, act, toInbox, declined } = useAccount()
+  const { user, profile, sessions, act, toInbox, declined, reviewed } = useAccount()
+  const navigate = useNavigate()
+  const [ending, setEnding] = useState(false)
   const [params, setParams] = useSearchParams()
   const [confirm, dialog] = useConfirm()
   const s = sessions.find((x) => x.id === Number(id))
@@ -101,20 +104,29 @@ export default function MemberRoom() {
   const release = async () => {
     setConfirming(false)
     const r = await act('complete_session', { sid: s.id })
+    if (r.error) return setError(r.error)
+    if (live.inCall) live.leave()
+    navigate(`/review/${s.id}`)
+  }
+  const propose = async (share) => {
+    const r = await act('propose_end', { sid: s.id, share })
+    setEnding(false)
     if (r.error) setError(r.error)
   }
-  const cancel = async () => {
-    const ok = await confirm({
-      title: 'Cancel this session?',
-      body: `${s.cost} credits go back to ${isLearner ? 'you' : first(learner)}. The room closes for both of you.`,
-      yes: 'Cancel session',
-      no: 'Keep it',
-      danger: true,
-    })
-    if (!ok) return
-    const r = await act('cancel_session', { sid: s.id })
+  const answer = async (agree) => {
+    if (agree) {
+      const ok = await confirm({
+        title: 'Agree to end early?',
+        body: `${first(mentor)} keeps ${s.end_share} and ${first(learner)} gets ${s.cost - s.end_share} back. This is final.`,
+        yes: 'Agree and end',
+      })
+      if (!ok) return
+    }
+    const r = await act('answer_end', { sid: s.id, agree })
     if (r.error) setError(r.error)
   }
+  const earlyEnd = status === 'ended'
+  const canReview = (done || earlyEnd) && !reviewed.has(s.id)
 
   return (
     <div className="room">
@@ -128,7 +140,11 @@ export default function MemberRoom() {
         {!ended && <span className="pill pill-live">Live</span>}
         <span className={`pill ${done ? 'pill-quiet' : 'pill-spark'}`}>
           <Spark />
-          {done ? `${s.cost} sent to ${first(mentor)}` : status === 'cancelled' ? `${s.cost} refunded` : `${s.cost} on hold until it works`}
+          {done
+            ? `${s.cost} sent to ${first(mentor)}`
+            : earlyEnd
+              ? `ended early · ${s.mentor_share} kept, ${s.cost - s.mentor_share} back`
+              : status === 'cancelled' ? 'cancelled' : `${s.cost} on hold until it works`}
         </span>
         {!ended && isLearner && (
           <button type="button" className="btn btn-light btn-sm" onClick={() => setConfirming(true)}>Got it</button>
@@ -151,7 +167,7 @@ export default function MemberRoom() {
             </div>
           )}
           {!ended && teaching && <p className="m-0 text-[12px] dim">Waiting for {first(learner)} to say it worked. Credits stay on hold until then.</p>}
-          {!ended && <button type="button" onClick={cancel} className="link self-start text-[12px]">Cancel session</button>}
+          {!ended && !s.end_by && <button type="button" onClick={() => setEnding(true)} className="link self-start text-[12px]">End early</button>}
         </aside>
 
         <main className="room-main">
@@ -187,7 +203,26 @@ export default function MemberRoom() {
               </div>
             </div>
           )}
+          <EndProposal
+            s={s}
+            uid={uid}
+            mentor={mentor}
+            learner={learner}
+            onAnswer={answer}
+            onCounter={() => setEnding(true)}
+            onWithdraw={async () => {
+              const r = await act('withdraw_end', { sid: s.id })
+              if (r.error) setError(r.error)
+            }}
+          />
           {error && <p role="alert" className="m-0 text-[13px] text-amber">{error}</p>}
+          {canReview && (
+            <Link to={`/review/${s.id}`} className="card card-hot review-nudge">
+              <span className="spark-stars-mini" aria-hidden="true">✦✦✦✦✦</span>
+              <b>Rate {first(other)}</b>
+              <span className="dim text-[12px]">Takes ten seconds. It shows on their profile.</span>
+            </Link>
+          )}
           {done && (
             <div role="status" className="grid">
               <div className="receipt printing">
@@ -202,7 +237,12 @@ export default function MemberRoom() {
               <Link to="/credits" className="link mt-4 justify-self-start text-[12px]">See your credits</Link>
             </div>
           )}
-          {status === 'cancelled' && <p className="card m-0 text-[13px]">This session was cancelled. {s.cost} credits went back to {isLearner ? 'you' : first(learner)}.</p>}
+          {status === 'cancelled' && <p className="card m-0 text-[13px]">This request was cancelled before it started. Nothing was charged.</p>}
+          {earlyEnd && (
+            <p className="card m-0 text-[13px]">
+              Ended early by agreement. {first(mentor)} kept {s.mentor_share}, {first(learner)} got {s.cost - s.mentor_share} back.
+            </p>
+          )}
           {s.message && (
             <div className="grid gap-2">
               <h2 className="label m-0">{isLearner ? 'What you asked for' : `${first(learner)} asked for`}</h2>
@@ -222,6 +262,7 @@ export default function MemberRoom() {
           </div>
         </aside>
       </div>
+      {ending && <EndDialog s={s} uid={uid} mentor={mentor} learner={learner} onClose={() => setEnding(false)} onSend={propose} />}
       {dialog}
     </div>
   )

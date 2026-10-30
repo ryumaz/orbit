@@ -4,6 +4,8 @@ import { Brand } from '../components/Shell'
 import { Spark } from '../components/Spark'
 import ProfileCard, { ShareProfile } from '../components/ProfileCard'
 import BookForm from '../components/BookForm'
+import { SparkRating } from '../components/SparkStars'
+import { MemberAvatar } from '../components/ProfileCard'
 import { supabase } from '../lib/supabase'
 import { useAccount } from '../lib/account'
 import { joinAnd } from '../lib/time'
@@ -15,12 +17,14 @@ export default function PublicProfile() {
   const [params] = useSearchParams()
   const account = useAccount()
   const [state, setState] = useState({ loading: true })
+  const [reviews, setReviews] = useState([])
 
   useEffect(() => {
     let alive = true
     supabase.rpc('profile_by_handle', { h: handle }).then(({ data, error }) => {
       if (alive) setState({ loading: false, p: data?.[0] ?? null, error: error?.message })
     })
+    supabase.rpc('reviews_for', { h: handle }).then(({ data }) => alive && setReviews(data ?? []))
     return () => {
       alive = false
     }
@@ -72,6 +76,13 @@ export default function PublicProfile() {
               <div className="grid gap-2">
                 <p className="greet-date m-0">@{p.handle} · on orbit since {since}</p>
                 <h1 className="page-title m-0">{p.name}</h1>
+                {p.reviews > 0 ? (
+                  <a href="#reviews" onClick={(e) => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }) }} className="rating-line">
+                    <SparkRating value={Number(p.rating)} size={15} /> <b>{Number(p.rating).toFixed(1)}</b> <span className="dim">· {p.reviews} {p.reviews === 1 ? 'review' : 'reviews'}</span>
+                  </a>
+                ) : (
+                  <span className="text-[12px] dim">No reviews yet</span>
+                )}
                 {p.bio && <p className="m-0 font-[family-name:var(--font-hand)] text-[30px] leading-none opacity-85">“{p.bio}”</p>}
               </div>
 
@@ -89,6 +100,27 @@ export default function PublicProfile() {
                   <div className="block-head"><h2 id="h-learns">{first} wants to learn</h2></div>
                   <div className="tags">{p.learns.map((t) => <span key={t} className="tag">{t}</span>)}</div>
                   <p className="m-0 text-[12px] dim">Know one of these? You could swap: teach {first} and learn from them.</p>
+                </section>
+              )}
+
+              {reviews.length > 0 && (
+                <section className="block" id="reviews" aria-labelledby="h-reviews">
+                  <div className="block-head"><h2 id="h-reviews">What people say</h2><span className="dim text-[11px]">{reviews.length}</span></div>
+                  <ul className="reviews m-0 list-none p-0">
+                    {reviews.map((r, i) => (
+                      <li key={i} className="review">
+                        <MemberAvatar name={r.reviewer_name} url={r.reviewer_avatar} />
+                        <div className="grid min-w-0 gap-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link to={`/u/${r.reviewer_handle}`} className="link text-[12.5px]">{r.reviewer_name}</Link>
+                            <SparkRating value={r.stars} size={12} />
+                          </div>
+                          {r.body && <p className="m-0 text-[13px] leading-relaxed">“{r.body}”</p>}
+                          <span className="text-[11px] dim">{r.as_mentor ? 'learned' : 'taught'} {r.skill} · {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </section>
               )}
 

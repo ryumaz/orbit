@@ -12,6 +12,8 @@ import Dashboard from './pages/Dashboard'
 import Me from './pages/Me'
 import PublicProfile from './pages/PublicProfile'
 import MemberRoom from './pages/MemberRoom'
+import Review from './pages/Review'
+import Activity from './pages/Activity'
 import { RequireAccount } from './lib/account'
 import IncomingCall from './components/IncomingCall'
 import './app.css'
@@ -42,6 +44,8 @@ export default function App() {
         <Route path="/account" element={<Navigate to="/home" replace />} />
         <Route path="/u/:handle" element={<PublicProfile />} />
         <Route path="/s/:id" element={<RequireAccount><MemberRoom /></RequireAccount>} />
+        <Route path="/review/:id" element={<RequireAccount><Review /></RequireAccount>} />
+        <Route path="/activity" element={<RequireAccount><AppShell><Activity /></AppShell></RequireAccount>} />
         <Route path="/find" element={<AppShell><Find /></AppShell>} />
         <Route path="/people/:id" element={<AppShell><Profile /></AppShell>} />
         <Route path="/sessions" element={<AppShell><Sessions /></AppShell>} />

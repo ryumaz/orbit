@@ -8,7 +8,7 @@ import { Spark, initials } from '../components/Spark'
 import { useStore, PEOPLE, getPerson, balanceOf, helpedCount, levelOf } from '../lib/store'
 import { useMe, setMe } from '../lib/me'
 import { freeStatus } from '../lib/time'
-import { useSession } from '../lib/supabase'
+import { useAccount } from '../lib/account'
 import '../landing.css'
 
 const first = (id) => getPerson(id).name.split(' ')[0]
@@ -18,7 +18,7 @@ export default function Home() {
   const s = useStore()
   const me = useMe()
   const { state } = useLocation()
-  const session = useSession()
+  const { session } = useAccount()
 
   useEffect(() => {
     if (state?.to) requestAnimationFrame(() => document.getElementById(state.to)?.scrollIntoView({ block: 'start' }))
@@ -38,7 +38,7 @@ export default function Home() {
         </nav>
         <div className="lnav-auth">
           {session ? (
-            <Link to="/account" className="btn btn-light btn-sm">Your account</Link>
+            <Link to="/home" className="btn btn-light btn-sm">Dashboard</Link>
           ) : (
             <>
               <Link to="/login" className="link text-[12px]">Log in</Link>
@@ -124,7 +124,7 @@ export default function Home() {
             <h2>Someone already fixed it.</h2>
             <p>Type what's broken, see who's free right now, and be back to building in twenty minutes.</p>
             <div className="flex flex-wrap items-center gap-4">
-              <Link to={session ? '/account' : '/join'} className="btn btn-light"><Spark /> {session ? 'Your account' : 'Join and get 30 credits'}</Link>
+              <Link to={session ? '/home' : '/join'} className="btn btn-light"><Spark /> {session ? 'Open your dashboard' : 'Join and get 30 credits'}</Link>
               <Link to="/find" className="link">Or try the demo first</Link>
             </div>
           </div>

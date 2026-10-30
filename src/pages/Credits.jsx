@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Spark } from '../components/Spark'
 import { useStore, getPerson, balanceOf, ledgerOf, sessionById } from '../lib/store'
 import { useMe } from '../lib/me'
+import { useAccount } from '../lib/account'
 import { stamp } from '../lib/time'
 
 const FILTERS = [
@@ -21,6 +22,82 @@ function kindOf(s, r) {
 }
 
 export default function Credits() {
+  const account = useAccount()
+  if (account.session && !account.live) return <p className="py-16 dim">Opening your credits…</p>
+  return account.live ? <MyCredits account={account} /> : <DemoCredits />
+}
+
+// The logged-in member's real ledger from Supabase.
+function MyCredits({ account }) {
+  const { profile, ledger, balance } = account
+  let running = 0
+  const rows = ledger.map((r) => ({ ...r, bal: (running += r.amount) }))
+  const earned = ledger.filter((r) => r.type === 'welcome' || r.type === 'earn').reduce((a, r) => a + r.amount, 0)
+  const spent = -ledger.filter((r) => r.type === 'hold').reduce((a, r) => a + r.amount, 0)
+  const refunded = ledger.filter((r) => r.type === 'refund').reduce((a, r) => a + r.amount, 0)
+  const sumLine = `${ledger.map((r) => (r.amount > 0 ? `+${r.amount}` : r.amount)).join(' ')} = ${running}`
+
+  return (
+    <>
+      <div className="view-head">
+        <h1 className="page-title">Credits</h1>
+        <p>Teach someone, earn credits. Spend them when you are the one learning.</p>
+      </div>
+      <div className="credits-grid">
+        <section className="stack" aria-labelledby="h-balance">
+          <h2 id="h-balance" className="sr-only">Balance</h2>
+          <div className="flex items-end gap-3">
+            <span className="balance-num spark-text">{balance}</span>
+            <Spark className="balance-spark" />
+          </div>
+          <p className="m-0 max-w-[520px] text-[15px] leading-relaxed">{balance} to spend. Nothing is on hold right now.</p>
+          <dl className="credit-stats">
+            <div><dt>Earned</dt><dd>+{earned}</dd></div>
+            <div><dt>Spent</dt><dd>{spent ? `−${spent}` : 0}</dd></div>
+            <div><dt>Refunded</dt><dd>{refunded ? `+${refunded}` : 0}</dd></div>
+          </dl>
+          <div className="card text-[12px] leading-relaxed">
+            <p className="label m-0 mb-2">Sum check</p>
+            <p className="m-0 break-words dim">
+              Your balance is not stored anywhere. It is the {ledger.length} {ledger.length === 1 ? 'row' : 'rows'} on the receipt, added up just now:{' '}
+              <span className="text-chalk">{sumLine}</span>.
+            </p>
+            <p className={`m-0 mt-2 ${running === balance ? 'spark-text' : 'text-amber'}`}>
+              {running === balance ? 'They match.' : 'They do not match, which should never happen.'}
+            </p>
+          </div>
+        </section>
+
+        <section aria-label="Ledger" className="grid">
+          <div className="receipt printing">
+            <div className="grid justify-items-center gap-0.5 text-center">
+              <span className="receipt-brand"><Spark /> orbit</span>
+              <span>ledger for {profile.name}</span>
+              <span className="muted">printed {stamp(Date.now())}</span>
+            </div>
+            <hr />
+            {[...rows].reverse().map((r) => (
+              <div key={r.id} className="receipt-row">
+                <span className="muted">{stamp(r.created_at)}</span>
+                <div className="receipt-line">
+                  <span>{r.note || r.type}</span>
+                  <b className="whitespace-nowrap">{r.amount > 0 ? `+${r.amount}` : r.amount}</b>
+                </div>
+                <div className="receipt-line muted"><span>{r.type}</span><span>bal {r.bal}</span></div>
+              </div>
+            ))}
+            <hr />
+            <div className="receipt-line text-[16px] font-bold"><span>balance</span><span>{balance}</span></div>
+            <span className="receipt-note">every row is one change. none are ever edited.</span>
+          </div>
+          <div aria-hidden="true" className="receipt-edge" />
+        </section>
+      </div>
+    </>
+  )
+}
+
+function DemoCredits() {
   const s = useStore()
   const me = useMe()
   const [filter, setFilter] = useState('all')

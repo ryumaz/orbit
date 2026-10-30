@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Link, Routes, Route, useLocation } from 'react-router-dom'
+import { Link, Navigate, Routes, Route, useLocation } from 'react-router-dom'
 import { AppShell } from './components/Shell'
 import { SparkDefs } from './components/Spark'
 import Home from './pages/Home'
@@ -8,7 +8,9 @@ import Profile from './pages/Profile'
 import Sessions from './pages/Sessions'
 import Credits from './pages/Credits'
 import Join from './pages/Join'
-import Account from './pages/Account'
+import Dashboard from './pages/Dashboard'
+import Me from './pages/Me'
+import { RequireAccount } from './lib/account'
 import './app.css'
 
 // the room carries the code editor, so it loads only when someone opens a room
@@ -31,7 +33,9 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/join" element={<Join mode="signup" />} />
         <Route path="/login" element={<Join mode="login" />} />
-        <Route path="/account" element={<Account />} />
+        <Route path="/home" element={<RequireAccount><AppShell><Dashboard /></AppShell></RequireAccount>} />
+        <Route path="/me" element={<RequireAccount><AppShell><Me /></AppShell></RequireAccount>} />
+        <Route path="/account" element={<Navigate to="/home" replace />} />
         <Route path="/find" element={<AppShell><Find /></AppShell>} />
         <Route path="/people/:id" element={<AppShell><Profile /></AppShell>} />
         <Route path="/sessions" element={<AppShell><Sessions /></AppShell>} />

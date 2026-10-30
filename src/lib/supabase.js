@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 // The project URL and publishable key are public by design: row level security
@@ -9,44 +8,6 @@ export const supabase = createClient(
   // hash routes would look like a login redirect, and we never use email links
   { auth: { storageKey: 'orbit-auth', detectSessionInUrl: false } },
 )
-
-// The signed-in session; undefined while it is still being read from storage.
-export function useSession() {
-  const [session, setSession] = useState(undefined)
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
-    return () => data.subscription.unsubscribe()
-  }, [])
-  return session
-}
-
-// Profile and ledger of the signed-in member. Balance = sum of ledger rows.
-export function useAccount(session) {
-  const uid = session?.user.id
-  const [state, setState] = useState({ loading: true })
-  const load = useCallback(async () => {
-    if (!uid) return setState({ loading: false, uid })
-    const [p, l] = await Promise.all([
-      supabase.from('profiles').select('name, bio, langs, created_at').eq('id', uid).single(),
-      supabase.from('ledger').select('id, amount, type, note, created_at').order('created_at'),
-    ])
-    const rows = l.data ?? []
-    setState({
-      loading: false,
-      uid,
-      error: (p.error ?? l.error)?.message,
-      profile: p.data,
-      ledger: rows,
-      balance: rows.reduce((a, r) => a + r.amount, 0),
-    })
-  }, [uid])
-  useEffect(() => {
-    load()
-  }, [load])
-  // right after login the session is new but its data isn't loaded yet: still loading
-  return { ...state, loading: state.loading || state.uid !== uid, reload: load }
-}
 
 // Supabase's messages, said the way the rest of the site talks.
 export function friendly(error) {

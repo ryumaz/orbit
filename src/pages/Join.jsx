@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import Burst from '../glyph/Burst'
 import { Brand } from '../components/Shell'
 import { Spark } from '../components/Spark'
-import { supabase, useSession, friendly } from '../lib/supabase'
+import { supabase, friendly } from '../lib/supabase'
+import { useAccount } from '../lib/account'
 
 // One page for both doors: /join makes an account, /login opens one.
 export default function Join({ mode }) {
   const signup = mode === 'signup'
-  const session = useSession()
+  const { session } = useAccount()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -17,7 +18,7 @@ export default function Join({ mode }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (session) navigate('/account', { replace: true })
+    if (session) navigate('/home', { replace: true })
   }, [session, navigate])
 
   const submit = async (e) => {

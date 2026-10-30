@@ -5,6 +5,7 @@ import { MemberAvatar } from '../components/ProfileCard'
 import { Tracker } from '../components/Shell'
 import { useAccount, sessionView } from '../lib/account'
 import { ago } from '../lib/time'
+import { useConfirm } from '../components/Confirm'
 
 const OPEN = ['requested', 'accepted', 'live']
 const first = (p) => p?.name.split(' ')[0] ?? 'They'
@@ -14,6 +15,7 @@ export const stageOfReal = (s) => ({ requested: 0, accepted: 1, live: 2, complet
 export default function MySessions() {
   const { user, sessions, act } = useAccount()
   const [notice, setNotice] = useState(null)
+  const [confirm, dialog] = useConfirm()
   const uid = user.id
 
   const incoming = sessions.filter((s) => s.mentor_id === uid && s.status === 'requested')
@@ -66,7 +68,15 @@ export default function MySessions() {
                   <button
                     type="button"
                     className="btn btn-line"
-                    onClick={() => window.confirm(`Cancel this session? ${s.cost} credits go back to ${teaching ? first(other) : 'you'}.`) && run('cancel_session', s, `Cancelled. ${s.cost} credits went back.`)}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: 'Cancel this session?',
+                        body: `${s.cost} credits go back to ${teaching ? first(other) : 'you'}.`,
+                        yes: 'Cancel session',
+                        danger: true,
+                      })
+                      if (ok) run('cancel_session', s, `Cancelled. ${s.cost} credits went back.`)
+                    }}
                   >
                     Cancel
                   </button>
@@ -135,6 +145,7 @@ export default function MySessions() {
           </section>
         </div>
       </div>
+      {dialog}
     </>
   )
 }

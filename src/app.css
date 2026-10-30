@@ -284,3 +284,24 @@
 .rate-range { width: 100%; accent-color: var(--color-violet); }
 .room-hot-wrap { display: inline-flex; border-radius: 50%; padding: 1.5px; background: var(--spark); }
 .room-hot-wrap .avatar { background: #000; border-color: transparent; }
+
+/* ---------- ringing, confirm, danger ---------- */
+.btn-danger { background: var(--color-amber); color: #000; border-color: var(--color-amber); }
+.confirm-dialog { width: min(100%, 420px); }
+.ring-wrap { position: fixed; z-index: 120; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(calc(100% - 24px), 520px); animation: ringIn .3s var(--ease) both; }
+.ring-card {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 22px;
+  background: rgba(14, 14, 13, .96); border: 1px solid transparent;
+  background-image: linear-gradient(rgba(14, 14, 13, .96), rgba(14, 14, 13, .96)), var(--spark);
+  background-origin: border-box; background-clip: padding-box, border-box;
+  box-shadow: 0 24px 60px -20px rgba(155, 130, 255, .55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.ring-card b { font-weight: 500; font-size: 14px; }
+.ring-avatar { position: relative; display: inline-flex; border-radius: 50%; }
+.ring-avatar::before, .ring-avatar::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--color-violet); animation: ringPulse 1.6s ease-out infinite; }
+.ring-avatar::after { animation-delay: .8s; border-color: var(--color-amber); }
+.ring-actions { display: flex; gap: 8px; margin-left: auto; }
+.ring-decline { border: 1px solid rgba(255, 148, 85, .6); color: var(--color-amber); background: transparent; }
+@keyframes ringPulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.7); opacity: 0; } }
+@keyframes ringIn { from { opacity: 0; transform: translate(-50%, -12px); } }
+@media (prefers-reduced-motion: reduce) { .ring-avatar::before, .ring-avatar::after, .ring-wrap { animation: none; } }

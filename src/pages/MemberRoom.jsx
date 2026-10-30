@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import Editor from '../components/Editor'
 import { Brand, Tracker } from '../components/Shell'
 import { Spark } from '../components/Spark'
 import { MemberAvatar } from '../components/ProfileCard'
 import { CallPanel, Chat, Notes } from '../components/RoomParts'
+import Whiteboard from '../components/Whiteboard'
+import { useConfirm } from '../components/Confirm'
 import { useAccount, sessionView } from '../lib/account'
 import { useLiveRoom } from '../lib/call'
 import { stageOfReal } from './MySessions'
 import '../room.css'
 
 const first = (p) => p.name.split(' ')[0]
+// coding skills open on the code editor; everything else on the whiteboard
+const CODE = /code|coding|program|python|java|react|sql|c\+\+|c#|javascript|typescript|html|css|git|web|app|excel|data|machine learning|rust|go\b|kotlin|swift|php|linux|docker/i
 
 // The live room for a real session between two members: call, chat, shared editor,
 // a timer, and the one button that pays the mentor.
 export default function MemberRoom() {
   const { id } = useParams()
-  const { user, profile, sessions, act } = useAccount()
+  const { user, profile, sessions, act, toInbox, declined } = useAccount()
+  const [params, setParams] = useSearchParams()
+  const [confirm, dialog] = useConfirm()
   const s = sessions.find((x) => x.id === Number(id))
   const uid = user.id
   const live = useLiveRoom({ roomId: s ? `m${s.id}` : null, selfId: uid, selfName: profile.name })
@@ -24,6 +30,8 @@ export default function MemberRoom() {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   const [side, setSide] = useState('chat')
+  const [work, setWork] = useState(null) // 'board' | 'code'
+  const [ringStart, setRingStart] = useState(0)
 
   // opening the room starts the session
   const status = s?.status
@@ -35,6 +43,34 @@ export default function MemberRoom() {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  // answered a ring from another page: join as soon as the room is connected
+  const joinAs = params.get('join')
+  useEffect(() => {
+    if (!joinAs || !live.ready || live.inCall) return
+    live.join(joinAs === 'video')
+    setParams({}, { replace: true })
+  }, [joinAs, live.ready]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // in the call but the other person isn't: ring them (on any orbit page) until they join
+  const otherKey = s ? (s.mentor_id === user.id ? s.learner_id : s.mentor_id) : null
+  const otherInCall = Boolean(otherKey && live.peers[otherKey]?.inCall)
+  const wasDeclined = Boolean(ringStart && declined && declined.sid === s?.id && declined.at > ringStart)
+  const calling = live.inCall && !otherInCall && !wasDeclined
+  useEffect(() => {
+    if (!calling) return
+    const ring = () => toInbox(otherKey, 'ring', { sid: s.id, video: live.local.cam })
+    ring()
+    const t = setInterval(ring, 4000)
+    return () => {
+      clearInterval(t)
+      toInbox(otherKey, 'ring-stop', { sid: s.id })
+    }
+  }, [calling]) // eslint-disable-line react-hooks/exhaustive-deps
+  // each new call starts a fresh ring (an earlier decline doesn't count)
+  useEffect(() => {
+    setRingStart(live.inCall ? Date.now() : 0)
+  }, [live.inCall])
 
   if (!s) {
     return (
@@ -48,6 +84,7 @@ export default function MemberRoom() {
   }
 
   const { teaching, other } = sessionView(s, uid)
+  const tab = work ?? (CODE.test(s.skill) ? 'code' : 'board')
   const isLearner = !teaching
   const mentor = teaching ? profile : s.mentor
   const learner = teaching ? s.learner : profile
@@ -67,7 +104,14 @@ export default function MemberRoom() {
     if (r.error) setError(r.error)
   }
   const cancel = async () => {
-    if (!window.confirm(`Cancel this session? ${s.cost} credits go back to ${isLearner ? 'you' : first(learner)}.`)) return
+    const ok = await confirm({
+      title: 'Cancel this session?',
+      body: `${s.cost} credits go back to ${isLearner ? 'you' : first(learner)}. The room closes for both of you.`,
+      yes: 'Cancel session',
+      no: 'Keep it',
+      danger: true,
+    })
+    if (!ok) return
     const r = await act('cancel_session', { sid: s.id })
     if (r.error) setError(r.error)
   }
@@ -111,12 +155,16 @@ export default function MemberRoom() {
         </aside>
 
         <main className="room-main">
-          <CallPanel live={live} other={other} ended={ended} />
-          <div className="room-tabs">
-            <span className="room-tab">shared editor</span>
-            <span className="dim ml-auto self-center text-[11px]">{ended ? 'read only' : `${first(other)} sees every keystroke`}</span>
+          <CallPanel live={live} other={other} ended={ended} calling={calling} declined={wasDeclined} />
+          <div className="room-tabs" role="tablist" aria-label="Workspace">
+            <button type="button" role="tab" aria-selected={tab === 'board'} className={`room-tab-btn ${tab === 'board' ? 'on' : ''}`} onClick={() => setWork('board')}>Whiteboard</button>
+            <button type="button" role="tab" aria-selected={tab === 'code'} className={`room-tab-btn ${tab === 'code' ? 'on' : ''}`} onClick={() => setWork('code')}>Code editor</button>
+            <span className="dim ml-auto self-center text-[11px]">{ended ? 'read only' : `${first(other)} sees it live`}</span>
           </div>
-          <div className="flex-auto">
+          <div className={`flex-auto ${tab === 'board' ? '' : 'hidden'}`}>
+            <Whiteboard roomKey={`m${s.id}`} live={live} me={uid} readOnly={ended} onConfirm={confirm} />
+          </div>
+          <div className={`flex-auto ${tab === 'code' ? '' : 'hidden'}`}>
             <Editor
               roomKey={`m${s.id}`}
               initial={`// ${s.skill} with ${first(other)}\n// both of you can type here: code, notes, links, steps.\n\n`}
@@ -174,6 +222,7 @@ export default function MemberRoom() {
           </div>
         </aside>
       </div>
+      {dialog}
     </div>
   )
 }

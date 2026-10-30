@@ -13,6 +13,7 @@ import Me from './pages/Me'
 import PublicProfile from './pages/PublicProfile'
 import MemberRoom from './pages/MemberRoom'
 import { RequireAccount } from './lib/account'
+import IncomingCall from './components/IncomingCall'
 import './app.css'
 
 // the room carries the code editor, so it loads only when someone opens a room
@@ -31,6 +32,7 @@ export default function App() {
     <>
       <SparkDefs />
       <ScrollToTop />
+      <IncomingCall />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/join" element={<Join mode="signup" />} />

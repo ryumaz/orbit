@@ -5,7 +5,7 @@ import { initials } from './Spark'
 const first = (p) => p.name.split(' ')[0]
 
 // Video or voice for the two people in the room. Nothing starts until someone presses join.
-export function CallPanel({ live, other, ended }) {
+export function CallPanel({ live, other, ended, calling = false, declined = false }) {
   const otherInCall = Object.values(live.peers).some((p) => p.inCall)
   const { local, remote } = live
 
@@ -27,12 +27,14 @@ export function CallPanel({ live, other, ended }) {
     )
   }
 
-  const waiting = !otherInCall ? `Waiting for ${first(other)} to join` : remote.state === 'connected' ? null : 'Connecting…'
+  const waiting = !otherInCall
+    ? declined ? `${first(other)} can't take the call right now` : calling ? `Ringing ${first(other)}…` : `Waiting for ${first(other)} to join`
+    : remote.state === 'connected' ? null : remote.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…'
   const canShare = Boolean(navigator.mediaDevices?.getDisplayMedia)
   return (
     <div className="call">
       <div className="call-grid">
-        <Tile stream={remote.stream} name={other.name} video={remote.cam || remote.screen} mic={remote.mic} speaking={remote.speaking} waiting={waiting} />
+        <Tile stream={remote.stream} name={other.name} video={remote.cam || remote.screen} mic={remote.mic} speaking={remote.speaking} waiting={waiting} ringing={calling && !otherInCall && !declined} />
         <Tile
           stream={local.screen ? local.screenStream : local.stream}
           name={local.screen ? 'You, sharing screen' : 'You'}
@@ -57,18 +59,28 @@ export function CallPanel({ live, other, ended }) {
   )
 }
 
-function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mirror = false, waiting = null }) {
+function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mirror = false, waiting = null, ringing = false }) {
   const ref = useRef(null)
+  const [blocked, setBlocked] = useState(false)
   useEffect(() => {
-    if (ref.current && ref.current.srcObject !== stream) ref.current.srcObject = stream ?? null
-  }, [stream])
+    const el = ref.current
+    if (!el) return
+    if (el.srcObject !== stream) el.srcObject = stream ?? null
+    // browsers sometimes refuse to play sound until the page is tapped
+    if (stream && !self) el.play().then(() => setBlocked(false), () => setBlocked(true))
+  }, [stream, self])
   const showVideo = Boolean(stream?.getVideoTracks().length) && video
   return (
-    <div className={`tile ${speaking && mic ? 'talking' : ''}`}>
+    <div className={`tile ${speaking && mic ? 'talking' : ''} ${ringing ? 'ringing' : ''}`}>
       {/* the video element also plays the other person's audio, so it stays mounted */}
       <video ref={ref} autoPlay playsInline muted={self} className={`${showVideo ? '' : 'invisible'} ${mirror ? 'mirror' : ''}`} />
       {!showVideo && <span className="avatar avatar-lg tile-avatar">{initials(initialsOf ?? name)}</span>}
       {waiting && <span className="tile-wait">{waiting}</span>}
+      {blocked && (
+        <button type="button" className="btn btn-light btn-sm tile-unmute" onClick={() => ref.current?.play().then(() => setBlocked(false), () => {})}>
+          Tap to hear {name.split(' ')[0]}
+        </button>
+      )}
       <span className="tile-name">{name}{!mic && ' · muted'}</span>
     </div>
   )

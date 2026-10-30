@@ -6,12 +6,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
 
-const ICE = {
+// Direct connections first. If /api/turn exists (a relay for networks that block
+// direct calls), its servers are added; without it, calls stay direct-only.
+let ICE = {
   iceServers: [
-    { urls: 'stun:stun.cloudflare.com:3478' },
-    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
   ],
 }
+let iceLoaded = null
+function loadIce() {
+  iceLoaded ??= fetch('/api/turn', { headers: { accept: 'application/json' } })
+    .then((r) => (r.ok && r.headers.get('content-type')?.includes('json') ? r.json() : null))
+    .then((j) => {
+      if (j?.iceServers?.length) ICE = { iceServers: [...ICE.iceServers, ...j.iceServers] }
+    })
+    .catch(() => {})
+  return iceLoaded
+}
+const RETRIES = 3
 const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
 const VIDEO = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
 
@@ -68,6 +80,14 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
   const remoteStream = useRef(null)
   const otherId = useRef(null)
   const inCallRef = useRef(false)
+  const retries = useRef(0)
+  const offerRef = useRef(null)
+  const boardListeners = useRef(new Set())
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    loadIce()
+  }, [])
 
   const send = (event, payload) => channel.current?.send({ type: 'broadcast', event, payload })
 
@@ -99,10 +119,28 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
       setRemote((r) => ({ ...r, stream: new MediaStream(remoteStream.current.getTracks()) }))
     }
     conn.onicecandidate = (e) => e.candidate && send('signal', { to, from: selfId, kind: 'ice', data: e.candidate.toJSON() })
+    // a dropped or failed call re-dials a few times before giving up
+    let dropTimer
+    const redial = () => {
+      if (pc.current !== conn || !inCallRef.current) return
+      if (retries.current >= RETRIES) {
+        setError("The call couldn't connect. One of your networks blocks direct calls; try another Wi-Fi or a hotspot.")
+        return
+      }
+      retries.current += 1
+      setRemote((r) => ({ ...r, state: 'reconnecting' }))
+      if (selfId < to) setTimeout(() => offerRef.current?.(to), 800)
+      else send('signal', { to, from: selfId, kind: 'retry' })
+    }
     conn.onconnectionstatechange = () => {
       const st = conn.connectionState
       setRemote((r) => ({ ...r, state: st }))
-      if (st === 'failed') setError("The call couldn't connect. One of your networks may block direct calls; try another network or hotspot.")
+      clearTimeout(dropTimer)
+      if (st === 'connected') {
+        retries.current = 0
+        setError('')
+      } else if (st === 'failed') redial()
+      else if (st === 'disconnected') dropTimer = setTimeout(() => conn.connectionState === 'disconnected' && redial(), 4000)
     }
     return conn
   }, [closePeer, selfId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -122,6 +160,7 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     await conn.setLocalDescription(await conn.createOffer())
     send('signal', { to, from: selfId, kind: 'offer', data: conn.localDescription.toJSON() })
   }, [makePeer, selfId]) // eslint-disable-line react-hooks/exhaustive-deps
+  offerRef.current = offer
 
   const onSignal = useCallback(async ({ to, from, kind, data }) => {
     if (to !== selfId) return
@@ -133,6 +172,9 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
         attachLocal(conn)
         await conn.setLocalDescription(await conn.createAnswer())
         send('signal', { to: from, from: selfId, kind: 'answer', data: conn.localDescription.toJSON() })
+      } else if (kind === 'retry') {
+        if (inCallRef.current && selfId < from) offerRef.current?.(from)
+        return
       } else if (kind === 'answer') {
         await pc.current?.setRemoteDescription(data)
       } else if (kind === 'ice') {
@@ -155,6 +197,7 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
       .on('broadcast', { event: 'signal' }, ({ payload }) => onSignal(payload))
       .on('broadcast', { event: 'media' }, ({ payload }) => payload.from !== selfId && setRemote((r) => ({ ...r, ...payload.state })))
       .on('broadcast', { event: 'doc' }, ({ payload }) => payload.from !== selfId && setRemoteDoc({ text: payload.text, at: payload.at }))
+      .on('broadcast', { event: 'board' }, ({ payload }) => payload.from !== selfId && boardListeners.current.forEach((l) => l(payload)))
       .on('broadcast', { event: 'bye' }, ({ payload }) => payload.from === otherId.current && closePeer())
       .on('presence', { event: 'sync' }, () => {
         const next = {}
@@ -162,9 +205,13 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
         setPeers(next)
       })
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') ch.track({ name: selfName, inCall: inCallRef.current })
+        if (status === 'SUBSCRIBED') {
+          ch.track({ name: selfName, inCall: inCallRef.current })
+          setReady(true)
+        }
       })
     return () => {
+      setReady(false)
       send('bye', { from: selfId })
       supabase.removeChannel(ch)
       channel.current = null
@@ -195,6 +242,8 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
   const join = async (withVideo) => {
     setError('')
     try {
+      await loadIce()
+      retries.current = 0
       const stream = await navigator.mediaDevices.getUserMedia({ audio: AUDIO, video: withVideo ? VIDEO : false })
       localStream.current = stream
       inCallRef.current = true
@@ -298,7 +347,17 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     send('chat', msg)
   }
 
+  // whiteboard messages ride on the same channel
+  const sendBoard = (msg) => send('board', { from: selfId, ...msg })
+  const onBoard = useCallback((fn) => {
+    boardListeners.current.add(fn)
+    return () => boardListeners.current.delete(fn)
+  }, [])
+
   return {
+    ready,
+    sendBoard,
+    onBoard,
     messages,
     say,
     remoteDoc,

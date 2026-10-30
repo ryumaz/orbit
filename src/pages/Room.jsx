@@ -9,6 +9,8 @@ import { STARTER_CODE } from '../lib/seed'
 import { prefersReducedMotion } from '../glyph/particles'
 import { useLiveRoom } from '../lib/call'
 import { CallPanel, Chat, Notes } from '../components/RoomParts'
+import { useConfirm } from '../components/Confirm'
+import Whiteboard from '../components/Whiteboard'
 import '../room.css'
 
 const LENGTH = 20 * 60 * 1000
@@ -84,6 +86,8 @@ export default function Room() {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   const [side, setSide] = useState('chat')
+  const [work, setWork] = useState(null)
+  const [confirm, dialog] = useConfirm()
   const live = useLiveRoom({ roomId: isLearner || isMentor ? x?.id : null, selfId: me, selfName: getPerson(me)?.name })
 
   if (!x) {
@@ -98,6 +102,7 @@ export default function Room() {
     )
   }
 
+  const tab = work ?? (/figma|design|css|canvas|blender/i.test(x.skill) ? 'board' : 'code')
   const learner = getPerson(x.learnerId)
   const mentor = getPerson(x.mentorId)
   const other = getPerson(otherId)
@@ -114,8 +119,8 @@ export default function Room() {
     setConfirming(false)
     if (!r.ok) setError(r.error)
   }
-  const cancel = () => {
-    if (!window.confirm(`Cancel this session? ${learner.name} gets the ${x.cost} credits back.`)) return
+  const cancel = async () => {
+    if (!(await confirm({ title: 'Cancel this session?', body: `${learner.name} gets the ${x.cost} credits back.`, yes: 'Cancel session', danger: true }))) return
     const r = cancelSession(x.id, me)
     if (!r.ok) setError(r.error)
   }
@@ -160,12 +165,16 @@ export default function Room() {
 
         <main className="room-main">
           <CallPanel live={live} other={other} ended={ended} />
-          <div className="room-tabs">
-            <span className="room-tab">{x.skill === 'React' ? 'Room.jsx' : 'scratch.js'}</span>
-            <span className="dim ml-auto self-center text-[11px]">{ended ? 'read only' : `${first(other)} sees every keystroke`}</span>
+          <div className="room-tabs" role="tablist" aria-label="Workspace">
+            <button type="button" role="tab" aria-selected={tab === 'code'} className={`room-tab-btn ${tab === 'code' ? 'on' : ''}`} onClick={() => setWork('code')}>Code editor</button>
+            <button type="button" role="tab" aria-selected={tab === 'board'} className={`room-tab-btn ${tab === 'board' ? 'on' : ''}`} onClick={() => setWork('board')}>Whiteboard</button>
+            <span className="dim ml-auto self-center text-[11px]">{ended ? 'read only' : `${first(other)} sees it live`}</span>
           </div>
-          <div className="flex-auto">
+          <div className={`flex-auto ${tab === 'code' ? '' : 'hidden'}`}>
             <Editor roomKey={x.id} initial={STARTER_CODE[x.skill] ?? STARTER_CODE.default} readOnly={ended} label={`Shared code with ${other.name}`} />
+          </div>
+          <div className={`flex-auto ${tab === 'board' ? '' : 'hidden'}`}>
+            <Whiteboard roomKey={x.id} live={live} me={me} readOnly={ended} onConfirm={confirm} />
           </div>
         </main>
 
@@ -218,6 +227,7 @@ export default function Room() {
         </aside>
       </div>
 
+      {dialog}
       {flight &&
         Array.from({ length: Math.min(12, x.cost) }, (_, i) => {
           const jx = ((i * 37) % 40) - 20

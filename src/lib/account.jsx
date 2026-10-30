@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, friendly } from './supabase'
 
@@ -63,6 +63,53 @@ export function AccountProvider({ children }) {
     }
   }, [uid, load])
 
+  // Calls ring through a personal inbox channel, so they reach the other person on
+  // any orbit page. A ring only counts if it matches one of my open sessions with that person.
+  const [incomingCall, setIncomingCall] = useState(null)
+  const [declined, setDeclined] = useState(null) // { sid, at } when the other person said no
+  const sessionsRef = useRef([])
+  sessionsRef.current = data.sessions ?? []
+  useEffect(() => {
+    if (!uid) return
+    const ch = supabase
+      .channel(`orbit-inbox-${uid}`)
+      .on('broadcast', { event: 'ring' }, ({ payload }) => {
+        const s = sessionsRef.current.find((x) => x.id === payload.sid)
+        const otherId = s && (s.mentor_id === uid ? s.learner_id : s.mentor_id)
+        if (!s || otherId !== payload.from || !['accepted', 'live'].includes(s.status)) return
+        setIncomingCall((c) => (c?.sid === s.id ? { ...c, at: Date.now() } : { sid: s.id, from: payload.from, video: payload.video, session: s, at: Date.now() }))
+      })
+      .on('broadcast', { event: 'ring-stop' }, ({ payload }) => setIncomingCall((c) => (c?.sid === payload.sid ? null : c)))
+      .on('broadcast', { event: 'decline' }, ({ payload }) => setDeclined({ sid: payload.sid, at: Date.now() }))
+      .subscribe()
+    return () => {
+      supabase.removeChannel(ch)
+    }
+  }, [uid])
+
+  // a ring that stops repeating has ended (the caller left or gave up)
+  useEffect(() => {
+    if (!incomingCall) return
+    const t = setTimeout(() => setIncomingCall(null), 12000)
+    return () => clearTimeout(t)
+  }, [incomingCall])
+
+  // send to someone else's inbox: join their channel just long enough to send
+  const sending = useRef(new Set())
+  const toInbox = useCallback(async (to, event, payload) => {
+    const key = `${to}:${event}`
+    if (sending.current.has(key)) return // the last one is still on its way
+    sending.current.add(key)
+    const ch = supabase.channel(`orbit-inbox-${to}`)
+    await new Promise((resolve) => {
+      ch.subscribe((status) => status === 'SUBSCRIBED' && resolve())
+      setTimeout(resolve, 3000)
+    })
+    await ch.send({ type: 'broadcast', event, payload: { ...payload, from: uid } })
+    supabase.removeChannel(ch)
+    sending.current.delete(key)
+  }, [uid])
+
   // run a session action (accept, cancel, …) and refresh; returns an error text or null
   const act = useCallback(
     async (fn, args) => {
@@ -86,6 +133,10 @@ export function AccountProvider({ children }) {
     live: Boolean(session) && !loading && Boolean(data.profile),
     reload: load,
     act,
+    incomingCall,
+    dismissCall: () => setIncomingCall(null),
+    declined,
+    toInbox,
     signOut: () => supabase.auth.signOut(),
   }
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>

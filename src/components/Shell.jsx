@@ -6,6 +6,7 @@ import Icon from './Icons'
 import { Spark, initials } from './Spark'
 import { MemberAvatar } from './ProfileCard'
 import LogOut from './LogOut'
+import { useConfirm } from './Confirm'
 
 export function Brand({ compact = false }) {
   return (
@@ -160,6 +161,7 @@ export function AppShell({ children }) {
 }
 
 export function Footer({ live = false }) {
+  const [confirm, dialog] = useConfirm()
   return (
     <footer className="foot">
       <p className="m-0">
@@ -170,11 +172,12 @@ export function Footer({ live = false }) {
         type="button"
         className="link"
         onClick={() => {
-          if (window.confirm('Put every balance, request and session back to the starting sample data?')) resetDemo()
+          confirm({ title: 'Reset the demo?', body: 'Every sample balance, request and session goes back to the start. Your real account is not touched.', yes: 'Reset demo' }).then((ok) => ok && resetDemo())
         }}
       >
         Reset demo data
       </button>
+      {dialog}
     </footer>
   )
 }

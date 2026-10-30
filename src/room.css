@@ -71,3 +71,19 @@
 .chat-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .chat-form .input { min-height: 40px; padding: 8px 14px; }
 @media (max-width: 520px) { .call-grid { grid-template-columns: minmax(0, 1fr); } .tile { max-height: 40svh; } }
+
+/* ---------- ringing tile, tap to hear, workspace tabs, whiteboard ---------- */
+.tile.ringing .tile-avatar { animation: ringBeat 1.4s ease-in-out infinite; }
+@keyframes ringBeat { 50% { box-shadow: 0 0 0 10px rgba(155, 130, 255, .18), 0 0 30px rgba(155, 130, 255, .45); } }
+.tile-unmute { position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 2; }
+.room-tab-btn { font: inherit; font-size: 12px; padding: 10px 14px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--color-ash); cursor: pointer; }
+.room-tab-btn.on { color: var(--color-chalk); border-bottom-color: var(--color-chalk); }
+.board { display: grid; gap: 10px; padding: 12px 16px 16px; }
+.board-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.board-swatch { width: 24px; height: 24px; border-radius: 50%; background: var(--sw); border: 2px solid transparent; cursor: pointer; padding: 0; }
+.board-swatch[aria-checked="true"] { border-color: #000; box-shadow: 0 0 0 2px var(--color-chalk); }
+.board-btn { min-height: 30px; padding: 0 11px; font-size: 11px; }
+.board-btn[aria-checked="true"] { background: var(--color-chalk); color: #000; border-color: var(--color-chalk); }
+.board-canvas { width: 100%; aspect-ratio: 16 / 10; border-radius: 14px; border: 1px solid var(--line); touch-action: none; display: block; background: #0b0b0a; }
+.board-canvas.drawing { cursor: crosshair; }
+.board-canvas.erasing { cursor: cell; }

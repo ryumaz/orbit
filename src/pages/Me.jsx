@@ -5,7 +5,30 @@ import { Spark } from '../components/Spark'
 import { useAccount } from '../lib/account'
 import { supabase, friendly } from '../lib/supabase'
 
-const LANGS = ['English', 'Hindi', 'Marathi', 'Gujarati', 'Tamil', 'Telugu', 'Bengali', 'Kannada']
+// Widely spoken languages, searchable. Anything else can be typed in.
+const LANGS = [
+  'English', 'Mandarin Chinese', 'Hindi', 'Spanish', 'French', 'Arabic', 'Bengali', 'Portuguese', 'Russian', 'Urdu',
+  'Indonesian', 'German', 'Japanese', 'Nigerian Pidgin', 'Marathi', 'Telugu', 'Turkish', 'Tamil', 'Cantonese', 'Vietnamese',
+  'Wu Chinese', 'Tagalog', 'Korean', 'Persian', 'Hausa', 'Swahili', 'Javanese', 'Italian', 'Punjabi', 'Gujarati',
+  'Thai', 'Kannada', 'Amharic', 'Bhojpuri', 'Yoruba', 'Malayalam', 'Odia', 'Burmese', 'Ukrainian', 'Polish',
+  'Igbo', 'Uzbek', 'Sindhi', 'Nepali', 'Romanian', 'Dutch', 'Pashto', 'Malay', 'Kurdish', 'Sinhala',
+  'Assamese', 'Zulu', 'Hungarian', 'Greek', 'Czech', 'Swedish', 'Somali', 'Kazakh', 'Hebrew', 'Khmer',
+  'Serbian', 'Croatian', 'Bulgarian', 'Azerbaijani', 'Haitian Creole', 'Danish', 'Finnish', 'Slovak', 'Norwegian', 'Tigrinya',
+  'Xhosa', 'Afrikaans', 'Lao', 'Georgian', 'Armenian', 'Mongolian', 'Albanian', 'Lithuanian', 'Catalan', 'Konkani',
+  'Maithili', 'Kashmiri', 'Tibetan', 'Maori', 'Hawaiian', 'Irish', 'Welsh', 'Icelandic', 'Estonian', 'Latvian',
+  'Slovenian', 'Basque', 'Galician', 'Malagasy', 'Shona', 'Kinyarwanda', 'Quechua', 'Guarani', 'Esperanto', 'Sign language',
+]
+
+// The browser's own languages go first, so people mostly tap instead of type.
+function browserLangs() {
+  try {
+    const names = new Intl.DisplayNames(['en'], { type: 'language' })
+    return [...new Set((navigator.languages || []).map((code) => names.of(code.split('-')[0])))].filter(Boolean)
+  } catch {
+    return []
+  }
+}
+const LANG_SUGGESTIONS = [...new Set([...browserLangs(), ...LANGS])]
 const SKILLS = [
   'Maths', 'Physics', 'Python', 'React', 'SQL', 'Exam prep',
   'Guitar', 'Singing', 'Cooking', 'Baking', 'Valorant', 'Chess',
@@ -100,20 +123,8 @@ export default function Me() {
           </section>
 
           <section className="block" aria-labelledby="h-langs">
-            <div className="block-head"><h2 id="h-langs">I speak</h2></div>
-            <div role="group" aria-labelledby="h-langs" className="flex flex-wrap gap-2">
-              {LANGS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  className="chip"
-                  aria-pressed={form.langs.includes(l)}
-                  onClick={() => set('langs')(form.langs.includes(l) ? form.langs.filter((x) => x !== l) : [...form.langs, l])}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
+            <div className="block-head"><h2 id="h-langs">I speak</h2><span className="dim text-[11px]">{form.langs.length}/8</span></div>
+            <TagField id="me-langs" value={form.langs} onChange={set('langs')} placeholder="search any language" suggestions={LANG_SUGGESTIONS} max={8} />
           </section>
 
           <div className="save-bar">
@@ -128,13 +139,13 @@ export default function Me() {
   )
 }
 
-// Type a skill and press Enter, or tap a suggestion. Tap a tag to remove it.
-function TagField({ id, value, onChange, placeholder }) {
+// Type and press Enter, or tap a suggestion (they filter as you type). Tap a tag to remove it.
+function TagField({ id, value, onChange, placeholder, suggestions = SKILLS, max = 12 }) {
   const [text, setText] = useState('')
   const has = (t) => value.some((x) => x.toLowerCase() === t.toLowerCase())
   const add = (raw) => {
     const t = raw.trim().replace(/\s+/g, ' ').slice(0, 30)
-    if (!t || has(t) || value.length >= 12) return
+    if (!t || has(t) || value.length >= max) return
     onChange([...value, t])
     setText('')
   }
@@ -149,7 +160,7 @@ function TagField({ id, value, onChange, placeholder }) {
           ))}
         </div>
       )}
-      <label htmlFor={id} className="sr-only">Add a skill</label>
+      <label htmlFor={id} className="sr-only">Add one</label>
       <input
         id={id}
         className="input"
@@ -162,12 +173,14 @@ function TagField({ id, value, onChange, placeholder }) {
             add(text)
           }
         }}
-        onBlur={() => text.trim() && add(text)}
-        placeholder={value.length >= 12 ? 'that’s the maximum of 12' : `${placeholder} then Enter`}
-        disabled={value.length >= 12}
+        placeholder={value.length >= max ? `that’s the maximum of ${max}` : `${placeholder}, then Enter`}
+        disabled={value.length >= max}
       />
       <div className="flex flex-wrap gap-1.5">
-        {SKILLS.filter((s) => !has(s)).slice(0, 10).map((s) => (
+        {suggestions
+          .filter((s) => !has(s) && (!text.trim() || s.toLowerCase().includes(text.trim().toLowerCase())))
+          .slice(0, 10)
+          .map((s) => (
           <button key={s} type="button" className="chip chip-sm" onClick={() => add(s)}>+ {s}</button>
         ))}
       </div>

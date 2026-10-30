@@ -7,6 +7,7 @@ import { useStore, getPerson, sessionById, completeSession, startSession, cancel
 import { useMe } from '../lib/me'
 import { STARTER_CODE } from '../lib/seed'
 import { prefersReducedMotion } from '../glyph/particles'
+import { useLiveRoom } from '../lib/call'
 import '../room.css'
 
 const LENGTH = 20 * 60 * 1000
@@ -81,6 +82,8 @@ export default function Room() {
 
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
+  const [side, setSide] = useState('chat')
+  const live = useLiveRoom({ roomId: isLearner || isMentor ? x?.id : null, selfId: me, selfName: getPerson(me)?.name })
 
   if (!x) {
     return <Blocked title="This room does not exist." body="It may have been a different session number. Your sessions are listed on the Sessions page." />
@@ -97,6 +100,7 @@ export default function Room() {
   const learner = getPerson(x.learnerId)
   const mentor = getPerson(x.mentorId)
   const other = getPerson(otherId)
+  const here = otherHere || Boolean(live.peers[otherId])
   const left = Math.max(0, LENGTH - (now - (x.acceptedAt ?? x.createdAt)))
   const done = status === 'completed'
   const ended = done || status === 'cancelled' || status === 'declined'
@@ -137,8 +141,8 @@ export default function Room() {
       <div className="room-body">
         <aside className="room-side room-left">
           <div className="grid gap-4">
-            <Person refEl={mentorRef} p={mentor} role={isMentor ? 'Helping (you)' : 'Helping'} here={isMentor || otherHere} hot />
-            <Person p={learner} role={isLearner ? 'Asking (you)' : 'Asking'} here={isLearner || otherHere} />
+            <Person refEl={mentorRef} p={mentor} role={isMentor ? 'Helping (you)' : 'Helping'} here={isMentor || here} hot />
+            <Person p={learner} role={isLearner ? 'Asking (you)' : 'Asking'} here={isLearner || here} />
           </div>
           <Tracker stage={done ? 4 : stageOf(x)} />
           {!ended && (
@@ -154,6 +158,7 @@ export default function Room() {
         </aside>
 
         <main className="room-main">
+          <CallPanel live={live} other={other} ended={ended} />
           <div className="room-tabs">
             <span className="room-tab">{x.skill === 'React' ? 'Room.jsx' : 'scratch.js'}</span>
             <span className="dim ml-auto self-center text-[11px]">{ended ? 'read only' : `${first(other)} sees every keystroke`}</span>
@@ -198,7 +203,17 @@ export default function Room() {
             <h2 className="label m-0">{isLearner ? 'Your question' : `${first(learner)} asked`}</h2>
             <p className="room-question">“{x.problem}”</p>
           </div>
-          <Notes roomKey={x.id} />
+          <div className="grid gap-3">
+            <div role="tablist" aria-label="Talk" className="flex gap-2">
+              <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'chat'} aria-pressed={side === 'chat'} onClick={() => setSide('chat')}>
+                Chat{live.messages.length > 0 && ` · ${live.messages.length}`}
+              </button>
+              <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'notes'} aria-pressed={side === 'notes'} onClick={() => setSide('notes')}>
+                Notes
+              </button>
+            </div>
+            {side === 'chat' ? <Chat live={live} me={me} other={other} /> : <Notes roomKey={x.id} />}
+          </div>
         </aside>
       </div>
 
@@ -239,6 +254,109 @@ function Person({ p, role, here, hot, refEl }) {
           {role} · <span className={here ? 'text-chalk' : ''}>{here ? 'in the room' : 'not here yet'}</span>
         </span>
       </span>
+    </div>
+  )
+}
+
+// Video or voice for the two people in the room. Nothing starts until someone presses join.
+function CallPanel({ live, other, ended }) {
+  const otherInCall = Object.values(live.peers).some((p) => p.inCall)
+  const { local, remote } = live
+
+  if (!live.inCall) {
+    return (
+      <div className="call-invite">
+        <div className="grid gap-1">
+          <b>{otherInCall ? `${first(other)} is in the call` : 'Talk it through'}</b>
+          <span className="dim text-[11px]">
+            {otherInCall ? 'Join to see and hear each other.' : 'Video or voice, straight between your two browsers.'}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-light btn-sm" disabled={ended} onClick={() => live.join(true)}>Video call</button>
+          <button type="button" className="btn btn-line btn-sm" disabled={ended} onClick={() => live.join(false)}>Voice only</button>
+        </div>
+        {live.error && <p role="alert" className="m-0 w-full text-[12px] text-amber">{live.error}</p>}
+      </div>
+    )
+  }
+
+  const waiting = !otherInCall ? `Waiting for ${first(other)} to join` : remote.state === 'connected' ? null : 'Connecting…'
+  const canShare = Boolean(navigator.mediaDevices?.getDisplayMedia)
+  return (
+    <div className="call">
+      <div className="call-grid">
+        <Tile stream={remote.stream} name={other.name} video={remote.cam || remote.screen} mic={remote.mic} speaking={remote.speaking} waiting={waiting} />
+        <Tile
+          stream={local.screen ? local.screenStream : local.stream}
+          name={local.screen ? 'You, sharing screen' : 'You'}
+          initialsOf="You"
+          video={local.cam || local.screen}
+          mic={local.mic}
+          speaking={local.speaking}
+          self
+          mirror={!local.screen}
+        />
+      </div>
+      <div className="call-controls" role="toolbar" aria-label="Call controls">
+        <button type="button" className="call-btn" aria-pressed={!local.mic} onClick={live.toggleMic}>{local.mic ? 'Mute' : 'Unmute'}</button>
+        <button type="button" className="call-btn" aria-pressed={!local.cam} onClick={live.toggleCam}>{local.cam ? 'Camera off' : 'Camera on'}</button>
+        {canShare && (
+          <button type="button" className="call-btn" aria-pressed={local.screen} onClick={live.toggleScreen}>{local.screen ? 'Stop sharing' : 'Share screen'}</button>
+        )}
+        <button type="button" className="call-btn call-leave" onClick={live.leave}>Leave call</button>
+      </div>
+      {live.error && <p role="alert" className="m-0 px-4 pb-3 text-[12px] text-amber">{live.error}</p>}
+    </div>
+  )
+}
+
+function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mirror = false, waiting = null }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (ref.current && ref.current.srcObject !== stream) ref.current.srcObject = stream ?? null
+  }, [stream])
+  const showVideo = Boolean(stream?.getVideoTracks().length) && video
+  return (
+    <div className={`tile ${speaking && mic ? 'talking' : ''}`}>
+      {/* the video element also plays the other person's audio, so it stays mounted */}
+      <video ref={ref} autoPlay playsInline muted={self} className={`${showVideo ? '' : 'invisible'} ${mirror ? 'mirror' : ''}`} />
+      {!showVideo && <span className="avatar avatar-lg tile-avatar">{initials(initialsOf ?? name)}</span>}
+      {waiting && <span className="tile-wait">{waiting}</span>}
+      <span className="tile-name">{name}{!mic && ' · muted'}</span>
+    </div>
+  )
+}
+
+function Chat({ live, me, other }) {
+  const [text, setText] = useState('')
+  const list = useRef(null)
+  useEffect(() => {
+    list.current?.scrollTo({ top: list.current.scrollHeight })
+  }, [live.messages.length])
+  return (
+    <div className="chat">
+      <ol ref={list} className="chat-list" aria-live="polite" aria-label="Messages">
+        {live.messages.length === 0 && <li className="chat-empty">Say hi. {first(other)} sees messages instantly.</li>}
+        {live.messages.map((m) => (
+          <li key={m.id} className={m.from === me ? 'mine' : ''}>
+            <b>{m.from === me ? 'You' : m.name.split(' ')[0]}</b>
+            <span>{m.text}</span>
+          </li>
+        ))}
+      </ol>
+      <form
+        className="chat-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          live.say(text)
+          setText('')
+        }}
+      >
+        <label htmlFor="chat-input" className="sr-only">Message</label>
+        <input id="chat-input" className="input" value={text} maxLength={500} autoComplete="off" onChange={(e) => setText(e.target.value)} placeholder={`message ${first(other)}`} />
+        <button type="submit" className="btn btn-light btn-sm" disabled={!text.trim()}>Send</button>
+      </form>
     </div>
   )
 }

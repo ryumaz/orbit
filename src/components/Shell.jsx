@@ -73,12 +73,21 @@ export function AppShell({ children }) {
         <div className="side-foot">
           {live ? (
             <>
-              <p className="m-0">
-                <b className="dot-num text-xl">{balance}</b> credits <span className="dim">· {held} on hold</span>
-              </p>
-              <p className="m-0 dim">
-                {name} · <LogOut />
-              </p>
+              <Link to="/credits" className="side-wallet" aria-label={`${balance} credits, ${held} on hold`}>
+                <span className="side-wallet-label">Balance</span>
+                <span className="side-wallet-n"><b className="dot-num">{balance}</b><Spark /></span>
+                <small>{held ? `${held} on hold` : 'nothing on hold'}</small>
+              </Link>
+              <div className="side-who">
+                <Link to="/me" className="side-who-link">
+                  <MemberAvatar name={name} url={account.profile.avatar_url} />
+                  <span className="side-who-text">
+                    <b>{name}</b>
+                    <small>@{account.profile.handle}</small>
+                  </span>
+                </Link>
+                <LogOut icon />
+              </div>
             </>
           ) : (
             <p className="m-0 dim">

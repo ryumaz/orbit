@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, friendly } from './supabase'
 import { chime, systemNotify } from './notify'
 
@@ -25,7 +25,7 @@ export function AccountProvider({ children }) {
   const load = useCallback(async () => {
     if (!uid) return setData({ uid, loading: false })
     const [p, l, s, rv] = await Promise.all([
-      supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, created_at').eq('id', uid).single(),
+      supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, created_at, onboarded').eq('id', uid).single(),
       supabase.from('ledger').select('id, amount, type, note, session_id, created_at').order('created_at'),
       supabase.from('sessions').select(SESSION_FIELDS).order('created_at', { ascending: false }).limit(100),
       supabase.from('reviews').select('session_id, stars').eq('reviewer_id', uid),
@@ -59,9 +59,21 @@ export function AccountProvider({ children }) {
       .channel(`orbit-me-${uid}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, soon)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ledger', filter: `user_id=eq.${uid}` }, soon)
-      .subscribe()
+      // (re)connected: catch up on anything that happened while the line was down
+      .subscribe((status) => status === 'SUBSCRIBED' && soon())
+    // Belt and braces: a phone that slept or a dropped socket can miss a change, so
+    // coming back to the tab refreshes, and an open tab checks again every 45 s.
+    const onBack = () => document.visibilityState === 'visible' && soon()
+    document.addEventListener('visibilitychange', onBack)
+    window.addEventListener('focus', onBack)
+    window.addEventListener('online', onBack)
+    const poll = setInterval(onBack, 45000)
     return () => {
       clearTimeout(t)
+      clearInterval(poll)
+      document.removeEventListener('visibilitychange', onBack)
+      window.removeEventListener('focus', onBack)
+      window.removeEventListener('online', onBack)
       supabase.removeChannel(ch)
     }
   }, [uid, load])
@@ -228,6 +240,10 @@ export function RequireAccount({ children }) {
   }, [account.session, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
   if (account.error && !account.profile) return <p className="p-8 text-amber">{account.error}</p>
   if (!account.live) return <p className="p-8 dim">Opening your account…</p>
+  // new members confirm their name and username first
+  if (account.profile.onboarded === false && pathname !== '/welcome') {
+    return <Navigate to={`/welcome${pathname !== '/home' ? `?next=${encodeURIComponent(pathname)}` : ''}`} replace />
+  }
   return children
 }
 

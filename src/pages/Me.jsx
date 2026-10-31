@@ -8,6 +8,7 @@ import { uploadAvatar, removeAvatar } from '../lib/avatar'
 import PhotoCropper from '../components/PhotoCropper'
 import LogOut from '../components/LogOut'
 import NotifySetting from '../components/NotifySetting'
+import AccountSecurity from '../components/AccountSecurity'
 
 // Widely spoken languages, searchable. Anything else can be typed in.
 const LANGS = [
@@ -129,6 +130,7 @@ export default function Me() {
           </section>
         </div>
 
+        <div className="stack">
         <form className="stack" onSubmit={save}>
           <section className="block grid gap-4" aria-labelledby="h-basics">
             <div className="block-head"><h2 id="h-basics">Basics</h2></div>
@@ -192,6 +194,8 @@ export default function Me() {
             </span>
           </div>
         </form>
+        <AccountSecurity user={user} />
+        </div>
       </div>
     </>
   )

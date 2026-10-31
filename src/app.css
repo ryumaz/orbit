@@ -56,7 +56,7 @@
   .side-nav a:hover { color: var(--color-chalk); background: rgba(255, 255, 255, .04); }
   .side-nav a.active { color: var(--color-chalk); background: var(--raise-2); }
   .side-nav svg { width: 18px; height: 18px; }
-  .side-foot { margin-top: auto; font-size: 12px; display: grid; gap: 6px; padding-left: 8px; }
+  .side-foot { margin-top: auto; font-size: 12px; display: grid; gap: 8px; }
   .top { position: sticky; padding: 0 20px 0 40px; }
   .brand-top, .top-who { display: none; }
   .top-title { display: block; font-size: 13px; color: var(--color-ash); }
@@ -532,3 +532,37 @@
   body:not(:has(.tabs)) .toasts { bottom: calc(var(--safe-b) + 104px); }
 }
 @media (prefers-reduced-motion: reduce) { .orbi-launch, .orbi-face .orbi-eyes, .orbi-typing i, .orbi-thought { animation: none; transition: none; } }
+
+/* ---------- You: sign-in and security ---------- */
+.sec-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.sec-row .input { flex: 1 1 200px; min-width: 0; }
+.sec-row .btn { flex: none; align-self: center; }
+.sec-links { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.sec-links li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+.sec-links b { font-weight: 500; font-size: 13px; }
+.sec-links small { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.welcome-from { display: flex; align-items: center; gap: 8px; margin: -4px 0 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0, 0, 0, .35); font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.welcome-from svg { flex: none; }
+
+/* ---------- sidebar: wallet and who you are ---------- */
+.side-wallet {
+  position: relative; display: grid; gap: 2px; padding: 14px 16px; border-radius: 16px; text-decoration: none; color: var(--color-chalk);
+  border: 1px solid var(--line); background: radial-gradient(120% 140% at 100% 0%, rgba(155, 130, 255, .16), transparent 55%), var(--raise-2);
+  transition: border-color .2s;
+}
+.side-wallet:hover { border-color: var(--line-strong); }
+.side-wallet-label { font-size: 10.5px; color: var(--color-ash); }
+.side-wallet-n { display: flex; align-items: center; gap: 6px; }
+.side-wallet-n b { font-size: 34px; line-height: 1; }
+.side-wallet-n .spark-svg { width: 14px; height: 14px; }
+.side-wallet small { font-size: 11px; color: var(--color-ash); }
+.side-who { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 8px; border-radius: 14px; border: 1px solid var(--line); }
+.side-who-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--color-chalk); }
+.side-who-text { display: grid; min-width: 0; }
+.side-who-text b, .side-who-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-who-text b { font-weight: 500; font-size: 12.5px; }
+.side-who-text small { font-size: 11px; color: var(--color-ash); }
+.side-who-link:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.logout-icon { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 10px; background: none; color: var(--color-ash); cursor: pointer; }
+.logout-icon:hover { color: var(--color-chalk); background: rgba(255, 255, 255, .06); }
+.logout-pop { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); z-index: 5; justify-content: space-between; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: #111110; box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .9); font-size: 12px; }

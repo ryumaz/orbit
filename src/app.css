@@ -73,7 +73,7 @@
 .block { display: grid; gap: 12px; }
 .empty { padding: 14px 4px; display: grid; gap: 6px; font-size: 12.5px; color: var(--color-ash); }
 /* the handwritten line sits on its own row: its tall letters used to run into the text below */
-.empty .scribble { line-height: 1.35; padding-bottom: 4px; }
+.empty .scribble { line-height: 1.35; padding-bottom: 10px; }
 
 /* ---------- sessions (today) ---------- */
 .today-grid { display: grid; gap: 28px; }
@@ -735,3 +735,5 @@ select.input option { background: #111110; color: var(--color-chalk); }
 /* ---------- danger zone ---------- */
 .danger { display: grid; gap: 10px; margin-top: 8px; padding: 16px; border-radius: 16px; border: 1px solid rgba(255, 148, 85, .35); background: rgba(255, 148, 85, .04); }
 .danger-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 12.5px; color: #cfcec9; }
+/* right-to-left languages: the wordmark, logo and dotted numbers still read left to right */
+[dir="rtl"] .hero-word, [dir="rtl"] .brand, [dir="rtl"] .dot-num, [dir="rtl"] .bigfoot-word, [dir="rtl"] .room-clock { direction: ltr; unicode-bidi: isolate; }

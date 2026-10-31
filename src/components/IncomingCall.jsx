@@ -2,11 +2,12 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MemberAvatar } from './ProfileCard'
 import { useAccount, sessionView } from '../lib/account'
+import { isQuiet } from '../lib/notify'
 
 // A soft two-tone ring made in the browser, repeating until answered.
 function useRingtone(on) {
   useEffect(() => {
-    if (!on) return
+    if (!on || isQuiet()) return
     let ctx
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)()

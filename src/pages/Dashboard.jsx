@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import Halftone from '../glyph/Halftone'
 import { Spark } from '../components/Spark'
 import { ShareProfile } from '../components/ProfileCard'
@@ -6,6 +7,7 @@ import NotifySetting from '../components/NotifySetting'
 import { useAccount, sessionView } from '../lib/account'
 import { MemberAvatar } from '../components/ProfileCard'
 import { stamp } from '../lib/time'
+import { BADGES, BadgeShelf } from '../components/Badges'
 
 function greeting() {
   const h = new Date().getHours()
@@ -24,7 +26,12 @@ export function profileSteps(p) {
 
 // Home for a logged-in member: wallet, what to do next, and their real credits.
 export default function Dashboard() {
-  const { profile, ledger, balance, sessions, user } = useAccount()
+  const { profile, ledger, balance, sessions, user, badges } = useAccount()
+  const { hash } = useLocation()
+  // "See your badges" from an unlock card lands here
+  useEffect(() => {
+    if (hash === '#badges') requestAnimationFrame(() => document.getElementById('badges')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  }, [hash])
   const open = sessions.filter((s) => ['requested', 'accepted', 'live'].includes(s.status))
   const held = open.filter((s) => s.learner_id === user.id && s.status !== 'requested').reduce((a, s) => a + s.cost, 0)
   const first = profile.name.split(' ')[0]
@@ -96,7 +103,7 @@ export default function Dashboard() {
                     : teaching ? `Teach ${other.name.split(' ')[0]} ${s.skill}` : `${other.name.split(' ')[0]} is teaching you ${s.skill}`
                   return (
                     <li key={s.id}>
-                      <MemberAvatar name={other.name} url={other.avatar_url} />
+                      <MemberAvatar name={other.name} url={other.avatar_url} handle={other.handle} />
                       <b>{line}</b>
                       <small>{s.minutes} min · {s.status === 'requested' ? (teaching ? 'waiting for you' : 'waiting for them') : 'room ready'}</small>
                       <Link to={s.status === 'requested' ? '/sessions' : `/s/${s.id}`} className="link amt text-[11px]">
@@ -115,6 +122,14 @@ export default function Dashboard() {
           <ShareProfile handle={profile.handle} name={profile.name} title="Share your profile with friends" />
           <TagBlock id="h-teach" title="You teach" tags={profile.teaches} empty="Nothing yet. What could you explain to someone in twenty minutes?" />
           <TagBlock id="h-learn" title="You want to learn" tags={profile.learns} empty="Nothing yet. Add a few and orbit will show who can teach them." find />
+
+          <section className="block" id="badges" aria-labelledby="h-badges">
+            <div className="block-head">
+              <h2 id="h-badges">Badges</h2>
+              <span className="dim text-[11px]">{badges.length} of {BADGES.length}</span>
+            </div>
+            <BadgeShelf earned={badges} all />
+          </section>
 
           <section className="block" aria-labelledby="h-credits">
             <div className="block-head">

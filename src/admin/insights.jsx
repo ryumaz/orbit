@@ -16,6 +16,14 @@ export function Classes({ tick }) {
   const reviews = useData(() => db.rpc('admin_reviews'), tick)
   const [show, setShow] = useState('all')
   const c = stats.data
+  // for abusive or fake reviews; logged with who deleted it
+  const removeReview = async (x) => {
+    if (!window.confirm(`Delete ${x.reviewer}'s ${x.stars}-star review for good?`)) return
+    const { error } = await db.rpc('admin_delete_review', { rid: x.id })
+    if (error) return window.alert(errText(error))
+    reviews.reload()
+    stats.reload()
+  }
   if (!c) return stats.error ? <Problem text={stats.error} /> : <Loading />
   const r = c.reviews ?? {}
   const done = c.completed + c.ended
@@ -130,7 +138,7 @@ export function Classes({ tick }) {
         <div className="ad-card ad-flush">
           <div className="ad-scroll">
             <table className="ad-table">
-              <thead><tr><th>Stars</th><th>Review</th><th>Class</th><th>From</th><th>About</th><th>When</th></tr></thead>
+              <thead><tr><th>Stars</th><th>Review</th><th>Class</th><th>From</th><th>About</th><th>When</th><th /></tr></thead>
               <tbody>
                 {list.map((x) => (
                   <tr key={x.id}>
@@ -140,6 +148,7 @@ export function Classes({ tick }) {
                     <td><Person name={x.reviewer} handle={x.reviewer_handle} /></td>
                     <td><span className="ad-member"><Person name={x.reviewee} handle={x.reviewee_handle} /><span className={`ad-pill is-${x.of_teacher ? 'purple' : 'blue'}`}>{x.of_teacher ? 'teacher' : 'learner'}</span></span></td>
                     <td title={full(x.created_at)}>{ago(x.created_at)}</td>
+                    <td><button type="button" className="ad-link ad-link-danger" onClick={() => removeReview(x)}>Delete</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -171,6 +180,15 @@ const KIND = {
   reviewed: ['Reviewed', 'green', 'reviews'],
   'profile-updated': ['Edited profile', 'gray', 'accounts'],
   'account-deleted': ['Deleted account', 'red', 'accounts'],
+  'admin-suspended': ['Suspended a member', 'red', 'admin'],
+  'admin-unsuspended': ['Lifted a suspension', 'green', 'admin'],
+  'admin-credits': ['Changed credits', 'blue', 'admin'],
+  'admin-granted': ['Made an admin', 'purple', 'admin'],
+  'admin-revoked': ['Removed an admin', 'gray', 'admin'],
+  'admin-cleared': ['Cleared profile content', 'gray', 'admin'],
+  'admin-review-deleted': ['Deleted a review', 'red', 'admin'],
+  'notice-updated': ['Changed the site notice', 'blue', 'admin'],
+  'alerts-updated': ['Changed Discord alerts', 'gray', 'admin'],
 }
 const groupOf = (e) => KIND[e.kind]?.[2] ?? 'steps'
 
@@ -188,6 +206,13 @@ function describe(e) {
     case 'end-rejected': return `split was ${d.share} of ${d.cost}`
     case 'reviewed': return `${'★'.repeat(d.stars ?? 0)} for ${d.skill ?? 'the class'}`
     case 'profile-updated': return (d.fields ?? []).join(', ')
+    case 'admin-suspended': return `@${d.member} · “${d.reason}”`
+    case 'admin-unsuspended': case 'admin-granted': case 'admin-revoked': return `@${d.member}`
+    case 'admin-credits': return `@${d.member} ${d.amount > 0 ? '+' : ''}${d.amount} · “${d.reason}”`
+    case 'admin-cleared': return `@${d.member}'s ${d.field}`
+    case 'admin-review-deleted': return `${'★'.repeat(d.stars ?? 0)} by @${d.member}${d.body ? ` · “${d.body}”` : ''}`
+    case 'notice-updated': return d.active ? `on · “${d.body}”` : 'switched off'
+    case 'alerts-updated': return d.discord ? 'Discord alerts on' : 'Discord alerts off'
     default: return ''
   }
 }
@@ -236,7 +261,7 @@ export function Logs({ tick }) {
   return (
     <div className="ad-stack">
       <div className="ad-row">
-        <Filter value={group} onChange={setGroup} options={[['all', 'All', rows.length], ['steps', 'Class steps', n('steps')], ['problems', 'Problems', n('problems')], ['reviews', 'Reviews', n('reviews')], ['accounts', 'Accounts', n('accounts')]]} />
+        <Filter value={group} onChange={setGroup} options={[['all', 'All', rows.length], ['steps', 'Class steps', n('steps')], ['problems', 'Problems', n('problems')], ['reviews', 'Reviews', n('reviews')], ['accounts', 'Accounts', n('accounts')], ['admin', 'Admin actions', n('admin')]]} />
         <input className="ad-search" type="search" placeholder="Search name, skill or #session" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search the log" />
         <button type="button" className="ad-btn ad-btn-sm" onClick={download} disabled={!list.length}>Download CSV</button>
       </div>

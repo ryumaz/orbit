@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Halftone from '../glyph/Halftone'
 import { Spark } from './Spark'
+import { StatusDot } from '../lib/presence'
 
 // Card colours a member can pick. Keys are stored in profiles.card_color.
 export const CARD_COLORS = {
@@ -42,12 +43,20 @@ export default function ProfileCard({ name, bio, city, teaches = [], avatarUrl, 
 }
 
 // A round photo or initials, for lists and the top bar.
-export function MemberAvatar({ name, url, large = false }) {
+// With a `handle`, the avatar carries that member's status dot (online, idle, busy, offline).
+export function MemberAvatar({ name, url, large = false, handle }) {
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
-  return url ? (
+  const pic = url ? (
     <img src={url} alt="" className={`avatar avatar-photo ${large ? 'avatar-lg' : ''}`} />
   ) : (
     <span className={`avatar ${large ? 'avatar-lg' : ''}`} translate="no">{initials}</span>
+  )
+  if (!handle) return pic
+  return (
+    <span className="av-wrap">
+      {pic}
+      <StatusDot handle={handle} large={large} />
+    </span>
   )
 }
 

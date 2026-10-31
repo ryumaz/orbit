@@ -6,6 +6,7 @@ import { MemberAvatar } from './ProfileCard'
 import LogOut from './LogOut'
 import AccountMenu from './AccountMenu'
 import LanguagePicker from './LanguagePicker'
+import SiteNotice from './SiteNotice'
 
 export function Brand({ compact = false }) {
   return (
@@ -82,7 +83,7 @@ export function AppShell({ children }) {
               </Link>
               <div className="side-who">
                 <Link to="/me" className="side-who-link">
-                  <MemberAvatar name={name} url={account.profile.avatar_url} />
+                  <MemberAvatar name={name} url={account.profile.avatar_url} handle={account.profile.handle} />
                   <span className="side-who-text">
                     <b>{name}</b>
                     <small>@{account.profile.handle}</small>
@@ -122,6 +123,7 @@ export function AppShell({ children }) {
           </div>
         </header>
         <main className="main view-in" key={pathname}>
+          <SiteNotice className="site-notice-app" />
           {children}
         </main>
         <Footer />

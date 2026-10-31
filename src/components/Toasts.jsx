@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MemberAvatar } from './ProfileCard'
 import { useAccount } from '../lib/account'
+import { BadgeMedal } from './Badges'
 
 // How long each kind stays on screen. Requests stay longer: they need an answer.
-const LIFE = { request: 25000, end: 25000, disputed: 25000, accepted: 12000, joined: 20000, declined: 9000, paid: 9000, expired: 9000, resolved: 15000 }
+const LIFE = { request: 25000, end: 25000, disputed: 25000, accepted: 12000, joined: 20000, badge: 12000, declined: 9000, paid: 9000, expired: 9000, resolved: 15000 }
 
 // In-app notification cards, on any page.
 export default function Toasts() {
@@ -42,7 +43,7 @@ function Toast({ t, onClose }) {
 
   return (
     <div className={`toast-card toast-${t.kind}`}>
-      {t.who && <MemberAvatar name={t.who.name} url={t.who.avatar_url} />}
+      {t.badge ? <BadgeMedal badge={t.badge} size={42} /> : t.who && <MemberAvatar name={t.who.name} url={t.who.avatar_url} />}
       <div className="grid min-w-0 gap-1">
         <b>{t.title}</b>
         <span className="text-[12px] dim">{t.body}</span>
@@ -56,6 +57,7 @@ function Toast({ t, onClose }) {
           )}
           {(t.kind === 'accepted' || t.kind === 'joined') && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/s/${t.s.id}`)}>Join the room</button>}
           {t.kind === 'end' && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/s/${t.s.id}`)}>Answer</button>}
+          {t.kind === 'badge' && <button type="button" className="btn btn-line btn-sm" onClick={() => go('/home#badges')}>See your badges</button>}
           {t.kind === 'paid' && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/review/${t.s.id}`)}>Rate them</button>}
           {t.kind === 'disputed' && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/s/${t.s.id}`)}>See the session</button>}
           {(t.kind === 'resolved' || (t.kind === 'expired' && t.s.mentor_id !== t.s.learner_id && t.who === t.s.learner)) && <button type="button" className="btn btn-line btn-sm" onClick={() => go('/sessions')}>Sessions</button>}

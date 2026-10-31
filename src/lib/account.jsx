@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, friendly } from './supabase'
 import { chime, systemNotify } from './notify'
+import { BADGE } from '../components/Badges'
 
 const AccountContext = createContext(null)
 
@@ -35,7 +36,7 @@ export function AccountProvider({ children }) {
     if (!uid) return setData({ uid, loading: false })
     await sweep().catch(() => {})
     const [p, l, s, rv] = await Promise.all([
-      supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, skill_rates, created_at, onboarded').eq('id', uid).single(),
+      supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, skill_rates, created_at, onboarded, status').eq('id', uid).single(),
       supabase.from('ledger').select('id, amount, type, note, session_id, created_at').order('created_at'),
       supabase.from('sessions').select(SESSION_FIELDS).order('created_at', { ascending: false }).limit(100),
       supabase.from('reviews').select('session_id, stars').eq('reviewer_id', uid),
@@ -226,6 +227,34 @@ export function AccountProvider({ children }) {
     }
   }, [data.sessions]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Badges: checked after every reload. One this device hasn't seen yet gets a card
+  // (the first visit on a device only takes note, so old badges don't all pop up at once).
+  const [badges, setBadges] = useState([])
+  const myHandle = data.profile?.handle
+  useEffect(() => {
+    if (!myHandle) return setBadges([])
+    let alive = true
+    supabase.rpc('badges_for', { h: myHandle }).then(({ data: rows }) => {
+      if (!alive || !rows) return
+      setBadges(rows)
+      const key = `orbit:badges:${myHandle}`
+      let seen = null
+      try {
+        seen = JSON.parse(localStorage.getItem(key))
+        localStorage.setItem(key, JSON.stringify(rows.map((r) => r.badge)))
+      } catch {
+        seen = null
+      }
+      const fresh = Array.isArray(seen) ? rows.filter((r) => !seen.includes(r.badge) && BADGE[r.badge]) : []
+      if (!fresh.length) return
+      chime()
+      setToasts((t) => [...t, ...fresh.map((r) => ({ kind: 'badge', badge: r.badge, title: `Badge unlocked: ${BADGE[r.badge].name}`, body: BADGE[r.badge].how, id: `badge-${r.badge}-${Date.now()}` }))].slice(-4))
+    })
+    return () => {
+      alive = false
+    }
+  }, [myHandle, data.sessions, data.ledger, data.myReviews])
+
   // the tab title shows how many requests are waiting for me: "(2) orbit"
   useEffect(() => {
     const waiting = (data.sessions ?? []).filter((s) => s.mentor_id === uid && s.status === 'requested').length
@@ -261,6 +290,7 @@ export function AccountProvider({ children }) {
     incomingCall,
     dismissCall: () => setIncomingCall(null),
     toasts,
+    badges,
     dismissToast: (id) => setToasts((t) => t.filter((x) => x.id !== id)),
     setActiveCall,
     setOpenRoom,

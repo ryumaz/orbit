@@ -114,7 +114,7 @@ export default function MySessions() {
             <article key={s.id} className="need card-hot">
               <p className="need-kicker"><Spark /> New request · pays {s.cost} · expires in {untilText(expiresAt(s))}</p>
               <div className="flex items-center gap-3">
-                <MemberAvatar name={s.learner.name} url={s.learner.avatar_url} />
+                <MemberAvatar name={s.learner.name} url={s.learner.avatar_url} handle={s.learner.handle} />
                 <h3 className="m-0">
                   <Link to={`/u/${s.learner.handle}`} className="link">{s.learner.name}</Link> wants {s.minutes} min of {s.skill}
                 </h3>
@@ -171,7 +171,7 @@ export default function MySessions() {
                 const canRate = (done || early || settled) && !reviewed.has(s.id)
                 return (
                   <li key={s.id}>
-                    <MemberAvatar name={other.name} url={other.avatar_url} />
+                    <MemberAvatar name={other.name} url={other.avatar_url} handle={other.handle} />
                     <b>{line}</b>
                     <small>{ago(new Date(s.ended_at ?? s.created_at).getTime())}{s.message && ` · “${s.message}”`}</small>
                     <span className="amt grid justify-items-end gap-0.5">

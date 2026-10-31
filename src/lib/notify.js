@@ -3,6 +3,13 @@
 
 const KEY = 'orbit:notify'
 
+// "Do not disturb": no sounds and no system notifications (cards still show in orbit)
+let quiet = false
+export const setQuiet = (on) => {
+  quiet = on
+}
+export const isQuiet = () => quiet
+
 export const canNotify = () => typeof window !== 'undefined' && 'Notification' in window
 
 // 'on' | 'off' | 'blocked' | 'unsupported' | 'ask'
@@ -41,7 +48,7 @@ export function disableNotify() {
 
 // A system notification, only when the page is in the background.
 export function systemNotify({ title, body, icon, onClick }) {
-  if (!document.hidden || notifyState() !== 'on') return
+  if (quiet || !document.hidden || notifyState() !== 'on') return
   try {
     const n = new Notification(title, { body, icon: icon || undefined, tag: `orbit-${title}` })
     n.onclick = () => {
@@ -56,6 +63,7 @@ export function systemNotify({ title, body, icon, onClick }) {
 
 // A short, soft two-note chime.
 export function chime() {
+  if (quiet) return
   let ctx
   try {
     ctx = new (window.AudioContext || window.webkitAudioContext)()

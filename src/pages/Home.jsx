@@ -14,6 +14,7 @@ import { useRecent, useStats } from '../lib/pulse'
 import { Community, Faq, Features } from './HomeMore'
 import LanguagePicker from '../components/LanguagePicker'
 import '../landing.css'
+import SiteNotice from '../components/SiteNotice'
 
 const firstName = (name) => name?.split(' ')[0] ?? ''
 const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -83,6 +84,7 @@ export default function Home() {
 
       <main>
         <section className="hero">
+          <SiteNotice className="site-notice-hero" />
           <ParticleHero leftNote="that's you. curious about something new." rightNote="that's someone who knows it. teaching you keeps them sharp." />
           <div className="hero-fade" aria-hidden="true" />
           <div className="hero-meta" aria-hidden="true">
@@ -268,7 +270,7 @@ function Topics({ members }) {
                 .slice(0, 4)
                 .map((m) => (
                   <li key={m.handle}>
-                    <MemberAvatar name={m.name} url={m.avatar_url} />
+                    <MemberAvatar name={m.name} url={m.avatar_url} handle={m.handle} />
                     <Link to={`/u/${m.handle}?skill=${encodeURIComponent(sel.skill)}`} translate="no">{m.name}</Link>
                     {m.reviews > 0 ? <SparkRating value={Number(m.rating)} size={10} /> : <span className="dim text-[11px]">new</span>}
                   </li>

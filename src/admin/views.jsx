@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ago, db, errText, full, profileUrl, useData } from './db'
+import { MemberDrawer } from './member'
 
 const STATUS = {
   requested: ['Requested', 'gray'],
@@ -313,9 +314,10 @@ function Ticket({ t, onDone }) {
 }
 
 // ---------- members ----------
-export function Members({ tick }) {
-  const { data, error } = useData(() => db.rpc('admin_members'), tick)
+export function Members({ tick, onChange }) {
+  const { data, error, reload } = useData(() => db.rpc('admin_members'), tick)
   const [q, setQ] = useState('')
+  const [open, setOpen] = useState(null)
   const list = useMemo(() => {
     const s = q.trim().toLowerCase().replace(/^@/, '')
     return (data ?? []).filter((m) => !s || `${m.name} ${m.handle} ${(m.teaches ?? []).join(' ')}`.toLowerCase().includes(s))
@@ -325,7 +327,7 @@ export function Members({ tick }) {
     <div className="ad-stack">
       <div className="ad-row">
         <input className="ad-search" type="search" placeholder="Search name, @handle or skill" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search members" />
-        <span className="ad-muted ad-small">{list.length} of {data.length}</span>
+        <span className="ad-muted ad-small">{list.length} of {data.length} · click a name for details and actions</span>
       </div>
       <div className="ad-card ad-flush">
         <div className="ad-scroll">
@@ -337,8 +339,9 @@ export function Members({ tick }) {
                   <td>
                     <span className="ad-member">
                       {m.avatar_url ? <img src={m.avatar_url} alt="" /> : <span className="ad-me-dot">{m.name?.[0] ?? '?'}</span>}
-                      <Person name={m.name} handle={m.handle} />
+                      <button type="button" className="ad-person ad-person-btn" onClick={() => setOpen(m.handle)}>{m.name}<small>@{m.handle}</small></button>
                       {m.is_admin && <span className="ad-pill is-purple">admin</span>}
+                      {m.suspended && <span className="ad-pill is-red">suspended</span>}
                       {m.deleted && <span className="ad-pill is-gray">deleted</span>}
                     </span>
                   </td>
@@ -355,6 +358,7 @@ export function Members({ tick }) {
           </table>
         </div>
       </div>
+      {open && <MemberDrawer handle={open} onClose={() => setOpen(null)} onChange={() => { reload(); onChange?.() }} />}
     </div>
   )
 }

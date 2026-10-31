@@ -116,7 +116,7 @@ function MemberCard({ m, hit, you }) {
   return (
     <article className="mentor card member-card" style={{ '--accent': accent }}>
       <div className="mentor-head">
-        <MemberAvatar name={m.name} url={m.avatar_url} large />
+        <MemberAvatar name={m.name} url={m.avatar_url} handle={m.handle} large />
         <h3>
           <Link to={`/u/${m.handle}`} translate="no">{m.name}</Link>
           <small>@{m.handle}{m.city && ` · ${m.city}`}</small>

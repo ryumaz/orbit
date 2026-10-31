@@ -10,6 +10,8 @@ import { supabase } from '../lib/supabase'
 import { useAccount } from '../lib/account'
 import ReportDialog from '../components/ReportDialog'
 import { joinAnd } from '../lib/time'
+import { BadgeShelf, useBadges } from '../components/Badges'
+import { STATUS_LABEL, useStatusOf } from '../lib/presence'
 
 // A member's public page, the link they share: orbit.voids.wtf/u/<handle>.
 // Anyone can open it, logged in or not.
@@ -77,6 +79,7 @@ export default function PublicProfile() {
             <div className="stack">
               <div className="grid gap-2">
                 <p className="greet-date m-0">@{p.handle} · on orbit since {since}</p>
+                <PresenceChip handle={p.handle} />
                 <h1 className="page-title m-0" translate="no">{p.name}</h1>
                 {p.reviews > 0 ? (
                   <a href="#reviews" onClick={(e) => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }) }} className="rating-line">
@@ -104,6 +107,8 @@ export default function PublicProfile() {
                   <p className="m-0 text-[12px] dim">Know one of these? You could swap: teach {first} and learn from them.</p>
                 </section>
               )}
+
+              <ProfileBadges handle={p.handle} first={first} />
 
               {reviews.length > 0 && (
                 <section className="block" id="reviews" aria-labelledby="h-reviews">
@@ -161,5 +166,27 @@ export default function PublicProfile() {
         )}
       </main>
     </div>
+  )
+}
+
+// online / idle / busy / offline, live
+function PresenceChip({ handle }) {
+  const s = useStatusOf(handle)
+  return (
+    <span className={`presence-chip is-${s}`}>
+      <span className={`sdot sdot-inline is-${s}`} aria-hidden="true" />
+      {s === 'invisible' ? 'Invisible (you)' : STATUS_LABEL[s]}
+    </span>
+  )
+}
+
+function ProfileBadges({ handle, first }) {
+  const earned = useBadges(handle)
+  if (!earned?.length) return null
+  return (
+    <section className="block" aria-labelledby="h-badges">
+      <div className="block-head"><h2 id="h-badges">{first}'s badges</h2><span className="dim text-[11px]">{earned.length}</span></div>
+      <BadgeShelf earned={earned} />
+    </section>
   )
 }

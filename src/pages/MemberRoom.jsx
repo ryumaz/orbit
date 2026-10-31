@@ -322,7 +322,7 @@ export default function MemberRoom() {
 function Person({ p, role, here, hot }) {
   return (
     <div className="room-person">
-      <span className={hot ? 'room-hot-wrap' : ''}><MemberAvatar name={p.name} url={p.avatar_url} large /></span>
+      <span className={hot ? 'room-hot-wrap' : ''}><MemberAvatar name={p.name} url={p.avatar_url} handle={p.handle} large /></span>
       <span className="grid">
         <b translate="no">{p.name}</b>
         <span className="dim text-[11px]">

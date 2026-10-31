@@ -17,6 +17,7 @@ const FILTERS = [
 function kindOf(s, r) {
   if (r.type === 'welcome' || r.type === 'earn') return 'earned'
   if (r.type === 'refund') return 'held'
+  if (r.type === 'adjust') return r.amount > 0 ? 'earned' : 'spent' // a change made by orbit support
   const x = r.sessionId ? sessionById(s, r.sessionId) : null
   return x?.status === 'completed' ? 'spent' : 'held'
 }
@@ -32,8 +33,8 @@ function MyCredits({ account }) {
   const { profile, ledger, balance } = account
   let running = 0
   const rows = ledger.map((r) => ({ ...r, bal: (running += r.amount) }))
-  const earned = ledger.filter((r) => r.type === 'welcome' || r.type === 'earn').reduce((a, r) => a + r.amount, 0)
-  const spent = -ledger.filter((r) => r.type === 'hold').reduce((a, r) => a + r.amount, 0)
+  const earned = ledger.filter((r) => r.type === 'welcome' || r.type === 'earn' || (r.type === 'adjust' && r.amount > 0)).reduce((a, r) => a + r.amount, 0)
+  const spent = -ledger.filter((r) => r.type === 'hold' || (r.type === 'adjust' && r.amount < 0)).reduce((a, r) => a + r.amount, 0)
   const refunded = ledger.filter((r) => r.type === 'refund').reduce((a, r) => a + r.amount, 0)
   const sumLine = `${ledger.map((r) => (r.amount > 0 ? `+${r.amount}` : r.amount)).join(' ')} = ${running}`
 

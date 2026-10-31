@@ -733,3 +733,62 @@ select.input option { background: #111110; color: var(--color-chalk); }
 /* a quick sign-in that isn't switched on yet */
 .signin-provider { position: relative; }
 .signin-soon { position: absolute; top: -8px; right: 8px; padding: 1px 7px; border-radius: 99px; background: #2a2a28; border: 1px solid var(--line-strong); color: var(--color-ash); font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; }
+
+/* ---------- status dots (online, idle, do not disturb, offline) ---------- */
+.av-wrap { position: relative; display: inline-flex; flex: none; }
+.sdot { position: absolute; right: -2px; bottom: -2px; width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--sdot-ring, #0e0e0d); }
+.sdot-lg { width: 14px; height: 14px; right: 0; bottom: 0; box-shadow: 0 0 0 3px var(--sdot-ring, #0e0e0d); }
+.sdot-inline { position: static; display: inline-block; flex: none; width: 10px; height: 10px; box-shadow: none; --sdot-ring: #111110; }
+.sdot.is-online { background: #23a55a; }
+.sdot.is-idle { background: radial-gradient(circle at 28% 28%, var(--sdot-ring, #0e0e0d) 0 36%, transparent 38%), #f0b232; }
+.sdot.is-dnd { background: linear-gradient(var(--sdot-ring, #0e0e0d), var(--sdot-ring, #0e0e0d)) center / 56% 24% no-repeat, #f23f43; }
+.sdot.is-offline, .sdot.is-invisible { background: radial-gradient(circle, var(--sdot-ring, #0e0e0d) 0 30%, transparent 33%), #80848e; }
+.top-avatar .sdot { --sdot-ring: #000; }
+.acct-status { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 10px; background: none; color: var(--color-chalk); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+.acct-status:hover { background: rgba(255, 255, 255, .07); }
+.acct-chev { color: var(--color-ash); transition: transform .15s; transform: rotate(-90deg); }
+.acct-chev.is-open { transform: rotate(0deg); }
+.acct-statuses { display: grid; gap: 2px; margin: 0 0 4px 8px; padding: 4px; border-radius: 12px; background: rgba(255, 255, 255, .04); }
+.acct-statuses button { display: flex; align-items: flex-start; gap: 10px; padding: 8px; border: 0; border-radius: 9px; background: none; color: var(--color-chalk); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
+.acct-statuses button:hover, .acct-statuses button[aria-checked="true"] { background: rgba(255, 255, 255, .07); }
+.acct-statuses .sdot { margin-top: 4px; }
+.acct-statuses b { font-weight: 500; }
+.acct-statuses small { font-size: 11px; color: var(--color-ash); }
+.presence-chip { display: inline-flex; align-items: center; gap: 7px; justify-self: start; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); font-size: 11.5px; color: var(--color-ash); }
+.presence-chip.is-online { color: #9be3b4; border-color: rgba(35, 165, 90, .35); }
+.presence-chip.is-idle { color: #f5cf7a; border-color: rgba(240, 178, 50, .3); }
+.presence-chip.is-dnd { color: #f7a1a3; border-color: rgba(242, 63, 67, .3); }
+
+/* ---------- badges ---------- */
+.medal { --size: 52px; width: var(--size); height: var(--size); flex: none; display: grid; place-items: center; color: #1a1306;
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); position: relative; }
+.medal::after { content: ''; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255, 255, 255, .45), transparent 45%); pointer-events: none; }
+.medal.tier-bronze { background: linear-gradient(150deg, #f0b07c, #b8693a 60%, #7d4220); color: #2b1306; }
+.medal.tier-silver { background: linear-gradient(150deg, #f4f6f9, #b3bccb 55%, #6e7787); color: #1c2028; }
+.medal.tier-gold { background: linear-gradient(150deg, #fff1b8, #f0be3c 50%, #a8701a); color: #2e1d00; }
+.medal.tier-spark { background: linear-gradient(150deg, #c9b8ff, var(--color-violet) 45%, var(--color-amber)); color: #170b2e; }
+.medal.is-locked { background: #2a2a28; color: #5c5b57; }
+.medal.is-locked::after { display: none; }
+.badges { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 16px 10px; }
+.badges li { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.badges li b { font-size: 11.5px; font-weight: 500; line-height: 1.25; }
+.badges li small { font-size: 10.5px; color: var(--color-ash); line-height: 1.3; }
+.badges li.is-locked b { color: var(--color-ash); }
+.badges li:not(.is-locked) .medal { transition: transform .2s var(--ease); }
+.badges li:not(.is-locked):hover .medal { transform: translateY(-2px) rotate(-4deg); }
+.toast-badge .medal { animation: medalIn .6s var(--ease) both; }
+@keyframes medalIn { from { transform: scale(.4) rotate(-30deg); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---------- site-wide notice ---------- */
+.site-notice { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; border-radius: 14px; border: 1px solid var(--line-strong); background: #121211; font-size: 13px; line-height: 1.45; }
+.site-notice p { margin: 0; flex: 1; min-width: 0; }
+.site-notice-icon { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 12px; font-weight: 700; background: rgba(155, 130, 255, .2); color: #c9bbff; }
+.site-notice.tone-warn { border-color: rgba(255, 148, 85, .45); background: #1a120c; }
+.site-notice.tone-warn .site-notice-icon { background: rgba(255, 148, 85, .22); color: var(--color-amber); }
+.site-notice.tone-good { border-color: rgba(35, 165, 90, .45); background: #0c1610; }
+.site-notice.tone-good .site-notice-icon { background: rgba(35, 165, 90, .22); color: #8fe0ad; }
+.site-notice-link { color: var(--color-chalk); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; margin-left: 4px; white-space: nowrap; }
+.site-notice-x { width: 28px; height: 28px; flex: none; border: 0; border-radius: 8px; background: none; color: var(--color-ash); font-size: 18px; cursor: pointer; }
+.site-notice-x:hover { background: rgba(255, 255, 255, .08); color: var(--color-chalk); }
+.site-notice-app { margin-bottom: 18px; }
+.site-notice-hero { position: absolute; z-index: 6; top: 84px; left: 50%; transform: translateX(-50%); width: min(calc(100% - 32px), 640px); box-shadow: 0 20px 50px -20px #000; }

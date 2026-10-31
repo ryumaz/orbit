@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom'
 import App from './App'
 import Crash from './components/Crash'
 import { AccountProvider } from './lib/account'
+import { PresenceProvider } from './lib/presence'
 import { finishReturn } from './lib/oauth'
 import { startTranslating } from './lib/i18n'
 import './index.css'
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')).render(
     <Crash>
       <HashRouter>
         <AccountProvider>
-          <App />
+          <PresenceProvider>
+            <App />
+          </PresenceProvider>
         </AccountProvider>
       </HashRouter>
     </Crash>

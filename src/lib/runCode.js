@@ -68,6 +68,8 @@ def _orbit_check(src):
         return None
     except SyntaxError as e:
         return [e.lineno or 1, e.offset or 1, type(e).__name__ + ': ' + str(e.msg)]
+class _OrbitNeedInput(BaseException):
+    pass
 def _orbit_run(src, stdin):
     feed = iter(stdin.splitlines())
     def _input(prompt=''):
@@ -75,7 +77,8 @@ def _orbit_run(src, stdin):
         try:
             value = next(feed)
         except StopIteration:
-            raise EOFError('input() needs a line: type it in the Input box and run again') from None
+            # out of answers: stop here and ask the person, then the program runs again with one more
+            raise _OrbitNeedInput(str(prompt)) from None
         print(value)
         return value
     try:
@@ -83,6 +86,8 @@ def _orbit_run(src, stdin):
         return None
     except SystemExit:
         return None
+    except _OrbitNeedInput as e:
+        return ['__input__', str(e)]
     except BaseException as e:
         frames = [f for f in traceback.extract_tb(e.__traceback__) if f.filename == '<code>']
         line = frames[-1].lineno if frames else getattr(e, 'lineno', None)
@@ -255,6 +260,8 @@ export async function checkPython(code) {
 }
 
 // runPython(code, stdin, onOut, onStatus) → { done, stop() }
+// When input() runs out of lines, done resolves with { needInput: prompt }: ask the person,
+// then run again with their answer added.
 export function runPython(code, stdin, onOut, onStatus) {
   const id = ++seq
   let finish
@@ -289,6 +296,7 @@ export function runPython(code, stdin, onOut, onStatus) {
           else if (lines === MAX_LINES + 1) onOut('warn', `… more output hidden (over ${MAX_LINES} lines)`)
         }
         if (data.t === 'done') {
+          if (data.error?.line === '__input__') return end({ error: null, needInput: data.error.text })
           if (data.error) onOut('error', data.error.text)
           end({ error: data.error })
         }

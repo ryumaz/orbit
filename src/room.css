@@ -232,3 +232,7 @@
 .ticket-list li.is-system { max-width: none; background: none; border: 1px dashed var(--line-strong); color: var(--color-ash); font-size: 12px; }
 .ticket-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
 .ticket-form .input { min-height: 44px; resize: vertical; font-size: 12.5px; }
+.runner-ask { display: flex; align-items: center; gap: 8px; padding: 0 16px 14px; font-family: "Martian Mono", ui-monospace, monospace; font-size: 12px; }
+.runner-ask > span { color: var(--color-amber); }
+.runner-ask input { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255, 148, 85, .5); background: #000; color: var(--color-chalk); font: inherit; outline: none; }
+.runner-ask input:focus { border-color: var(--color-amber); }

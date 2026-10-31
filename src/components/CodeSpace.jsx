@@ -117,10 +117,14 @@ export default function CodeSpace({ roomKey, initial, readOnly, label, sync, liv
     v.dispatch(setDiagnostics(v.state, list))
   }, [check, runError])
 
+  // answers typed into the output while the program runs (input() asks live)
+  const answers = useRef([])
+  const [answer, setAnswer] = useState('')
   const run = useCallback(async () => {
     if (job.current) return
     const code = view.current?.state.doc.toString() ?? ''
     if (!code.trim()) return
+    const given = [...(stdin.trim() ? stdin.replace(/\n$/, '').split('\n') : []), ...answers.current].join('\n')
     const lines = []
     let shown = 0
     const push = (kind, t) => {
@@ -133,13 +137,15 @@ export default function CodeSpace({ roomKey, initial, readOnly, label, sync, liv
     }
     setOut({ by: 'You', lang, lines: [], running: true, text: code })
     setRunning(true)
-    job.current = lang === 'python' ? runPython(code, stdin, push, setStatus) : runJs(code, push)
+    job.current = lang === 'python' ? runPython(code, given, push, setStatus) : runJs(code, push)
     const r = await job.current.done
     job.current = null
     setRunning(false)
     setStatus('')
     if (lang === 'python') setPyState(pythonState())
     const result = { lang, lines: [...lines], ms: r.ms, error: r.error ?? null, stopped: r.stopped ?? null }
+    // waiting for an answer: show the box, share nothing yet
+    if (r.needInput !== undefined) return setOut({ by: 'You', ...result, needInput: r.needInput, text: code })
     setOut({ by: 'You', ...result, text: code })
     live.sendRun({
       kind: 'result',
@@ -147,6 +153,16 @@ export default function CodeSpace({ roomKey, initial, readOnly, label, sync, liv
       lines: result.lines.slice(-200).map((l) => ({ kind: l.kind, text: l.text.slice(0, 500) })),
     })
   }, [lang, stdin, live])
+  const runFresh = useCallback(() => {
+    answers.current = []
+    run()
+  }, [run])
+  const reply = (e) => {
+    e.preventDefault()
+    answers.current = [...answers.current, answer]
+    setAnswer('')
+    run()
+  }
 
   const goTo = (line) => {
     const v = view.current
@@ -168,7 +184,7 @@ export default function CodeSpace({ roomKey, initial, readOnly, label, sync, liv
   return (
     <div className="code-space">
       <div className="code-editor">
-        <Editor roomKey={roomKey} initial={initial} readOnly={readOnly} label={label} sync={sync} lang={lang} onText={setText} onRun={run} viewRef={view} />
+        <Editor roomKey={roomKey} initial={initial} readOnly={readOnly} label={label} sync={sync} lang={lang} onText={setText} onRun={runFresh} viewRef={view} />
       </div>
       <section className="runner" aria-label="Run the code">
         <div className="runner-bar">
@@ -183,14 +199,14 @@ export default function CodeSpace({ roomKey, initial, readOnly, label, sync, liv
           {running ? (
             <button type="button" className="btn btn-line btn-sm" onClick={() => job.current?.stop()}>Stop</button>
           ) : (
-            <button type="button" className="btn btn-light btn-sm runner-run" onClick={run} disabled={empty} title="Run (Ctrl+Enter)">
+            <button type="button" className="btn btn-light btn-sm runner-run" onClick={runFresh} disabled={empty} title="Run (Ctrl+Enter)">
               <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></svg> Run
             </button>
           )}
         </div>
         {lang === 'python' && (
           <details className="runner-stdin">
-            <summary>Input for input() {stdin.trim() ? `· ${stdin.trim().split('\n').length} line(s)` : ''}</summary>
+            <summary>Answers for input() in advance (optional) {stdin.trim() ? `· ${stdin.trim().split('\n').length} line(s)` : ''}</summary>
             <textarea className="input" rows={3} value={stdin} onChange={(e) => setStdin(e.target.value)} placeholder="one line per input() call" spellCheck={false} />
           </details>
         )}
@@ -208,9 +224,17 @@ export default function CodeSpace({ roomKey, initial, readOnly, label, sync, liv
             </div>
             <pre translate="no">
               {out?.lines.map((l, i) => <span key={i} className={`runner-line is-${l.kind}`}>{l.text}{'\n'}</span>)}
-              {out && !out.running && !out.lines.length && !out.error && !out.stopped && <span className="dim">Ran fine, printed nothing. Use {out.lang === 'python' ? 'print()' : 'console.log()'} to see values.{'\n'}</span>}
+              {out && !out.running && !out.lines.length && !out.error && !out.stopped && out.needInput === undefined && <span className="dim">Ran fine, printed nothing. Use {out.lang === 'python' ? 'print()' : 'console.log()'} to see values.{'\n'}</span>}
               {out?.stopped && <span className="runner-line is-warn">{out.stopped}{'\n'}</span>}
             </pre>
+            {out?.needInput !== undefined && !out.running && (
+              <form className="runner-ask" onSubmit={reply}>
+                <span aria-hidden="true">›</span>
+                <label htmlFor={`runner-answer-${roomKey}`} className="sr-only">{out.needInput || 'Your answer'}</label>
+                <input id={`runner-answer-${roomKey}`} autoFocus autoComplete="off" spellCheck={false} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="type your answer and press Enter" />
+                <button type="button" className="link dim" onClick={() => setOut((o) => ({ ...o, needInput: undefined, stopped: 'Stopped while waiting for input.' }))}>Stop</button>
+              </form>
+            )}
           </div>
         )}
       </section>

@@ -2,6 +2,13 @@
 
 By team Void Century.
 
+
+## Team
+
+**Void Century**
+
+- Niraj Singh Mehta:  design, full-stack development and deployment
+
 Peer micro-mentorship for students. Book twenty minutes in a shared editor with someone who has solved your exact problem, and pay with credits you earned by helping someone else.
 
 Built for Innovista (36-hour hackathon), problem statement 05: Micro-Mentorship & Skill Exchange Hub.

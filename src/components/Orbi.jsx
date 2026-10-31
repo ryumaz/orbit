@@ -225,19 +225,45 @@ export default function Orbi() {
   }
 
   // ---------- answering ----------
-  const ask = (q) => {
+  // Anything the built-in answers don't cover goes to the AI (functions/api/vortex.js),
+  // with the last few messages for context. If that's unavailable, the built-in
+  // "not sure, ask support" answer stays.
+  const askAi = async (question) => {
+    try {
+      const history = log.slice(-7).map((m) => ({ role: m.from === 'you' ? 'user' : 'assistant', content: m.text }))
+      const r = await fetch('/api/vortex', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messages: [...history, { role: 'user', content: question }], first: ctx.first, live: ctx.live }),
+        signal: AbortSignal.timeout(12000),
+      })
+      if (!r.ok) return null
+      return (await r.json()).reply || null
+    } catch {
+      return null
+    }
+  }
+
+  const ask = async (q) => {
     const question = q.trim().slice(0, 300)
     if (!question || typing) return
     setText('')
     setLog((l) => [...l, { from: 'you', text: question }])
     setTyping(true)
+    const started = Date.now()
     const own = mind.reply(question, ctx)
-    const reply = own ? { text: own } : answer(question, ctx)
+    let reply = own ? { text: own } : answer(question, ctx)
+    if (!own && !reply.topic) {
+      const ai = await askAi(question)
+      if (ai) reply = { text: ai, actions: [], chips: [] }
+    }
+    // a short "typing" pause so instant answers don't feel robotic
+    const wait = Math.max(0, 450 + Math.min(900, reply.text.length * 4) - (Date.now() - started))
     setTimeout(() => {
       setTyping(false)
       setLog((l) => [...l, { from: 'orbi', text: reply.text, actions: reply.actions }])
       setChips(reply.chips ?? [])
-    }, 450 + Math.min(900, reply.text.length * 4))
+    }, wait)
   }
 
   const act = ([, to]) => {

@@ -6,10 +6,11 @@
 // endpoint and keep these topics as its first try.
 
 const T = (id, keys, reply, actions = []) => ({ id, keys, reply, actions })
+const pick = (list) => list[Math.floor(Math.random() * list.length)]
 
 const TOPICS = [
   // ---------- small talk ----------
-  T('greet', [/\b(hi|hii+|hello|hey|yo|namaste|hola|sup|good (morning|evening|afternoon))\b/],
+  T('greet', [/\b(hi|hii+|hello|hey+|heya|hiya|howdy|yo|namaste|hola|good (morning|evening|afternoon))\b/],
     (c) => `Hi${c.first ? ` ${c.first}` : ''}! I'm Vortex. Ask me anything about orbit: credits, booking, calls, disputes, badges, your profile. If I don't know, I'll pass you to support.`),
   T('who', [/who are you|your name|are you (a |an )?(bot|ai|robot|human|real)/, /\bvortex\b/],
     () => "I'm Vortex, orbit's helper. I answer the common questions from what I know about orbit. For anything personal or tricky, press \"Talk to support\" and a real person reads it."),
@@ -20,8 +21,28 @@ const TOPICS = [
     [['Make an account', '/join'], ['Learn something', '/find']]),
   T('made', [/who (made|built|created|designed) (you|this|orbit)|your (creator|maker|team)|void century/],
     () => 'orbit (and me) were built by team Void Century for the Innovista hackathon, problem statement 05: a skill exchange where people teach each other for credits.'),
-  T('feel', [/how are you|how'?s it going|what'?s up|you ok|how do you feel/],
-    () => "Orbiting nicely, thanks! Fully charged and ready to help. What can I do for you?"),
+  T('feel', [/how are you|how r u|\bsup\b|how'?s it going|what'?s up|wh?a?ss?up|\bwsp\b|\bwyd\b|\bhbu\b|you ok|how do you feel/],
+    () => pick([
+      "Not much, just orbiting at a respectable speed. What's up with you?",
+      "Chilling in low orbit, fully charged. What can I do for you?",
+      'All systems nominal! Want to learn something today, or teach?',
+    ])),
+  T('joke', [/\bjoke|make me laugh|something funny|\bfunny\b|pun\b/],
+    () => pick([
+      "Why don't robots ever panic? We have nerves of steel. And a reboot button.",
+      "I tried to teach a black hole maths once. It absorbed everything and still asked for more credits.",
+      "Why did the student bring a ladder to orbit? Someone said the classes were next level.",
+      "My favourite subject is space. Mostly because there's a lot of it.",
+    ])),
+  T('laugh', [/^(lol|lmao|lmfao|haha+|hehe+|xd|rofl|😂|🤣)+[!. ]*$/],
+    () => pick(['Glad I could orbit a smile your way.', 'My humour circuits are working, then!', 'I knew that one would land.'])),
+  T('bruh', [/^(bruh+|bro+|ok+|okay|k|hmm+|mhm|yeah|yep|nah|nope|cool)[!. ]*$/],
+    () => pick(['Fair enough. Anything I can help with?', "I'll take that as a vibe. Need anything?", 'Noted. I am, as always, at your service.'])),
+  T('bye', [/\b(bye|goodbye|see ya|see you|cya|gn|good ?night|later|ttyl)\b/],
+    (c) => pick([`Bye${c.first ? ` ${c.first}` : ''}! I'll keep the orbit warm.`, 'See you around the galaxy.', 'Later! Go teach someone something cool.'])),
+  T('bored', [/\bbored|nothing to do|kill time/],
+    () => "Bored? Perfect time to learn something new for 15 minutes. Pick a random skill on Learn something and surprise yourself.",
+    [['Learn something', '/find']]),
 
   // ---------- the idea ----------
   T('what', [/what is (this|orbit|it)|how (does|do) (it|orbit|this|the site) work|explain|about orbit|what can i do/, /\bhow it works\b/],

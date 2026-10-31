@@ -56,10 +56,11 @@ export default function Orbi() {
   const [typing, setTyping] = useState(false)
   const [has3d, setHas3d] = useState(false)
   const [panelBox, setPanelBox] = useState(null)
-  // where you dragged the robot to (top-left corner, in px); null = its corner spot
-  const [pos, setPos] = useState(() => {
+  // where you dragged the robot to: which side, and how far down (share of the screen height)
+  const [spot, setSpot] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('orbi:pos')) ?? null
+      const v = JSON.parse(localStorage.getItem('orbi:spot'))
+      return v?.side ? v : null
     } catch {
       return null
     }
@@ -217,66 +218,90 @@ export default function Orbi() {
     place()
     window.addEventListener('resize', place)
     return () => window.removeEventListener('resize', place)
-  }, [open, pos])
+  }, [open, spot])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
   }, [log, typing])
 
-  // Hold and drag the robot anywhere; it stays there (this device remembers). A press
-  // that doesn't move is a normal click.
-  const keepOnScreen = (x, y) => {
-    const size = launchRef.current?.offsetWidth ?? 92
-    return { x: Math.min(Math.max(4, x), window.innerWidth - size - 4), y: Math.min(Math.max(4, y), window.innerHeight - size - 4) }
+  // Hold and drag the robot anywhere, like the voids.wtf helper: it follows the pointer
+  // while held (moved directly, no re-render), lets go on release, snaps to the nearer
+  // side and remembers it. A press that doesn't move is a normal click.
+  const EDGE = 6
+  const justDragged = useRef(false)
+  const place = (x, y) => {
+    const el = launchRef.current
+    const size = el.offsetWidth || 92
+    const p = { x: Math.min(Math.max(EDGE, x), window.innerWidth - size - EDGE), y: Math.min(Math.max(EDGE, y), window.innerHeight - size - EDGE) }
+    Object.assign(el.style, { left: `${p.x}px`, top: `${p.y}px`, right: 'auto', bottom: 'auto' })
+    return p
   }
   const onPointerDown = (e) => {
     if (e.button !== 0) return
     const r = launchRef.current.getBoundingClientRect()
     drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, moved: false }
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {}
   }
   const onPointerMove = (e) => {
     const d = drag.current
     if (!d || d.id !== e.pointerId) return
     const dx = e.clientX - d.sx
     const dy = e.clientY - d.sy
-    if (!d.moved && Math.hypot(dx, dy) < 6) return
     if (!d.moved) {
+      if (Math.hypot(dx, dy) < 6) return
       d.moved = true
-      e.currentTarget.setPointerCapture(e.pointerId)
+      launchRef.current.classList.add('is-dragging')
       setThought(null)
     }
-    setPos(keepOnScreen(d.ox + dx, d.oy + dy))
+    place(d.ox + dx, d.oy + dy)
   }
-  const onPointerUp = (e) => {
+  const endDrag = (e) => {
     const d = drag.current
     if (!d || d.id !== e.pointerId) return
-    if (d.moved) {
-      d.justDragged = true
-      setPos((p) => {
-        try {
-          localStorage.setItem('orbi:pos', JSON.stringify(p))
-        } catch {}
-        return p
-      })
-    }
-    drag.current = d.moved ? d : null
+    drag.current = null
+    if (!d.moved) return
+    const el = launchRef.current
+    el.classList.remove('is-dragging')
+    justDragged.current = true
+    setTimeout(() => (justDragged.current = false), 0)
+    const r = el.getBoundingClientRect()
+    const side = r.left + r.width / 2 < window.innerWidth / 2 ? 'left' : 'right'
+    el.classList.add('is-snapping')
+    const p = place(side === 'left' ? EDGE : window.innerWidth - r.width - EDGE, r.top)
+    setTimeout(() => el.classList.remove('is-snapping'), 320)
+    const next = { side, y: p.y / window.innerHeight }
+    setSpot(next)
+    try {
+      localStorage.setItem('orbi:spot', JSON.stringify(next))
+    } catch {}
   }
-  // the window got smaller: pull the robot back on screen
-  useEffect(() => {
-    if (!pos) return
-    const fit = () => setPos((p) => (p ? keepOnScreen(p.x, p.y) : p))
-    fit()
-    window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
-  }, [pos === null]) // eslint-disable-line react-hooks/exhaustive-deps
-  const onLeft = pos ? pos.x + 46 < window.innerWidth / 2 : false
+  // a drag must not also count as a click
+  const swallowClick = (e) => {
+    if (justDragged.current) {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+  }
+  // put it back on its side after a reload or when the window changes size
+  useLayoutEffect(() => {
+    if (!spot || hidden) return
+    const put = () => {
+      const el = launchRef.current
+      if (!el) return
+      const w = el.offsetWidth || 92
+      place(spot.side === 'left' ? EDGE : window.innerWidth - w - EDGE, spot.y * window.innerHeight)
+    }
+    put()
+    window.addEventListener('resize', put)
+    return () => window.removeEventListener('resize', put)
+  }, [spot, hidden]) // eslint-disable-line react-hooks/exhaustive-deps
+  const onLeft = spot?.side === 'left'
+  const high = spot ? spot.y < 0.2 : false
   robot.current.side = onLeft ? 'left' : 'right'
 
   const onClick = () => {
-    if (drag.current?.justDragged) {
-      drag.current = null
-      return
-    }
     setOpen(!open)
     const dizzy = mind.poked()
     if (dizzy) {
@@ -393,13 +418,13 @@ export default function Orbi() {
       )}
 
       <div
-        className={`orbi-dock ${onLeft ? 'is-left' : ''} ${pos && pos.y < 140 ? 'is-high' : ''}`}
+        className={`orbi-dock ${onLeft ? 'is-left' : ''} ${high ? 'is-high' : ''}`}
         ref={launchRef}
-        style={pos ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={() => (drag.current = null)}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={swallowClick}
       >
         {thought && !open && (
           <div className="orbi-thought" role="status">

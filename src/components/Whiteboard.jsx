@@ -4,6 +4,11 @@ const BG = '#0b0b0a'
 const COLORS = ['#f1f0ec', '#9b82ff', '#ff9455', '#7ee0a8', '#7cc4ff']
 const SIZES = [['S', 2], ['M', 4], ['L', 8]]
 const MAX_STROKES = 400
+// a long scribble is split into lines of this many points, so each message stays small
+const MAX_PTS = 200
+// a late joiner gets the board in parts of about this many points
+const PART_PTS = 4000
+const round = (v) => Math.round(v * 10000) / 10000
 
 function loadBoard(key) {
   try {
@@ -28,6 +33,8 @@ export default function Whiteboard({ roomKey, live, me, readOnly = false, onConf
   const [color, setColor] = useState(COLORS[0])
   const [size, setSize] = useState(4)
   const [eraser, setEraser] = useState(false)
+  const frame = useRef(0)
+  const stateAt = useRef(0) // the board state being received in parts
 
   const draw = useCallback(() => {
     const c = canvas.current
@@ -55,12 +62,44 @@ export default function Whiteboard({ roomKey, live, me, readOnly = false, onConf
     }
   }, [])
 
+  // at most one full redraw per screen frame, however many messages arrive
+  const redraw = useCallback(() => {
+    if (frame.current) return
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0
+      draw()
+    })
+  }, [draw])
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+
+  // while drawing, only the newest piece of the line is painted
+  const drawSegment = (s, a, b) => {
+    const c = canvas.current
+    if (!c?.width) return
+    const g = c.getContext('2d')
+    const W = c.width
+    const H = c.height
+    g.lineCap = 'round'
+    g.lineJoin = 'round'
+    g.strokeStyle = s.color === 'erase' ? BG : s.color
+    g.lineWidth = (s.size * W) / 1000
+    g.beginPath()
+    g.moveTo(a[0] * W, a[1] * H)
+    g.lineTo(b[0] * W, b[1] * H)
+    g.stroke()
+  }
+
+  // saving a big board takes a moment, so it waits for a pause in the drawing
+  const saveTimer = useRef(null)
   const persist = useCallback(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify({ strokes: strokes.current.slice(-MAX_STROKES), at: lastAt.current }))
-    } catch {
-      /* storage full: the board still works live */
-    }
+    clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(key, JSON.stringify({ strokes: strokes.current.slice(-MAX_STROKES), at: lastAt.current }))
+      } catch {
+        /* storage full: the board still works live */
+      }
+    }, 800)
   }, [key])
 
   // keep the canvas sharp at any size
@@ -87,23 +126,42 @@ export default function Whiteboard({ roomKey, live, me, readOnly = false, onConf
           if (i >= 0) strokes.current[i] = msg.stroke
           else strokes.current.push(msg.stroke)
         } else if (msg.type === 'undo') {
-          strokes.current = strokes.current.filter((s) => s.id !== msg.id)
+          const gone = new Set(msg.ids ?? [msg.id])
+          strokes.current = strokes.current.filter((s) => !gone.has(s.id))
         } else if (msg.type === 'clear') {
           strokes.current = []
         } else if (msg.type === 'state') {
-          if (msg.at <= lastAt.current) return
-          strokes.current = msg.strokes
+          // part 0 replaces my board if it is newer; later parts add to it
+          if (!msg.part) {
+            if (msg.at <= lastAt.current) return
+            stateAt.current = msg.at
+            strokes.current = msg.strokes
+          } else if (msg.at === stateAt.current) {
+            strokes.current.push(...msg.strokes)
+          } else return
         }
         lastAt.current = Math.max(lastAt.current, msg.at ?? 0)
-        draw()
+        redraw()
         persist()
       }),
-    [live.onBoard, draw, persist], // eslint-disable-line react-hooks/exhaustive-deps
+    [live.onBoard, redraw, persist], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // when the other person arrives, send them the board (they keep the newer one)
   useEffect(() => {
-    if (live.peerHere) live.sendBoard({ type: 'state', strokes: strokes.current.slice(-MAX_STROKES), at: lastAt.current })
+    if (!live.peerHere) return
+    const parts = [[]]
+    let count = 0
+    for (const s of strokes.current.slice(-MAX_STROKES)) {
+      if (count + s.pts.length > PART_PTS && parts.at(-1).length) {
+        parts.push([])
+        count = 0
+      }
+      parts.at(-1).push(s)
+      count += s.pts.length
+    }
+    const at = lastAt.current
+    parts.forEach((list, part) => setTimeout(() => live.sendBoard({ type: 'state', part, strokes: list, at }), part * 200))
   }, [live.peerHere]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const changed = () => {
@@ -124,44 +182,62 @@ export default function Whiteboard({ roomKey, live, me, readOnly = false, onConf
 
   const point = (e) => {
     const r = canvas.current.getBoundingClientRect()
-    return [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))]
+    return [round(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))), round(Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)))]
+  }
+  const startStroke = (p, like) => {
+    const id = `${me}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    // g groups the pieces of one scribble, so Undo takes back all of it
+    const stroke = { id, g: like.g ?? id, by: me, color: like.color, size: like.size, pts: [p] }
+    current.current = stroke
+    strokes.current.push(stroke)
+    if (strokes.current.length > MAX_STROKES * 2) strokes.current = strokes.current.slice(-MAX_STROKES)
+    return stroke
+  }
+  const finishStroke = (s) => {
+    changed()
+    sendStroke(s, true)
+    // each message carries the whole line, so a second copy repairs a dropped one
+    setTimeout(() => live.sendBoard({ type: 'stroke', stroke: { ...s, pts: [...s.pts] }, at: lastAt.current }), 600)
   }
   const down = (e) => {
     if (readOnly) return
     e.currentTarget.setPointerCapture(e.pointerId)
-    const stroke = { id: `${me}-${Date.now()}`, by: me, color: eraser ? 'erase' : color, size: eraser ? 26 : size, pts: [point(e)] }
-    current.current = stroke
-    strokes.current.push(stroke)
+    const p = point(e)
+    const s = startStroke(p, { color: eraser ? 'erase' : color, size: eraser ? 26 : size })
     changed()
-    draw()
+    drawSegment(s, p, [p[0] + 0.0001, p[1]])
   }
   const move = (e) => {
-    const s = current.current
+    let s = current.current
     if (!s) return
     const p = point(e)
     const last = s.pts[s.pts.length - 1]
     if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 0.002) return
+    if (s.pts.length >= MAX_PTS) {
+      // long scribble: close this line and carry on with a new one from the same point
+      finishStroke(s)
+      s = startStroke(last, s)
+    }
     s.pts.push(p)
-    draw()
+    drawSegment(s, last, p)
     sendStroke(s)
   }
   const up = () => {
     const s = current.current
     if (!s) return
     current.current = null
-    changed()
-    sendStroke(s, true)
-    // each message carries the whole line, so a second copy repairs a dropped one
-    setTimeout(() => live.sendBoard({ type: 'stroke', stroke: { ...s, pts: [...s.pts] }, at: lastAt.current }), 600)
+    finishStroke(s)
   }
 
   const undo = () => {
     const mine = [...strokes.current].reverse().find((s) => s.by === me)
     if (!mine) return
-    strokes.current = strokes.current.filter((s) => s !== mine)
+    const g = mine.g ?? mine.id
+    const ids = strokes.current.filter((s) => s.by === me && (s.g ?? s.id) === g).map((s) => s.id)
+    strokes.current = strokes.current.filter((s) => !ids.includes(s.id))
     changed()
     draw()
-    live.sendBoard({ type: 'undo', id: mine.id, at: lastAt.current })
+    live.sendBoard({ type: 'undo', ids, at: lastAt.current })
   }
   const clear = async () => {
     if (!(await onConfirm({ title: 'Clear the whiteboard?', body: 'It clears for both of you.', yes: 'Clear it', danger: true }))) return

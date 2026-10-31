@@ -34,12 +34,13 @@ export function CallPanel({ live, other, ended, calling = false, declined = fals
   return (
     <div className="call">
       <div className="call-grid">
-        <Tile stream={remote.stream} name={other.name} video={remote.cam || remote.screen} mic={remote.mic} speaking={remote.speaking} waiting={waiting} ringing={calling && !otherInCall && !declined} />
+        <Tile stream={remote.stream} name={other.name} video={remote.cam || remote.screen} screen={remote.screen} mic={remote.mic} speaking={remote.speaking} waiting={waiting} ringing={calling && !otherInCall && !declined} />
         <Tile
           stream={local.screen ? local.screenStream : local.stream}
           name={local.screen ? 'You, sharing screen' : 'You'}
           initialsOf="You"
           video={local.cam || local.screen}
+          screen={local.screen}
           mic={local.mic}
           speaking={local.speaking}
           self
@@ -59,26 +60,76 @@ export function CallPanel({ live, other, ended, calling = false, declined = fals
   )
 }
 
-function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mirror = false, waiting = null, ringing = false }) {
+const fullscreenEl = () => document.fullscreenElement ?? document.webkitFullscreenElement
+
+function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mirror = false, screen = false, waiting = null, ringing = false }) {
+  const box = useRef(null)
   const ref = useRef(null)
+  const sound = useRef(null)
   const [blocked, setBlocked] = useState(false)
+  const [full, setFull] = useState(false)
+
+  // Picture and sound play in separate elements. A <video> whose stream has a video
+  // slot but no camera waits for a first frame that never comes, and plays no sound
+  // meanwhile: that is why voice only worked with a camera on.
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (el.srcObject !== stream) el.srcObject = stream ?? null
-    // browsers sometimes refuse to play sound until the page is tapped
-    if (stream && !self) el.play().then(() => setBlocked(false), () => setBlocked(true))
+    const pic = stream ? new MediaStream(stream.getVideoTracks()) : null
+    el.srcObject = pic
+    if (pic) el.play().catch(() => {})
+  }, [stream])
+
+  useEffect(() => {
+    const el = sound.current
+    if (!el || self) return
+    const tracks = stream?.getAudioTracks() ?? []
+    el.srcObject = tracks.length ? new MediaStream(tracks) : null
+    if (!tracks.length) return
+    // browsers sometimes refuse to play sound until the page is tapped:
+    // any tap anywhere on the page then starts it
+    const tryPlay = () => el.play().then(() => setBlocked(false), () => setBlocked(true))
+    tryPlay()
+    const onTap = () => el.paused && tryPlay()
+    document.addEventListener('pointerdown', onTap)
+    return () => document.removeEventListener('pointerdown', onTap)
   }, [stream, self])
+
+  useEffect(() => {
+    const onChange = () => setFull(fullscreenEl() === box.current)
+    document.addEventListener('fullscreenchange', onChange)
+    document.addEventListener('webkitfullscreenchange', onChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      document.removeEventListener('webkitfullscreenchange', onChange)
+    }
+  }, [])
+
   const showVideo = Boolean(stream?.getVideoTracks().length) && video
+  const toggleFull = () => {
+    const el = box.current
+    if (fullscreenEl()) return (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document)
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {})
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+    else ref.current?.webkitEnterFullscreen?.() // iPhone: only the video itself can go full screen
+  }
+
   return (
-    <div className={`tile ${speaking && mic ? 'talking' : ''} ${ringing ? 'ringing' : ''}`}>
-      {/* the video element also plays the other person's audio, so it stays mounted */}
-      <video ref={ref} autoPlay playsInline muted={self} className={`${showVideo ? '' : 'invisible'} ${mirror ? 'mirror' : ''}`} />
+    <div ref={box} className={`tile ${speaking && mic ? 'talking' : ''} ${ringing ? 'ringing' : ''} ${full ? 'is-full' : ''}`} onDoubleClick={() => showVideo && toggleFull()}>
+      <video ref={ref} autoPlay playsInline muted className={`${showVideo ? '' : 'invisible'} ${mirror ? 'mirror' : ''} ${screen ? 'fit' : ''}`} />
+      {!self && <audio ref={sound} autoPlay />}
       {!showVideo && <span className="avatar avatar-lg tile-avatar">{initials(initialsOf ?? name)}</span>}
       {waiting && <span className="tile-wait">{waiting}</span>}
       {blocked && (
-        <button type="button" className="btn btn-light btn-sm tile-unmute" onClick={() => ref.current?.play().then(() => setBlocked(false), () => {})}>
+        <button type="button" className="btn btn-light btn-sm tile-unmute" onClick={() => sound.current?.play().then(() => setBlocked(false), () => {})}>
           Tap to hear {name.split(' ')[0]}
+        </button>
+      )}
+      {showVideo && (
+        <button type="button" className="tile-full" onClick={toggleFull} aria-label={full ? 'Exit full screen' : `Show ${name} full screen`} title={full ? 'Exit full screen' : 'Full screen'}>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            {full ? <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" /> : <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />}
+          </svg>
         </button>
       )}
       <span className="tile-name">{name}{!mic && ' · muted'}</span>

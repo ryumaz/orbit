@@ -158,8 +158,8 @@ export default function Me() {
               <textarea id="me-bio" className="input resize-y" rows={2} maxLength={160} value={form.bio} onChange={(e) => set('bio')(e.target.value)} placeholder="I can make anyone's dal taste like home" />
             </div>
             <div className="grid gap-1.5">
-              <label htmlFor="me-city" className="label">Area <span className="dim">· optional, for in-person sessions. Only this is shown.</span></label>
-              <input id="me-city" className="input" maxLength={60} value={form.city} onChange={(e) => set('city')(e.target.value)} placeholder="Andheri, Mumbai" />
+              <label htmlFor="me-city" className="label">City <span className="dim">· optional, for meeting in person. Only this is shown.</span></label>
+              <input id="me-city" className="input" maxLength={60} value={form.city} onChange={(e) => set('city')(e.target.value)} placeholder="City, country" />
             </div>
           </section>
 

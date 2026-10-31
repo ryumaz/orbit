@@ -66,6 +66,8 @@ export function startTranslating() {
   const lang = getLang()
   document.documentElement.lang = lang
   if (lang === 'en') return
+  // shown in the "Translating to …" badge while a page is translated for the first time
+  document.documentElement.dataset.i18nName = LANGS.find((l) => l.code === lang)?.name ?? lang
 
   let dict = {}
   try {
@@ -87,12 +89,16 @@ export function startTranslating() {
     return false
   }
 
-  const want = (phrase, apply) => {
+  const visible = new Set() // phrases on screen right now go first
+  const want = (phrase, apply, node) => {
     if (dict[phrase] != null) return apply(dict[phrase])
     if (failed) return
     if (!waiting.has(phrase)) waiting.set(phrase, [])
     waiting.get(phrase).push(apply)
     pending.add(phrase)
+    const el = node?.nodeType === 1 ? node : node?.parentElement
+    const r = el?.getBoundingClientRect?.()
+    if (r && r.bottom > 0 && r.top < innerHeight && r.width) visible.add(phrase)
     clearTimeout(timer)
     timer = setTimeout(flush, 120)
   }
@@ -110,7 +116,7 @@ export function startTranslating() {
       const next = lead + t + tail
       shown.set(node, next)
       if (node.nodeValue !== next) node.nodeValue = next
-    })
+    }, node)
   }
 
   const doAttrs = (el) => {
@@ -145,11 +151,13 @@ export function startTranslating() {
     }
   }
 
-  // 15 phrases a request, up to 3 requests at a time; a hiccup is retried twice
+  // 15 phrases a request, up to 4 requests at a time, what's on screen first;
+  // a hiccup is retried twice
   let running = 0
   function flush() {
-    while (running < 3 && pending.size) {
-      const batch = [...pending].slice(0, 15)
+    while (running < 4 && pending.size) {
+      const order = [...pending].sort((a, b) => visible.has(b) - visible.has(a))
+      const batch = order.slice(0, 15)
       batch.forEach((p) => pending.delete(p))
       running += 1
       send(batch, 0).finally(() => {

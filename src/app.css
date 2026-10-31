@@ -631,3 +631,9 @@ html.is-translating body::after { content: ''; position: fixed; z-index: 200; le
 .acct-menu > a svg { color: var(--color-ash); }
 .acct-out { margin-top: 4px; padding: 8px 10px 4px; border-top: 1px solid var(--line); }
 .acct-logout { padding: 0; border: 0; background: none; font: inherit; font-size: 13px; color: var(--color-amber); cursor: pointer; }
+
+html.is-translating body::before {
+  content: "Translating to " attr(data-i18n-name) "…"; position: fixed; z-index: 200; left: 50%; bottom: calc(var(--tabs-h) + var(--safe-b) + 14px); transform: translateX(-50%);
+  padding: 8px 14px; border-radius: 99px; background: rgba(17, 17, 16, .95); border: 1px solid var(--line-strong); color: var(--color-chalk); font-size: 12px; white-space: nowrap; pointer-events: none;
+}
+@media (min-width: 960px) { html.is-translating body::before { bottom: 22px; } }

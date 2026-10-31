@@ -230,7 +230,7 @@ export default function MemberRoom() {
             <i style={{ '--v': `${(left / length) * 100}%` }} aria-hidden="true" />
           </span>
         )}
-        <span className={`pill ${done ? 'pill-quiet' : 'pill-spark'}`}>
+        <span className={`pill room-held ${done ? 'pill-quiet' : 'pill-spark'}`}>
           <Spark />
           {done
             ? `${s.cost} sent to ${first(mentor)}`
@@ -239,10 +239,10 @@ export default function MemberRoom() {
               : status === 'cancelled' ? 'cancelled'
                 : status === 'disputed' ? `${s.cost} on hold · in dispute`
                   : settled ? `settled · ${s.mentor_share} kept, ${s.cost - s.mentor_share} back`
-                    : `${s.cost} on hold until it works`}
+                    : <>{s.cost} on hold<span className="room-held-tail"> until it works</span></>}
         </span>
         {!ended && isLearner && (
-          <button type="button" className="btn btn-light btn-sm" onClick={() => setConfirming(true)}>Got it</button>
+          <button type="button" className="btn btn-light btn-sm room-got" onClick={() => setConfirming(true)}>Got it</button>
         )}
       </header>
 

@@ -190,3 +190,28 @@
 .room-timer-pill.is-low b { color: var(--color-amber); }
 .room-timer-pill.is-up { border-color: rgba(255, 148, 85, .55); color: var(--color-amber); }
 .room-session { display: grid; gap: 22px; align-content: start; }
+
+/* phones: a tidy header (leave, clock and "got it" on one line, then the title, then who's here)
+   and a chat that gets real room */
+@media (max-width: 719px) {
+  .room-top { gap: 8px 10px; padding-left: 14px; padding-right: 14px; }
+  .room-top > .btn-line { order: 0; }
+  .room-timer-pill { order: 1; margin-left: auto; padding: 5px 11px 7px; }
+  .room-timer-pill b { font-size: 17px; }
+  .room-got { order: 2; }
+  .room-title { order: 3; }
+  .room-title h1 { font-size: 17px; }
+  .room-here { order: 4; padding: 3px 10px 3px 3px; }
+  .room-here .avatar { width: 22px; height: 22px; }
+  .room-held { order: 5; font-size: 11px; }
+  .room-held-tail { display: none; }
+  .room-side { padding: 18px 14px 24px; gap: 18px; }
+  .room-right { border-top: 1px solid var(--line); }
+  .chat-list { max-height: 55svh; min-height: 200px; }
+  .room-tabs { padding: 6px 10px 0; overflow-x: auto; }
+  .call-invite { padding: 12px 14px; }
+  .time-up { margin: 12px 12px 0; padding: 12px 14px; }
+  .time-up .btn { flex: 1 1 auto; justify-content: center; }
+  .runner-bar { padding: 10px 12px; }
+  .runner-check { flex-basis: 100%; order: 3; }
+}

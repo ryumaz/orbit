@@ -12,6 +12,7 @@ import ReportDialog from '../components/ReportDialog'
 import { joinAnd } from '../lib/time'
 import { BadgeShelf, useBadges } from '../components/Badges'
 import ActivityGraph from '../components/ActivityGraph'
+import WeekHours from '../components/WeekHours'
 import { STATUS_LABEL, useStatusOf } from '../lib/presence'
 
 // A member's public page, the link they share: orbit.voids.wtf/u/<handle>.
@@ -100,6 +101,8 @@ export default function PublicProfile() {
                   <p className="empty m-0">Nothing listed yet.</p>
                 )}
               </section>
+
+              {p.teaches.length > 0 && <WeekHours handle={p.handle} first={first} />}
 
               {p.learns.length > 0 && (
                 <section className="block" aria-labelledby="h-learns">

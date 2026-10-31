@@ -77,7 +77,11 @@ const SECTIONS = [
 export default function Me() {
   const { section = 'profile' } = useParams()
   const current = SECTIONS.find(([k]) => k === section) ?? SECTIONS[0]
-  const { profile, user, balance, reload } = useAccount()
+  const { profile, user, balance, reload, sessions } = useAccount()
+  // classes that actually happened: paid, ended early by agreement, or settled by support
+  const held = (sessions ?? []).filter((s) => ['completed', 'ended', 'resolved'].includes(s.status))
+  const taught = held.filter((s) => s.mentor_id === user.id).length
+  const learned = held.filter((s) => s.learner_id === user.id).length
   const [form, setForm] = useState(() => pick(profile))
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState(null)
@@ -181,7 +185,7 @@ export default function Me() {
                   teaches={form.teaches}
                   avatarUrl={profile.avatar_url}
                   color={form.card_color}
-                  stats={[['Taught', 0], ['Learned', 0], ['Credits', balance]]}
+                  stats={[['Taught', taught], ['Learned', learned], ['Credits', balance]]}
                   label="Your card, preview"
                 />
                 <ShareProfile handle={profile.handle} name={profile.name} />

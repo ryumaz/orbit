@@ -67,7 +67,7 @@ export function startTranslating() {
   document.documentElement.lang = lang
   if (lang === 'en') return
   // shown in the "Translating to …" badge while a page is translated for the first time
-  document.documentElement.dataset.i18nName = LANGS.find((l) => l.code === lang)?.name ?? lang
+  document.body.dataset.i18nName = LANGS.find((l) => l.code === lang)?.name ?? lang
 
   let dict = {}
   try {

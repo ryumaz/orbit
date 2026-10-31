@@ -24,8 +24,8 @@ const LIVE_NAV = [
 ]
 const GUEST_NAV = [['/find', 'find', 'Learn something']]
 
-// Team links in the footer. Discord shows once an invite link is set here.
-export const SOCIAL = { github: 'https://github.com/ryumaz', discord: '' }
+// Team links in the footer.
+export const SOCIAL = { github: 'https://github.com/ryumaz', discord: 'https://discord.gg/dJ5ba3BmgR' }
 
 // opens Orbi, the help assistant, from anywhere ("human" goes straight to the team form)
 export const openHelp = (mode = 'ai') => window.dispatchEvent(new CustomEvent('orbit:help', { detail: { mode } }))

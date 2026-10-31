@@ -8,7 +8,7 @@
 // Without it this answers 404 and orbit stays in English.
 const LLM = '@cf/google/gemma-3-12b-it'
 const MT = '@cf/meta/m2m100-1.2b'
-const VERSION = 'v2' // bump to retranslate everything
+const VERSION = 'v3' // bump to retranslate everything
 const NAMES = {
   hi: 'Hindi', es: 'Spanish (Spain)', pt: 'Brazilian Portuguese', fr: 'French', de: 'German', tr: 'Turkish', ru: 'Russian',
   id: 'Indonesian', it: 'Italian', pl: 'Polish', vi: 'Vietnamese', ja: 'Japanese', ko: 'Korean', zh: 'Simplified Chinese', bn: 'Bengali', ta: 'Tamil',
@@ -87,15 +87,17 @@ export async function onRequestPost({ request, env, waitUntil }) {
   // batches of 20 for the model, two at a time; a batch that comes back wrong goes phrase by phrase
   const batches = []
   for (let i = 0; i < todo.length; i += 20) batches.push(todo.slice(i, i + 20))
+  const errors = []
   const runBatch = async (batch) => {
     try {
       const list = await llmBatch(env, lang, batch.map((b) => b.text))
       batch.forEach((item, i) => keep(item, list[i]))
-    } catch {
+    } catch (e) {
+      errors.push(String(e?.message ?? e).slice(0, 300))
       await Promise.all(batch.map(async (item) => keep(item, await mtOne(env, lang, item.text))))
     }
   }
   for (let i = 0; i < batches.length; i += 2) await Promise.all(batches.slice(i, i + 2).map(runBatch))
 
-  return Response.json({ translations: out }, { headers: { 'cache-control': 'no-store' } })
+  return Response.json(body.debug ? { translations: out, errors } : { translations: out }, { headers: { 'cache-control': 'no-store' } })
 }

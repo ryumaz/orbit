@@ -43,6 +43,43 @@ export default function MemberRoom() {
   const [work, setWork] = useState(null) // 'board' | 'code'
   const [ringStart, setRingStart] = useState(0)
 
+  // On wide screens the chat column can be resized: drag the line on its left edge,
+  // or focus it and use the arrow keys. Double-click puts it back. Remembered on this device.
+  const [chatW, setChatW] = useState(() => {
+    try {
+      return Number(localStorage.getItem('orbit:chat-w')) || 360
+    } catch {
+      return 360
+    }
+  })
+  const bodyRef = useRef(null)
+  const clampW = (w) => Math.round(Math.min(Math.max(w, 280), Math.max(280, (bodyRef.current?.clientWidth ?? 1400) - 250 - 420)))
+  const keepW = (w) => {
+    setChatW(w)
+    try {
+      localStorage.setItem('orbit:chat-w', String(w))
+    } catch {
+      /* fine: back to the default next time */
+    }
+  }
+  const startResize = (e) => {
+    e.preventDefault()
+    let last = chatW
+    const move = (ev) => {
+      last = clampW(bodyRef.current.getBoundingClientRect().right - ev.clientX)
+      setChatW(last)
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      document.body.classList.remove('is-resizing')
+      keepW(last)
+    }
+    document.body.classList.add('is-resizing')
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
   // opening the room starts the session
   const status = s?.status
   useEffect(() => {
@@ -192,7 +229,7 @@ export default function MemberRoom() {
         )}
       </header>
 
-      <div className="room-body">
+      <div className="room-body" ref={bodyRef} style={{ '--chat-w': `${chatW}px` }}>
         <aside className="room-side room-left">
           <div className="grid gap-4">
             <Person p={mentor} role={teaching ? 'Teaching (you)' : 'Teaching'} here={teaching || here} hot />
@@ -239,6 +276,21 @@ export default function MemberRoom() {
         </main>
 
         <aside className="room-side room-right">
+          <div
+            className="room-resize"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize the chat"
+            aria-valuenow={chatW}
+            tabIndex={0}
+            title="Drag to resize the chat · double-click to reset"
+            onPointerDown={startResize}
+            onDoubleClick={() => keepW(360)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') keepW(clampW(chatW + 24))
+              if (e.key === 'ArrowRight') keepW(clampW(chatW - 24))
+            }}
+          />
           {confirming && !ended && (
             <div className="card card-hot grid gap-3.5">
               <p className="m-0 text-[14px] leading-relaxed">
@@ -296,7 +348,7 @@ export default function MemberRoom() {
               <p className="room-question">“{s.message}”</p>
             </div>
           )}
-          <div className="grid gap-3">
+          <div className="room-talk">
             <div role="tablist" aria-label="Talk" className="flex gap-2">
               <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'chat'} aria-pressed={side === 'chat'} onClick={() => setSide('chat')}>
                 Chat

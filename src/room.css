@@ -152,3 +152,22 @@
 .chat-tray-x:hover { background: #2a2a28; }
 .chat-tray-add button { width: 100%; aspect-ratio: 1; border-radius: 10px; border: 1px dashed var(--line-strong); background: none; color: var(--color-ash); font-size: 22px; cursor: pointer; }
 .chat-tray-add button:hover { color: var(--color-chalk); border-color: var(--color-chalk); }
+
+/* chat column: fills the height on the right, resizable on wide screens */
+.room-talk { display: grid; gap: 12px; }
+.room-resize { display: none; }
+@media (min-width: 1100px) {
+  .room { height: 100svh; min-height: 0; }
+  .room-body { min-height: 0; overflow: hidden; grid-template-columns: 250px minmax(0, 1fr) var(--chat-w, 360px); }
+  .room-left, .room-main { overflow-y: auto; }
+  .room-right { position: relative; display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; }
+  .room-talk { flex: 1; min-height: 320px; display: flex; flex-direction: column; }
+  .room-talk .chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .room-talk .chat-list { flex: 1; min-height: 0; max-height: none; }
+  .room-talk .room-notes { min-height: 40svh; }
+  .room-resize { display: block; position: absolute; z-index: 5; top: 0; bottom: 0; left: 0; width: 10px; cursor: col-resize; touch-action: none; }
+  .room-resize::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: transparent; transition: background .15s; }
+  .room-resize:hover::after, .room-resize:focus-visible::after, .is-resizing .room-resize::after { background: var(--color-violet); }
+  .room-resize:focus-visible { outline: none; }
+  .is-resizing, .is-resizing * { cursor: col-resize !important; user-select: none !important; }
+}

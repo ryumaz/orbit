@@ -110,7 +110,7 @@ export default function Join({ mode }) {
               {!forgot && (
                 <>
                   <div className="signin-quick" role="group" aria-label="Quick sign-in">
-                    {PROVIDERS.map(([id, label]) => {
+                    {PROVIDERS.filter(([id]) => !providers || providers[id]).map(([id, label]) => {
                       const Icon = PROVIDER_ICON[id]
                       const off = providers && !providers[id]
                       return (

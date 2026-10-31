@@ -1,14 +1,16 @@
 // POST /api/translate { lang, texts: [...] } → { translations: { [english]: translated } }
-// Translates orbit's interface on Cloudflare Workers AI. A multilingual model (Gemma 3)
+// Translates orbit's interface on Cloudflare Workers AI. A multilingual chat model
 // gets whole batches with context about the site, so short labels keep their meaning;
 // the m2m100 translation model is the fallback. Every phrase is cached at the edge for
 // 30 days, so each one is translated once per language, not per visit.
 //
 // Needs a Workers AI binding named AI on the Pages project (Settings → Bindings).
 // Without it this answers 404 and orbit stays in English.
-const LLM = '@cf/google/gemma-3-12b-it'
+// tried in order; the first one this account may use is remembered
+const LLMS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/mistralai/mistral-small-3.1-24b-instruct', '@cf/meta/llama-3.1-8b-instruct-fast']
+let llm = 0
 const MT = '@cf/meta/m2m100-1.2b'
-const VERSION = 'v3' // bump to retranslate everything
+const VERSION = 'v4' // bump to retranslate everything
 const NAMES = {
   hi: 'Hindi', es: 'Spanish (Spain)', pt: 'Brazilian Portuguese', fr: 'French', de: 'German', tr: 'Turkish', ru: 'Russian',
   id: 'Indonesian', it: 'Italian', pl: 'Polish', vi: 'Vietnamese', ja: 'Japanese', ko: 'Korean', zh: 'Simplified Chinese', bn: 'Bengali', ta: 'Tamil',
@@ -28,14 +30,24 @@ Translate every English string in the JSON array into ${NAMES[lang]}. Rules:
 - Answer with ONLY a JSON array of strings, the same length and order as the input. No notes.`
 
 async function llmBatch(env, lang, texts) {
-  const r = await env.AI.run(LLM, {
-    messages: [
-      { role: 'system', content: system(lang) },
-      { role: 'user', content: JSON.stringify(texts) },
-    ],
-    max_tokens: 4096,
-    temperature: 0.2,
-  })
+  let r
+  for (;;) {
+    try {
+      r = await env.AI.run(LLMS[llm], {
+        messages: [
+          { role: 'system', content: system(lang) },
+          { role: 'user', content: JSON.stringify(texts) },
+        ],
+        max_tokens: 4096,
+        temperature: 0.2,
+      })
+      break
+    } catch (e) {
+      // not available to this account: move on to the next model
+      if (/not allowed|5018|no such model|5007/i.test(String(e?.message ?? e)) && llm < LLMS.length - 1) llm += 1
+      else throw e
+    }
+  }
   const raw = typeof r?.response === 'string' ? r.response : JSON.stringify(r?.response ?? '')
   const list = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1))
   if (!Array.isArray(list) || list.length !== texts.length) throw new Error('shape')
@@ -99,5 +111,5 @@ export async function onRequestPost({ request, env, waitUntil }) {
   }
   for (let i = 0; i < batches.length; i += 2) await Promise.all(batches.slice(i, i + 2).map(runBatch))
 
-  return Response.json(body.debug ? { translations: out, errors } : { translations: out }, { headers: { 'cache-control': 'no-store' } })
+  return Response.json(body.debug ? { translations: out, errors, model: LLMS[llm] } : { translations: out }, { headers: { 'cache-control': 'no-store' } })
 }

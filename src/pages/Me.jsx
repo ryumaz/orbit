@@ -66,7 +66,7 @@ const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: 
 const SECTIONS = [
   ['profile', 'Profile', 'Photo, name, username and your card'],
   ['skills', 'Teaching and learning', 'What you teach, your price, what you want to learn'],
-  ['hours', 'Class hours', 'When people can book you'],
+  ['hours', 'Working hours', "When you're free to teach"],
   ['notifications', 'Notifications', 'Alerts here and on Discord'],
   ['language', 'Language', 'The language orbit shows you'],
   ['account', 'Account and security', 'Email, password and sign-in'],

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { DAYS, WEEK, clockText, openDays, slotText } from '../lib/timetable'
 
-// A member's class hours on their public page: one row per day with the hours marked
+// A member's working hours on their public page: one row per day with the hours marked
 // on a 24-hour track, and the next time you could book them.
 export default function WeekHours({ handle, first }) {
   const [tt, setTt] = useState(null)
@@ -22,7 +22,7 @@ export default function WeekHours({ handle, first }) {
   return (
     <section className="block" aria-labelledby="h-hours">
       <div className="block-head">
-        <h2 id="h-hours">When {first} teaches</h2>
+        <h2 id="h-hours">{first}'s working hours</h2>
         <span className="dim text-[11px]">India time</span>
       </div>
       <ul className="week m-0 list-none p-0">

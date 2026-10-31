@@ -31,7 +31,7 @@ export default function SlotPicker({ handle, first, minutes, value, onChange, on
     return (
       <div className="grid gap-1.5">
         <span className="label">When</span>
-        <p className="m-0 text-[12.5px] dim">{first} hasn't set class hours yet, so this asks for a class as soon as they can. Say what time suits you in the note.</p>
+        <p className="m-0 text-[12.5px] dim">{first} hasn't set working hours yet, so this asks for a class as soon as they can. Say what time suits you in the note.</p>
       </div>
     )
   }
@@ -50,7 +50,7 @@ export default function SlotPicker({ handle, first, minutes, value, onChange, on
       </div>
       {mode === 'pick' && (
         <div className="slots">
-          <p className="m-0 text-[11.5px] dim">{first} teaches {hoursSummary(tt.hours)}</p>
+          <p className="m-0 text-[11.5px] dim">{first}'s working hours: {hoursSummary(tt.hours)}</p>
           {firstOpen < 0 ? (
             <p className="m-0 text-[12.5px] dim">No free {minutes}-minute times in the next two weeks. Try a shorter class, or ask for one as soon as {first} can.</p>
           ) : (
@@ -82,7 +82,7 @@ export default function SlotPicker({ handle, first, minutes, value, onChange, on
                   </button>
                 ))}
               </div>
-              <p className="m-0 text-[12.5px]">{value ? <>Booked for <b>{slotText(value)}</b>, {minutes} min.</> : <span className="dim">Pick a start time.</span>}</p>
+              <p className="m-0 text-[12.5px]">{value ? <>You picked <b>{slotText(value)}</b>, {minutes} min. It's booked once {first} accepts.</> : <span className="dim">Pick a start time.</span>}</p>
             </>
           )}
         </div>

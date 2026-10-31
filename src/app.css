@@ -865,7 +865,8 @@ select.input option { background: #111110; color: var(--color-chalk); }
 
 /* ---------- timetable: picking a time, setting class hours ---------- */
 .slots { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--color-raise); }
-.slot-days { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.slot-days { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.slot-days::-webkit-scrollbar { display: none; }
 .slot-day { flex: 0 0 auto; display: grid; justify-items: center; gap: 2px; width: 50px; padding: 7px 0 6px; border-radius: 11px; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
 .slot-day small { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-ash); }
 .slot-day b { font-family: var(--font-dot); font-weight: 900; font-size: 19px; line-height: 1; }
@@ -893,8 +894,8 @@ select.input option { background: #111110; color: var(--color-chalk); }
 .booked-for { margin: 0; font-size: 12.5px; }
 .booked-for.is-soon { color: var(--color-amber); }
 @media (max-width: 560px) {
-  .hours-day { grid-template-columns: 38px 1fr; }
-  .hours-day > .link { grid-column: 2; justify-self: start; }
+  .hours-day { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; }
+  .hours-range { gap: 3px; padding-left: 6px; font-size: 11.5px; }
 }
 
 /* ---------- sidebar "me" card, Discord style ---------- */
@@ -925,7 +926,9 @@ select.input option { background: #111110; color: var(--color-chalk); }
 .week-day:not(.is-on) .week-text { color: var(--color-smoke); }
 .week-scale { display: flex; justify-content: space-between; margin: 4px 0 0; padding-left: 50px; padding-right: 162px; font-size: 9.5px; color: var(--color-smoke); }
 @media (max-width: 560px) {
-  .week-day { grid-template-columns: 34px minmax(0, 1fr); }
-  .week-text { grid-column: 2; margin-top: -2px; }
-  .week-scale { padding: 0 0 0 46px; }
+  .week { gap: 6px; }
+  .week-day { grid-template-columns: 32px minmax(0, 1fr) 104px; gap: 8px; }
+  .week-text { font-size: 10.5px; text-align: right; }
+  .week-scale { padding: 0 112px 0 40px; font-size: 9px; }
+  .week-scale span:nth-child(even) { visibility: hidden; }
 }

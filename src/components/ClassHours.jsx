@@ -49,7 +49,7 @@ export default function ClassHours() {
     const sorted = [...hours].sort((a, b) => WEEK.indexOf(a.d) - WEEK.indexOf(b.d) || a.from - b.from)
     setHours(sorted)
     setSaved(JSON.stringify(sorted))
-    setMsg({ ok: true, text: sorted.length ? 'Saved. Learners can now pick a time inside these hours.' : 'Saved. People can still ask for a class as soon as you can.' })
+    setMsg({ ok: true, text: sorted.length ? 'Saved. Your working hours are on your public page now.' : 'Saved. People can still ask for a class as soon as you can.' })
   }
 
   return (
@@ -60,7 +60,7 @@ export default function ClassHours() {
           <span className="dim text-[11px]">India time</span>
         </div>
         <p className="m-0 text-[12.5px] leading-relaxed dim">
-          Learners pick a start time inside these hours when they book you, up to two weeks ahead. Times someone already booked are taken off for everyone else. Leave it empty and people simply ask for a class as soon as you can.
+          Your working hours: the times in the week you're free to teach. They show on your public page, and learners book a slot inside them, up to two weeks ahead. Booked slots disappear for everyone else. No hours set? People just ask for a class whenever you're free.
         </p>
         <div className="flex flex-wrap gap-2">
           {PRESETS.map(([label, h]) => (
@@ -94,11 +94,11 @@ export default function ClassHours() {
             )
           })}
         </ul>
-        {hours.length > 0 && <p className="m-0 text-[12px]"><span className="dim">Learners see:</span> {hoursSummary(hours)}</p>}
+        {hours.length > 0 && <p className="m-0 text-[12px]"><span className="dim">On your public page:</span> {hoursSummary(hours)}</p>}
         {msg.text && <p role="status" className={`m-0 text-[12.5px] ${msg.ok ? 'text-chalk' : 'text-amber'}`}>{msg.text}</p>}
         {bad && <p className="m-0 text-[12.5px] text-amber">A range ends before it starts. Fix the red one to save.</p>}
         <div>
-          <button type="button" className="btn btn-light btn-sm" disabled={busy || !changed || bad} onClick={save}>{busy ? 'Saving…' : 'Save class hours'}</button>
+          <button type="button" className="btn btn-light btn-sm" disabled={busy || !changed || bad} onClick={save}>{busy ? 'Saving…' : 'Save working hours'}</button>
         </div>
       </section>
     </div>

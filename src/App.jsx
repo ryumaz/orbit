@@ -11,6 +11,7 @@ import Reset from './pages/Reset'
 import Welcome from './pages/Welcome'
 import Support from './pages/Support'
 import Lost from './pages/Lost'
+import UpdateNotice from './components/UpdateNotice'
 import Docs from './pages/Docs'
 import Dashboard from './pages/Dashboard'
 import Me from './pages/Me'
@@ -39,6 +40,7 @@ export default function App() {
       <ScrollToTop />
       <IncomingCall />
       <Toasts />
+      <UpdateNotice />
       <Orbi />
       <Routes>
         <Route path="/" element={<Home />} />

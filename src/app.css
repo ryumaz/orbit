@@ -816,3 +816,10 @@ select.input option { background: #111110; color: var(--color-chalk); }
 .lost-details summary { cursor: pointer; text-align: center; }
 .lost-details pre { margin: 10px 0; padding: 12px; max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 12px; border: 1px solid var(--line); background: var(--raise-2); color: var(--color-amber); font-size: 11px; }
 @media (prefers-reduced-motion: reduce) { .lost-moon { animation: none; transform: translateX(110px); } }
+
+/* a newer orbit is live: offer a reload */
+.update-notice { position: fixed; z-index: 130; left: 50%; bottom: calc(var(--safe-b, 0px) + 18px); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 99px; border: 1px solid var(--line-strong); background: rgba(17, 17, 16, .94); backdrop-filter: blur(10px); font-size: 12.5px; box-shadow: 0 20px 50px -18px #000; animation: toastIn .3s var(--ease) both; white-space: nowrap; }
+.update-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spark); box-shadow: 0 0 10px rgba(255, 148, 85, .8); }
+.update-x { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: var(--color-ash); font-size: 17px; cursor: pointer; }
+.update-x:hover { background: rgba(255, 255, 255, .08); color: var(--color-chalk); }
+@media (max-width: 959px) { .update-notice { bottom: calc(var(--tabs-h, 64px) + var(--safe-b, 0px) + 14px); } }

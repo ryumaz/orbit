@@ -251,11 +251,11 @@ export default function ParticleHero({ leftNote, rightNote }) {
   return (
     <>
       <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 -z-20 size-full" />
-      <p ref={leftRef} aria-hidden="true" className="scribble hero-note">
+      <p ref={leftRef} aria-hidden="true" translate="no" className="scribble hero-note">
         {leftNote}
         <svg viewBox="0 0 90 60" className="hero-arrow -mb-6"><path d="M4 8 C 30 4, 60 14, 78 46 M66 40 L79 48 L80 33" /></svg>
       </p>
-      <p ref={rightRef} aria-hidden="true" className="scribble hero-note hero-note-right">
+      <p ref={rightRef} aria-hidden="true" translate="no" className="scribble hero-note hero-note-right">
         <svg viewBox="0 0 90 60" className="hero-arrow mt-4"><path d="M86 8 C 60 4, 30 14, 12 46 M24 40 L11 48 L10 33" /></svg>
         {rightNote}
       </p>

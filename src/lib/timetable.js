@@ -24,10 +24,10 @@ export const dayText = (t) => new Date(t).toLocaleDateString('en-IN', { weekday:
 export const timeText = (t) => new Date(t).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }).toLowerCase()
 export const slotText = (t) => `${dayText(t)} · ${timeText(t)}`
 
-// "Mon–Fri 6:00 pm – 9:00 pm, Sat 10:00 am – 1:00 pm": days with the same hours grouped
+// "Mon–Fri 6:00–9:00 pm · Sat 10:00 am–1:00 pm": days with the same hours grouped
 export function hoursSummary(hours) {
   if (!hours?.length) return ''
-  const byDay = WEEK.map((d) => hours.filter((r) => r.d === d).map((r) => `${clockText(r.from)} – ${clockText(r.to)}`).join(', '))
+  const byDay = WEEK.map((d) => hours.filter((r) => r.d === d).map((r) => rangeText(r.from, r.to)).join(', '))
   const parts = []
   let i = 0
   while (i < 7) {

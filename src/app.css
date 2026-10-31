@@ -917,24 +917,6 @@ select.input option { background: #111110; color: var(--color-chalk); }
 /* on a computer the sidebar card does what the top-right menu does */
 @media (min-width: 960px) { .acct { display: none; } }
 
-/* ---------- class hours on a public profile ---------- */
-.week { display: grid; gap: 4px; }
-.week-day { display: grid; grid-template-columns: 38px minmax(0, 1fr) minmax(0, 150px); align-items: center; gap: 12px; font-size: 12px; }
-.week-day > b { font-weight: 500; color: var(--color-smoke); }
-.week-day.is-on > b { color: var(--color-chalk); }
-.week-day.is-today > b { color: var(--color-amber); }
-.week-track { position: relative; height: 12px; border-radius: 4px; background: #161615; overflow: hidden; }
-.week-track i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--spark); }
-.week-text { color: var(--color-ash); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.week-day:not(.is-on) .week-text { color: var(--color-smoke); }
-.week-scale { display: flex; justify-content: space-between; margin: 4px 0 0; padding-left: 50px; padding-right: 162px; font-size: 9.5px; color: var(--color-smoke); }
-@media (max-width: 560px) {
-  .week { gap: 6px; }
-  .week-day { grid-template-columns: 32px minmax(0, 1fr) 104px; gap: 8px; }
-  .week-text { font-size: 10.5px; text-align: right; }
-  .week-scale { padding: 0 112px 0 40px; font-size: 9px; }
-  .week-scale span:nth-child(even) { visibility: hidden; }
-}
 .book-anchor { display: block; height: 0; scroll-margin-top: 90px; }
 /* a finished class: one small line above the chat instead of the whole receipt */
 .room-done { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 12px 10px 14px; border-radius: 14px; border: 1px solid rgba(155, 130, 255, .45); background: rgba(155, 130, 255, .07); font-size: 12.5px; }

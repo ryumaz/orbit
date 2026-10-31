@@ -5,6 +5,7 @@
 // handshake messages, chat lines and "who is here".
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
+import { applyAudio, applyVideo, grade, readStats } from './callQuality'
 
 // Direct connections first. If /api/turn exists (a relay for networks that block
 // direct calls), its servers are added; without it, calls stay direct-only.
@@ -84,6 +85,15 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
   const offerRef = useRef(null)
   const boardListeners = useRef(new Set())
   const [ready, setReady] = useState(false)
+  // quality: what I asked for (auto | saver | voice), what they asked for, and live readings
+  const [quality, setQualityState] = useState('auto')
+  const [peerQuality, setPeerQuality] = useState('auto')
+  const [net, setNet] = useState(null)
+  const qualityRef = useRef('auto')
+  const peerQualityRef = useRef('auto')
+  const tierRef = useRef(0)
+  const remoteRef = useRef(remote)
+  remoteRef.current = remote
 
   useEffect(() => {
     loadIce()
@@ -154,11 +164,28 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
       if (st === 'connected') {
         retries.current = 0
         setError('')
+        applySending()
+        if (qualityRef.current !== 'auto') send('quality', { from: selfId, mode: qualityRef.current })
       } else if (st === 'failed') redial()
       else if (st === 'disconnected') dropTimer = setTimeout(() => conn.connectionState === 'disconnected' && redial(), 4000)
     }
     return conn
   }, [closePeer, selfId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // How much we send. Voice always has top priority; video follows the weakest of:
+  // the network (auto steps), my choice, and what the other person asked for.
+  function applySending() {
+    const conn = pc.current
+    if (!conn) return
+    const tr = conn.getTransceivers()
+    const modes = [qualityRef.current, peerQualityRef.current]
+    applyAudio(tr.find((t) => t.receiver.track.kind === 'audio')?.sender)
+    applyVideo(tr.find((t) => t.receiver.track.kind === 'video')?.sender, {
+      off: modes.includes('voice'),
+      screen: Boolean(screenTrack.current),
+      tier: modes.includes('saver') ? 2 : tierRef.current,
+    })
+  }
 
   // put this side's mic and camera (or screen) into the connection's two slots
   function attachLocal(conn) {
@@ -216,7 +243,18 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
       .on('broadcast', { event: 'media' }, ({ payload }) => payload.from !== selfId && setRemote((r) => ({ ...r, ...payload.state })))
       .on('broadcast', { event: 'doc' }, ({ payload }) => payload.from !== selfId && setRemoteDoc({ text: payload.text, at: payload.at }))
       .on('broadcast', { event: 'board' }, ({ payload }) => payload.from !== selfId && boardListeners.current.forEach((l) => l(payload)))
-      .on('broadcast', { event: 'bye' }, ({ payload }) => payload.from === otherId.current && closePeer())
+      .on('broadcast', { event: 'quality' }, ({ payload }) => {
+        if (payload.from === selfId) return
+        peerQualityRef.current = payload.mode
+        setPeerQuality(payload.mode)
+        applySending()
+      })
+      .on('broadcast', { event: 'bye' }, ({ payload }) => {
+        if (payload.from !== otherId.current) return
+        peerQualityRef.current = 'auto'
+        setPeerQuality('auto')
+        closePeer()
+      })
       .on('presence', { event: 'sync' }, () => {
         const next = {}
         for (const [id, metas] of Object.entries(ch.presenceState())) if (id !== selfId) next[id] = metas[metas.length - 1]
@@ -251,6 +289,56 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
   useEffect(() => {
     localStorage.setItem(chatKey, JSON.stringify(messages.slice(-200)))
   }, [chatKey, messages])
+
+  // Read the connection every 2 s. A struggling upload steps our video down a tier
+  // (at most every 4 s); ten seconds of good readings step it back up.
+  useEffect(() => {
+    if (remote.state !== 'connected') {
+      setNet(null)
+      return
+    }
+    let prev = null
+    let goodRun = 0
+    let lastStep = 0
+    let stopped = false
+    const t = setInterval(async () => {
+      const conn = pc.current
+      if (!conn) return
+      const s = await readStats(conn, prev).catch(() => null)
+      if (!s || stopped) return
+      prev = s
+      const g = grade(s, { expectVideo: Boolean(remoteRef.current.cam || remoteRef.current.screen) })
+      const now = Date.now()
+      if (g.send === 'poor') {
+        goodRun = 0
+        if (tierRef.current < 2 && now - lastStep > 4000) {
+          tierRef.current += 1
+          lastStep = now
+          applySending()
+        }
+      } else if (g.send === 'good') {
+        goodRun += 1
+        if (goodRun >= 5 && tierRef.current > 0) {
+          tierRef.current -= 1
+          goodRun = 0
+          lastStep = now
+          applySending()
+        }
+      } else goodRun = 0
+      setNet({ ...g, rtt: s.rtt, loss: s.loss, fps: s.fps, height: s.height, relay: s.relay, tier: tierRef.current })
+    }, 2000)
+    return () => {
+      stopped = true
+      clearInterval(t)
+    }
+  }, [remote.state]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const setQuality = (mode) => {
+    qualityRef.current = mode
+    setQualityState(mode)
+    send('quality', { from: selfId, mode })
+    applySending()
+  }
 
   useEffect(() => watchSpeaking(local.stream, (speaking) => setLocal((l) => ({ ...l, speaking }))), [local.stream])
   useEffect(() => watchSpeaking(remote.stream, (speaking) => setRemote((r) => ({ ...r, speaking }))), [remote.stream])
@@ -328,6 +416,7 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     screenTrack.current?.stop()
     screenTrack.current = null
     await videoSender()?.replaceTrack(localStream.current?.getVideoTracks()[0] ?? null)
+    applySending()
     setLocal((l) => ({ ...l, screen: false, screenStream: null }))
     shareState({ screen: false })
   }
@@ -337,9 +426,11 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     try {
       const display = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false })
       const track = display.getVideoTracks()[0]
+      track.contentHint = 'detail'
       screenTrack.current = track
       track.addEventListener('ended', stopScreen)
       await videoSender()?.replaceTrack(track)
+      applySending()
       setLocal((l) => ({ ...l, screen: true, screenStream: display }))
       shareState({ screen: true })
     } catch (e) {
@@ -392,5 +483,9 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     toggleMic,
     toggleCam,
     toggleScreen,
+    quality,
+    peerQuality,
+    setQuality,
+    net,
   }
 }

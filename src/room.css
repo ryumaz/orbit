@@ -95,3 +95,22 @@
 .board-canvas { width: 100%; aspect-ratio: 16 / 10; border-radius: 14px; border: 1px solid var(--line); touch-action: none; display: block; background: #0b0b0a; }
 .board-canvas.drawing { cursor: crosshair; }
 .board-canvas.erasing { cursor: cell; }
+
+/* connection badge and quality picker */
+.tile-net { position: absolute; top: 10px; left: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px 4px 7px; border-radius: 99px; background: rgba(0, 0, 0, .65); font-size: 10.5px; }
+.tile-net-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; }
+.tile-net-bars b { width: 3px; border-radius: 1px; background: rgba(241, 240, 236, .25); }
+.tile-net-bars b:nth-child(1) { height: 4px; }
+.tile-net-bars b:nth-child(2) { height: 7px; }
+.tile-net-bars b:nth-child(3) { height: 10px; }
+.tile-net.is-good .tile-net-bars b { background: #7ee0a8; }
+.tile-net.is-ok .tile-net-bars b:nth-child(-n+2) { background: #ffd166; }
+.tile-net.is-poor .tile-net-bars b:nth-child(1) { background: var(--color-amber); }
+.tile-net.is-poor { color: var(--color-amber); }
+.call-quality select {
+  height: 36px; padding: 0 30px 0 14px; border-radius: 99px; border: 1px solid var(--line-strong); background: transparent; color: var(--color-chalk);
+  font: inherit; font-size: 12px; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238d8c87' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.call-quality select option { background: #111; }

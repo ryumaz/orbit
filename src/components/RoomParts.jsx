@@ -4,6 +4,13 @@ import { initials } from './Spark'
 // Pieces shared by the demo room and the member room: the call, chat and private notes.
 const first = (p) => p.name.split(' ')[0]
 
+const QUALITY = [
+  ['auto', 'Auto'],
+  ['saver', 'Data saver'],
+  ['voice', 'Voice only'],
+]
+const NET_TEXT = { good: 'Good connection', ok: 'Okay connection', poor: 'Weak connection' }
+
 // Video or voice for the two people in the room. Nothing starts until someone presses join.
 export function CallPanel({ live, other, ended, calling = false, declined = false }) {
   const otherInCall = Object.values(live.peers).some((p) => p.inCall)
@@ -31,10 +38,22 @@ export function CallPanel({ live, other, ended, calling = false, declined = fals
     ? declined ? `${first(other)} can't take the call right now` : calling ? `Ringing ${first(other)}…` : `Waiting for ${first(other)} to join`
     : remote.state === 'connected' ? null : remote.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…'
   const canShare = Boolean(navigator.mediaDevices?.getDisplayMedia)
+  const net = live.net
+  const netLevel = net ? (net.see === 'poor' || net.send === 'poor' ? 'poor' : net.see === 'ok' || net.send === 'ok' ? 'ok' : 'good') : null
+  const voiceOnly = live.quality === 'voice' || live.peerQuality === 'voice'
+  const notice = live.peerQuality === 'voice'
+    ? `${first(other)} switched to voice only, so video is paused both ways.`
+    : live.quality === 'voice'
+      ? 'Voice only: video is paused both ways to keep the sound clear.'
+      : live.peerQuality === 'saver' || live.quality === 'saver'
+        ? 'Data saver is on: smaller, smoother video.'
+        : net?.tier > 0
+          ? 'Weak connection: orbit lowered the video quality to keep your voice clear. It goes back up by itself.'
+          : null
   return (
     <div className="call">
       <div className="call-grid">
-        <Tile stream={remote.stream} name={other.name} video={remote.cam || remote.screen} screen={remote.screen} mic={remote.mic} speaking={remote.speaking} waiting={waiting} ringing={calling && !otherInCall && !declined} />
+        <Tile stream={remote.stream} name={other.name} video={(remote.cam || remote.screen) && !voiceOnly} screen={remote.screen} mic={remote.mic} speaking={remote.speaking} waiting={waiting} ringing={calling && !otherInCall && !declined} net={netLevel} netInfo={net} />
         <Tile
           stream={local.screen ? local.screenStream : local.stream}
           name={local.screen ? 'You, sharing screen' : 'You'}
@@ -53,8 +72,15 @@ export function CallPanel({ live, other, ended, calling = false, declined = fals
         {canShare && (
           <button type="button" className="call-btn" aria-pressed={local.screen} onClick={live.toggleScreen}>{local.screen ? 'Stop sharing' : 'Share screen'}</button>
         )}
+        <label className="call-quality">
+          <span className="sr-only">Video quality</span>
+          <select value={live.quality} onChange={(e) => live.setQuality(e.target.value)} aria-label="Video quality">
+            {QUALITY.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          </select>
+        </label>
         <button type="button" className="call-btn call-leave" onClick={live.leave}>Leave call</button>
       </div>
+      {notice && <p role="status" className="m-0 px-4 pb-3 text-[12px] dim">{notice}</p>}
       {live.error && <p role="alert" className="m-0 px-4 pb-3 text-[12px] text-amber">{live.error}</p>}
     </div>
   )
@@ -62,7 +88,7 @@ export function CallPanel({ live, other, ended, calling = false, declined = fals
 
 const fullscreenEl = () => document.fullscreenElement ?? document.webkitFullscreenElement
 
-function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mirror = false, screen = false, waiting = null, ringing = false }) {
+function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mirror = false, screen = false, waiting = null, ringing = false, net = null, netInfo = null }) {
   const box = useRef(null)
   const ref = useRef(null)
   const sound = useRef(null)
@@ -131,6 +157,15 @@ function Tile({ stream, name, initialsOf, video, mic, speaking, self = false, mi
             {full ? <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" /> : <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />}
           </svg>
         </button>
+      )}
+      {net && (
+        <span
+          className={`tile-net is-${net}`}
+          title={netInfo ? `Round trip ${netInfo.rtt != null ? Math.round(netInfo.rtt * 1000) + ' ms' : '–'} · loss ${Math.round((netInfo.loss ?? 0) * 100)}%${netInfo.height ? ` · ${netInfo.height}p` : ''}${netInfo.fps ? ` ${Math.round(netInfo.fps)} fps` : ''}${netInfo.relay ? ' · via relay' : ''}` : undefined}
+        >
+          <i className="tile-net-bars" aria-hidden="true"><b /><b /><b /></i>
+          {NET_TEXT[net]}
+        </span>
       )}
       <span className="tile-name">{name}{!mic && ' · muted'}</span>
     </div>

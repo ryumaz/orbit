@@ -39,6 +39,13 @@ export function getLang() {
   return 'en'
 }
 
+// another tab picked a different language: follow it, so tabs never disagree
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY && (e.newValue ?? 'en') !== document.documentElement.lang) location.reload()
+  })
+}
+
 // A new language reloads the page: a clean start in the new language, and
 // switching back to English is simply the original page.
 export function setLang(code) {

@@ -177,7 +177,7 @@ export default function MemberRoom() {
         </aside>
 
         <main className="room-main">
-          <CallPanel live={live} other={other} ended={ended} calling={calling} declined={wasDeclined} />
+          <CallPanel live={live} other={other} ended={ended} calling={calling} declined={wasDeclined} onRingAgain={() => setRingStart(Date.now())} />
           <div className="room-tabs" role="tablist" aria-label="Workspace">
             <button type="button" role="tab" aria-selected={tab === 'board'} className={`room-tab-btn ${tab === 'board' ? 'on' : ''}`} onClick={() => setWork('board')}>Whiteboard</button>
             <button type="button" role="tab" aria-selected={tab === 'code'} className={`room-tab-btn ${tab === 'code' ? 'on' : ''}`} onClick={() => setWork('code')}>Code editor</button>

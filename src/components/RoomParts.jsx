@@ -12,7 +12,7 @@ const QUALITY = [
 const NET_TEXT = { good: 'Good connection', ok: 'Okay connection', poor: 'Weak connection' }
 
 // Video or voice for the two people in the room. Nothing starts until someone presses join.
-export function CallPanel({ live, other, ended, calling = false, declined = false }) {
+export function CallPanel({ live, other, ended, calling = false, declined = false, onRingAgain }) {
   const otherInCall = Object.values(live.peers).some((p) => p.inCall)
   const { local, remote } = live
 
@@ -35,7 +35,7 @@ export function CallPanel({ live, other, ended, calling = false, declined = fals
   }
 
   const waiting = !otherInCall
-    ? declined ? `${first(other)} can't take the call right now` : calling ? `Ringing ${first(other)}…` : `Waiting for ${first(other)} to join`
+    ? declined ? `${first(other)} said not now. You're still in the call, waiting for them.` : calling ? `Ringing ${first(other)}…` : `Waiting for ${first(other)} to join`
     : remote.state === 'connected' ? null : remote.state === 'reconnecting' ? 'Reconnecting…' : 'Connecting…'
   const canShare = Boolean(navigator.mediaDevices?.getDisplayMedia)
   const net = live.net
@@ -80,6 +80,12 @@ export function CallPanel({ live, other, ended, calling = false, declined = fals
         </label>
         <button type="button" className="call-btn call-leave" onClick={live.leave}>Leave call</button>
       </div>
+      {declined && !otherInCall && onRingAgain && (
+        <p className="m-0 flex flex-wrap items-center gap-3 px-4 pb-3 text-[12px] dim">
+          {first(other)} declined this ring. Stay here and they can join any time, or
+          <button type="button" className="btn btn-line btn-sm" onClick={onRingAgain}>Ring again</button>
+        </p>
+      )}
       {notice && <p role="status" className="m-0 px-4 pb-3 text-[12px] dim">{notice}</p>}
       {live.error && <p role="alert" className="m-0 px-4 pb-3 text-[12px] text-amber">{live.error}</p>}
     </div>

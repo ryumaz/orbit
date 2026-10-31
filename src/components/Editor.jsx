@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { EditorView, basicSetup } from 'codemirror'
 import { javascript } from '@codemirror/lang-javascript'
-import { Annotation } from '@codemirror/state'
+import { python } from '@codemirror/lang-python'
+import { Annotation, Compartment, Prec } from '@codemirror/state'
+import { keymap } from '@codemirror/view'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
 
 const MONO = '"Martian Mono", ui-monospace, monospace'
 const remote = Annotation.define()
+const LANGS = { javascript: () => javascript({ jsx: true }), python: () => python() }
 
 const theme = EditorView.theme(
   {
@@ -36,14 +39,21 @@ const ink = HighlightStyle.define([
   { tag: [t.tagName, t.angleBracket], color: '#f1f0ec' },
 ])
 
-// Shared editor. Until the server exists, tabs in one browser share the
-// document through localStorage. The backend phase swaps this for Yjs.
-export default function Editor({ roomKey, initial, readOnly = false, label, sync }) {
+// Shared editor. Edits go to the other person over the room's channel and are kept
+// in localStorage, so a refresh doesn't lose them.
+// Optional: `lang` (javascript | python) for highlighting, `onText` hears every change
+// (yours and theirs), `onRun` is Ctrl/Cmd+Enter, `viewRef` receives the CodeMirror view.
+export default function Editor({ roomKey, initial, readOnly = false, label, sync, lang = 'javascript', onText, onRun, viewRef: outerView }) {
   const host = useRef(null)
   const viewRef = useRef(null)
   const lastAt = useRef(0) // time of the newest edit this editor has
   const syncRef = useRef(sync)
   syncRef.current = sync
+  const hooks = useRef({})
+  hooks.current = { onText, onRun }
+  const langConf = useRef(new Compartment())
+  const langRef = useRef(lang)
+  langRef.current = lang
 
   useEffect(() => {
     const key = `unstuck:doc:${roomKey}`
@@ -59,13 +69,15 @@ export default function Editor({ roomKey, initial, readOnly = false, label, sync
       parent: host.current,
       doc: saved ?? initial,
       extensions: [
+        Prec.highest(keymap.of([{ key: 'Mod-Enter', run: () => (hooks.current.onRun ? (hooks.current.onRun(), true) : false) }])),
         basicSetup,
-        javascript({ jsx: true }),
+        langConf.current.of((LANGS[langRef.current] ?? LANGS.javascript)()),
         theme,
         syntaxHighlighting(ink),
         EditorView.editable.of(!readOnly),
         EditorView.contentAttributes.of({ 'aria-label': label }),
         EditorView.updateListener.of((u) => {
+          if (u.docChanged) hooks.current.onText?.(u.state.doc.toString())
           if (!u.docChanged || u.transactions.some((tr) => tr.annotation(remote))) return
           const at = Date.now()
           lastAt.current = at
@@ -93,12 +105,19 @@ export default function Editor({ roomKey, initial, readOnly = false, label, sync
     }
     window.addEventListener('storage', onStorage)
     viewRef.current = view
+    if (outerView) outerView.current = view
+    hooks.current.onText?.(view.state.doc.toString())
     return () => {
       window.removeEventListener('storage', onStorage)
       viewRef.current = null
+      if (outerView) outerView.current = null
       view.destroy()
     }
-  }, [roomKey, initial, readOnly, label])
+  }, [roomKey, initial, readOnly, label]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: langConf.current.reconfigure((LANGS[lang] ?? LANGS.javascript)()) })
+  }, [lang])
 
   // the other person's newer edits replace ours
   const incoming = sync?.incoming

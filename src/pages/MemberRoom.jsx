@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import Editor from '../components/Editor'
+import CodeSpace, { startsInPython } from '../components/CodeSpace'
 import { Brand, Tracker } from '../components/Shell'
 import { Spark } from '../components/Spark'
 import { MemberAvatar } from '../components/ProfileCard'
@@ -221,12 +221,17 @@ export default function MemberRoom() {
             <Whiteboard roomKey={`m${s.id}`} live={live} me={uid} readOnly={ended} onConfirm={confirm} />
           </div>
           <div className={`flex-auto ${tab === 'code' ? '' : 'hidden'}`}>
-            <Editor
+            <CodeSpace
               roomKey={`m${s.id}`}
-              initial={`// ${s.skill} with ${first(other)}\n// both of you can type here: code, notes, links, steps.\n\n`}
+              initial={startsInPython(s.skill)
+                ? `# ${s.skill} with ${first(other)}\n# both of you can type here. Press Run (or Ctrl+Enter) to try it.\n\nprint("hello from orbit")\n`
+                : `// ${s.skill} with ${first(other)}\n// both of you can type here. Press Run (or Ctrl+Enter) to try JavaScript or Python.\n\nconsole.log('hello from orbit')\n`}
               readOnly={ended}
               label={`Shared editor with ${other.name}`}
               sync={{ send: live.sendDoc, incoming: live.remoteDoc, peerHere: here }}
+              live={live}
+              skill={s.skill}
+              active={tab === 'code'}
             />
           </div>
         </main>

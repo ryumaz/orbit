@@ -70,6 +70,7 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
   const [remote, setRemote] = useState({ stream: null, mic: true, cam: true, screen: false, speaking: false, state: 'idle' })
   const [error, setError] = useState('')
   const [remoteDoc, setRemoteDoc] = useState(null) // { text, at } from the other person
+  const [remoteRun, setRemoteRun] = useState(null) // the other person's language pick or run output
   const docTimer = useRef(null)
   const docPending = useRef(null)
 
@@ -242,6 +243,7 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
       .on('broadcast', { event: 'signal' }, ({ payload }) => onSignal(payload))
       .on('broadcast', { event: 'media' }, ({ payload }) => payload.from !== selfId && setRemote((r) => ({ ...r, ...payload.state })))
       .on('broadcast', { event: 'doc' }, ({ payload }) => payload.from !== selfId && setRemoteDoc({ text: payload.text, at: payload.at }))
+      .on('broadcast', { event: 'run' }, ({ payload }) => payload.from !== selfId && setRemoteRun(payload))
       .on('broadcast', { event: 'board' }, ({ payload }) => payload.from !== selfId && boardListeners.current.forEach((l) => l(payload)))
       .on('broadcast', { event: 'quality' }, ({ payload }) => {
         if (payload.from === selfId) return
@@ -438,6 +440,9 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     }
   }
 
+  // code runner: language changes and run results, so both see the same output
+  const sendRun = (msg) => send('run', { from: selfId, name: selfName, at: Date.now(), ...msg })
+
   // send the shared document, at most every 120 ms while typing
   const sendDoc = (text, at) => {
     docPending.current = { text, at }
@@ -471,6 +476,8 @@ export function useLiveRoom({ roomId, selfId, selfName }) {
     say,
     remoteDoc,
     sendDoc,
+    remoteRun,
+    sendRun,
     peerHere: Object.keys(peers).length > 0,
     peers,
     inCall,

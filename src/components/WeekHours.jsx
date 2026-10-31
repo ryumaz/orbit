@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { DAYS, WEEK, clockText, openDays, slotText } from '../lib/timetable'
+import { DAYS, WEEK, openDays, rangeText, slotText } from '../lib/timetable'
 
 // A member's working hours on their public page: one row per day with the hours marked
 // on a 24-hour track, and the next time you could book them.
@@ -34,7 +34,7 @@ export default function WeekHours({ handle, first }) {
               <span className="week-track" aria-hidden="true">
                 {rows.map((r) => <i key={r.from} style={{ left: `${(r.from / 1440) * 100}%`, width: `${((r.to - r.from) / 1440) * 100}%` }} />)}
               </span>
-              <span className="week-text">{rows.length ? rows.map((r) => `${clockText(r.from)} – ${r.to === 1440 ? 'midnight' : clockText(r.to)}`).join(', ') : 'off'}</span>
+              <span className="week-text">{rows.length ? rows.map((r) => rangeText(r.from, r.to)).join(', ') : 'off'}</span>
             </li>
           )
         })}

@@ -12,6 +12,13 @@ export function clockText(m) {
   return `${h % 12 || 12}:${String(m % 60).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
 }
 
+// 870, 990 -> "2:30–4:30 pm"; 600, 1320 -> "10:00 am–10:00 pm"; 1440 -> "midnight"
+export function rangeText(from, to) {
+  const end = to === 1440 ? 'midnight' : clockText(to)
+  const start = clockText(from)
+  return to !== 1440 && start.slice(-2) === end.slice(-2) ? `${start.slice(0, -3)}–${end}` : `${start}–${end}`
+}
+
 // a moment as India-time text: "Sat 2 Nov", "6:30 pm"
 export const dayText = (t) => new Date(t).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })
 export const timeText = (t) => new Date(t).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }).toLowerCase()

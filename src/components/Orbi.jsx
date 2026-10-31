@@ -6,11 +6,6 @@ import { answer, STARTERS } from '../lib/orbiBrain'
 
 // Orbi: orbit's helper, bottom right on every page except the rooms.
 // "Ask Orbi" answers from lib/orbiBrain.js; "Talk to the team" files a support request.
-// The 3D robot is "Cute Robot" by RiotingSpectre on Sketchfab, shown through
-// Sketchfab's own embed (the model can't be downloaded), and only once the panel opens.
-const MODEL = '7db51dce07a84b6697229ee977bf196d'
-const EMBED = `https://sketchfab.com/models/${MODEL}/embed?autostart=1&transparent=1&preload=1&camera=0&dnt=1&scrollwheel=0&ui_theme=dark&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0&ui_hint=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=0&ui_loading=0`
-const CREDIT = `https://sketchfab.com/3d-models/cute-robot-${MODEL}`
 const SEEN = 'orbit:orbi-seen'
 const TOPICS = [
   ['account', 'Account or login'],
@@ -52,7 +47,6 @@ export default function Orbi() {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState('ai')
   const [hint, setHint] = useState(false)
-  const [stage, setStage] = useState(false) // the 3D robot loads on first open
   const [log, setLog] = useState([])
   const [chips, setChips] = useState(STARTERS)
   const [text, setText] = useState('')
@@ -106,7 +100,6 @@ export default function Orbi() {
 
   useEffect(() => {
     if (!open) return
-    setStage(true)
     dismissHint()
     if (!log.length) setLog([{ from: 'orbi', text: `Hi${first ? ` ${first}` : ''}! I'm Orbi, orbit's helper. What can I help with?` }])
     const onKey = (e) => e.key === 'Escape' && setOpen(false)
@@ -156,8 +149,8 @@ export default function Orbi() {
         <section className="orbi-panel" role="dialog" aria-label="Orbi, orbit's helper">
           <header className="orbi-head">
             <div className="orbi-stage" aria-hidden="true">
-              <span className="orbi-stage-fallback"><RobotFace size={64} /></span>
-              {stage && <iframe title="Orbi, a 3D robot" src={EMBED} allow="autoplay; xr-spatial-tracking" loading="lazy" tabIndex={-1} />}
+              <RobotFace size={92} />
+              <span className="orbi-shadow" />
             </div>
             <div className="orbi-title">
               <b>Orbi</b>
@@ -204,9 +197,6 @@ export default function Orbi() {
           ) : (
             <TeamForm account={account} />
           )}
-          <p className="orbi-credit">
-            Robot: <a href={CREDIT} target="_blank" rel="noreferrer">Cute Robot by RiotingSpectre</a> on Sketchfab
-          </p>
         </section>
       )}
 

@@ -25,7 +25,7 @@ export function AccountProvider({ children }) {
   const load = useCallback(async () => {
     if (!uid) return setData({ uid, loading: false })
     const [p, l, s, rv] = await Promise.all([
-      supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, created_at, onboarded').eq('id', uid).single(),
+      supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, skill_rates, created_at, onboarded').eq('id', uid).single(),
       supabase.from('ledger').select('id, amount, type, note, session_id, created_at').order('created_at'),
       supabase.from('sessions').select(SESSION_FIELDS).order('created_at', { ascending: false }).limit(100),
       supabase.from('reviews').select('session_id, stars').eq('reviewer_id', uid),

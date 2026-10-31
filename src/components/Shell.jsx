@@ -21,7 +21,7 @@ const LIVE_NAV = [
   ['/find', 'find', 'Learn something'],
   ['/sessions', 'sessions', 'Sessions'],
   ['/credits', 'credits', 'Credits'],
-  ['/activity', 'activity', 'Activity'],
+  ['/activity', 'activity', 'Audit log'],
   ['/me', 'me', 'Settings'],
 ]
 const GUEST_NAV = [['/find', 'find', 'Learn something']]
@@ -224,7 +224,7 @@ export function Footer({ full = false }) {
                 ['Dashboard', <Link to="/home">Dashboard</Link>],
                 ['Profile', <Link to="/me">Your profile</Link>],
                 ['Sessions', <Link to="/sessions">Sessions</Link>],
-                ['Activity', <Link to="/activity">Activity</Link>],
+                ['Audit log', <Link to="/activity">Audit log</Link>],
               ]
             : [
                 ['Join', <Link to="/join">Join, get 30 credits</Link>],
@@ -232,7 +232,7 @@ export function Footer({ full = false }) {
               ])}
           {col('Help', [
             ['Ask Vortex', <button type="button" onClick={() => openHelp()}>Ask Vortex</button>],
-            ['Contact', <button type="button" onClick={() => openHelp('human')}>Talk to the team</button>],
+            ['Contact', <button type="button" onClick={() => openHelp('human')}>Contact support</button>],
           ])}
         </nav>
       </div>

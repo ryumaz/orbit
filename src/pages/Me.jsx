@@ -49,9 +49,17 @@ const SKILLS = [
   'Painting', 'Photography', 'Video editing', 'Animation', 'Calligraphy',
   'Budgeting', 'Investing basics', 'CV writing', 'Interview prep', 'Knitting',
 ]
-const FIELDS = ['name', 'handle', 'bio', 'city', 'langs', 'teaches', 'learns', 'card_color', 'rate']
-const pick = (p) => Object.fromEntries(FIELDS.map((k) => [k, p[k]]))
-const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: f.bio.trim(), city: f.city.trim() })
+const FIELDS = ['name', 'handle', 'bio', 'city', 'langs', 'teaches', 'learns', 'card_color', 'rate', 'skill_rates']
+// Only prices that differ from the default, only for skills still taught, in a fixed
+// order (so "unsaved changes" isn't fooled by key order).
+const cleanRates = (rates, teaches, rate) =>
+  Object.fromEntries(
+    Object.entries(rates ?? {})
+      .filter(([k, v]) => v !== rate && teaches.some((t) => t.toLowerCase() === k.toLowerCase()))
+      .sort(([a], [b]) => a.localeCompare(b)),
+  )
+const pick = (p) => ({ ...Object.fromEntries(FIELDS.map((k) => [k, p[k]])), skill_rates: cleanRates(p.skill_rates, p.teaches, p.rate) })
+const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: f.bio.trim(), city: f.city.trim(), skill_rates: cleanRates(f.skill_rates, f.teaches, f.rate) })
 
 const SECTIONS = [
   ['profile', 'Profile', 'Photo, name, username and your card'],
@@ -185,11 +193,12 @@ export default function Me() {
                 <TagField id="me-teach" value={form.teaches} onChange={set('teaches')} placeholder="guitar chords, calculus, sourdough…" />
               </section>
               <section className="block grid gap-3" aria-labelledby="h-rate">
-                <div className="block-head"><h3 id="h-rate">Your price</h3><span className="flex items-center gap-1 text-[22px]"><span className="dot-num spark-text">{form.rate}</span></span></div>
-                <label htmlFor="me-rate" className="label">Credits for 30 minutes of your time <span className="dim">· 15 min costs {Math.ceil(form.rate / 2)}, 60 min costs {form.rate * 2}</span></label>
+                <div className="block-head"><h3 id="h-rate">Default price</h3><span className="flex items-center gap-1 text-[22px]"><span className="dot-num spark-text">{form.rate}</span></span></div>
+                <label htmlFor="me-rate" className="label">Credits for 30 minutes, for any skill without its own price <span className="dim">· 15 min costs {Math.ceil(form.rate / 2)}, 60 min costs {form.rate * 2}</span></label>
                 <input id="me-rate" type="range" min="2" max="40" step="1" value={form.rate} onChange={(e) => set('rate')(Number(e.target.value))} className="rate-range" />
-                <p className="m-0 text-[11.5px] dim">New here? Around 8 to 12 is typical. You can change it any time; booked sessions keep their price.</p>
+                <p className="m-0 text-[11.5px] dim">New here? Around 8 to 12 is typical. Booked sessions keep the price they were booked at.</p>
               </section>
+              <SkillPrices teaches={form.teaches} rate={form.rate} rates={form.skill_rates ?? {}} onChange={set('skill_rates')} />
               <section className="block" aria-labelledby="h-learn">
                 <div className="block-head"><h3 id="h-learn">I want to learn</h3><span className="dim text-[11px]">{form.learns.length}/12</span></div>
                 <TagField id="me-learn" value={form.learns} onChange={set('learns')} placeholder="what you're stuck on or curious about" />
@@ -214,7 +223,7 @@ export default function Me() {
             <div className="stack">
               <AccountSecurity user={user} />
               <section className="block grid gap-3 text-[12.5px]" aria-label="More">
-                <Link to="/activity" className="link self-start text-[12px]">See your activity log</Link>
+                <Link to="/activity" className="link self-start text-[12px]">See your audit log</Link>
                 <div><LogOut className="btn btn-line btn-sm" confirmClass="btn btn-light btn-sm" /></div>
               </section>
             </div>
@@ -288,6 +297,46 @@ function TagField({ id, value, onChange, placeholder, suggestions = SKILLS, max 
         )}
       </div>
     </div>
+  )
+}
+
+// Each skill can cost more or less than the default: exam prep is not Free Fire tips.
+function SkillPrices({ teaches, rate, rates, onChange }) {
+  if (!teaches.length) return null
+  const priceOf = (t) => {
+    const key = Object.keys(rates).find((k) => k.toLowerCase() === t.toLowerCase())
+    return key ? rates[key] : rate
+  }
+  const put = (t, v) => {
+    const next = Object.fromEntries(Object.entries(rates).filter(([k]) => k.toLowerCase() !== t.toLowerCase()))
+    if (v !== rate) next[t] = Math.min(80, Math.max(2, v))
+    onChange(next)
+  }
+  return (
+    <section className="block grid gap-3" aria-labelledby="h-skill-prices">
+      <div className="block-head"><h3 id="h-skill-prices">Price per skill</h3></div>
+      <p className="m-0 text-[12px] dim">Some skills take more prep or are worth more. Set their own price for 30 minutes; the rest use your default.</p>
+      <ul className="skill-prices">
+        {teaches.map((t) => {
+          const v = priceOf(t)
+          const custom = v !== rate
+          return (
+            <li key={t}>
+              <span className="grid min-w-0">
+                <b translate="no">{t}</b>
+                <small className="dim">{custom ? `own price · 60 min costs ${v * 2}` : 'uses your default'}</small>
+              </span>
+              <div className="stepper" role="group" aria-label={`Price for ${t}`}>
+                <button type="button" aria-label={`Lower the price of ${t}`} disabled={v <= 2} onClick={() => put(t, v - 1)}>−</button>
+                <output aria-live="polite" className={custom ? 'spark-text' : ''}>{v}</output>
+                <button type="button" aria-label={`Raise the price of ${t}`} disabled={v >= 80} onClick={() => put(t, v + 1)}>+</button>
+              </div>
+              {custom ? <button type="button" className="link text-[11px]" onClick={() => put(t, rate)}>Use default</button> : <span />}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
 

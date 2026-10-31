@@ -7,7 +7,7 @@ import { Brand, Footer } from '../components/Shell'
 import { Spark } from '../components/Spark'
 import { MemberAvatar } from '../components/ProfileCard'
 import { SparkRating } from '../components/SparkStars'
-import { priceFor } from '../components/BookForm'
+import { priceFor, rateFor } from '../components/BookForm'
 import { useAccount } from '../lib/account'
 import { useMembers } from '../lib/members'
 import { useRecent, useStats } from '../lib/pulse'
@@ -167,7 +167,7 @@ function Ticker({ members }) {
   const recent = useRecent()
   const items = useMemo(() => {
     const done = recent.map((r, i) => ({ key: `s${i}`, who: firstName(r.name), what: `taught ${r.skill}`, tail: `+${r.cost}` }))
-    const offers = members.flatMap((m) => m.teaches.slice(0, 2).map((k) => ({ key: `${m.handle}-${k}`, who: firstName(m.name), what: `teaches ${k}`, tail: `${m.rate}/30 min` })))
+    const offers = members.flatMap((m) => m.teaches.slice(0, 2).map((k) => ({ key: `${m.handle}-${k}`, who: firstName(m.name), what: `teaches ${k}`, tail: `${rateFor(m, k)}/30 min` })))
     const list = [...done, ...offers].slice(0, 14)
     return list.length >= 6 ? list : [...list, ...EXAMPLES.map((k) => ({ key: k, who: 'Learn', what: k.toLowerCase(), tail: '' }))].slice(0, 14)
   }, [recent, members])
@@ -223,7 +223,7 @@ function Topics({ members }) {
       }
     }
     return [...map.values()]
-      .map((t) => ({ ...t, cost: Math.min(...t.list.map((m) => priceFor(m.rate, 30))), rated: t.list.filter((m) => m.reviews > 0).length }))
+      .map((t) => ({ ...t, cost: Math.min(...t.list.map((m) => priceFor(rateFor(m, t.skill), 30))), rated: t.list.filter((m) => m.reviews > 0).length }))
       .sort((a, b) => b.list.length - a.list.length || b.rated - a.rated)
       .slice(0, 12)
   }, [members])
@@ -279,7 +279,7 @@ function Topics({ members }) {
           </aside>
         </div>
       )}
-      <p className="legend"><Spark /> = 1 credit. Sessions run 15 to 60 minutes; each teacher sets their own price.</p>
+      <p className="legend"><Spark /> = 1 credit. Sessions run 15 to 60 minutes; each teacher sets their own price, and can price each skill differently.</p>
     </section>
   )
 }

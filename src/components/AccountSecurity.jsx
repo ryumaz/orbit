@@ -124,7 +124,7 @@ function Connected({ identities, enabled, onChange, reauth }) {
     const { error } = await supabase.auth.linkIdentity({ provider, options: { redirectTo: `${location.origin}/?next=/me` } })
     if (error) {
       setBusy('')
-      setNote({ ok: false, text: /manual linking/i.test(error.message) ? "Connecting accounts isn't switched on yet. Ask the team through Vortex." : friendly(error) })
+      setNote({ ok: false, text: /manual linking/i.test(error.message) ? "Connecting accounts isn't switched on yet. Ask support through Vortex." : friendly(error) })
     }
   }
   const disconnect = async (identity) => {

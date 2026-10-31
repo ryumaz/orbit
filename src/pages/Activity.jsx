@@ -75,7 +75,7 @@ export default function Activity() {
   return (
     <>
       <div className="view-head">
-        <h1 className="page-title">Activity</h1>
+        <h1 className="page-title">Audit log</h1>
         <p>Everything that happened on your sessions and profile. orbit's database writes this log itself; nobody can edit it.</p>
       </div>
 

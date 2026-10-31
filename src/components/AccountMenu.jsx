@@ -41,7 +41,7 @@ export default function AccountMenu() {
           <Link role="menuitem" to="/home" onClick={close}><LineIcon name="home" size={16} /> Dashboard</Link>
           <Link role="menuitem" to={`/u/${profile.handle}`} onClick={close}><LineIcon name="user" size={16} /> My public page</Link>
           <Link role="menuitem" to="/me" onClick={close}><LineIcon name="cog" size={16} /> Settings</Link>
-          <Link role="menuitem" to="/activity" onClick={close}><LineIcon name="list" size={16} /> Activity</Link>
+          <Link role="menuitem" to="/activity" onClick={close}><LineIcon name="list" size={16} /> Audit log</Link>
           <div className="acct-out"><LogOut className="acct-logout" confirmClass="btn btn-light btn-sm" /></div>
         </div>
       )}

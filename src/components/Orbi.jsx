@@ -9,7 +9,7 @@ import { mountRobot } from '../lib/robot3d'
 // Vortex: orbit's helper, the same little 3D robot as on voids.wtf, on every page
 // except the rooms. It floats, watches your cursor, and thinks out loud now and then
 // (lib/orbiMind.js). Click it to chat: "Ask Vortex" answers from lib/orbiBrain.js,
-// "Talk to the team" files a support request.
+// "Talk to support" files a support request.
 const TOPICS = [
   ['account', 'Account or login'],
   ['credits', 'Credits'],
@@ -265,7 +265,7 @@ export default function Orbi() {
 
           <div className="orbi-modes" role="tablist" aria-label="Who to ask">
             <button type="button" role="tab" aria-selected={mode === 'ai'} onClick={() => setMode('ai')}>Ask Vortex</button>
-            <button type="button" role="tab" aria-selected={mode === 'human'} onClick={() => setMode('human')}>Talk to the team</button>
+            <button type="button" role="tab" aria-selected={mode === 'human'} onClick={() => setMode('human')}>Talk to support</button>
           </div>
 
           {mode === 'ai' ? (
@@ -364,13 +364,13 @@ function TeamForm({ account }) {
     <div className="orbi-team">
       {sent ? (
         <div className="orbi-sent" role="status">
-          <b>Sent to the team.</b>
+          <b>Sent to support.</b>
           <p className="m-0 dim">{account.live ? 'The reply shows up right here.' : `We'll reply to ${email}.`}</p>
           <button type="button" className="link" onClick={() => setSent(false)}>Send another</button>
         </div>
       ) : (
         <form className="grid gap-3" onSubmit={submit}>
-          <p className="m-0 text-[12.5px] dim">A real person on the Void Century team reads every message.</p>
+          <p className="m-0 text-[12.5px] dim">A real person on orbit's support team reads every message.</p>
           {!account.live && (
             <div className="grid gap-1.5">
               <label htmlFor="orbi-email" className="label">Your email</label>
@@ -388,7 +388,7 @@ function TeamForm({ account }) {
             <textarea id="orbi-msg" className="input" rows={4} maxLength={2000} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="what happened, and who (their @handle) if it's about someone" />
           </div>
           {error && <p role="alert" className="m-0 text-[12px] text-amber">{error}</p>}
-          <button type="submit" className="btn btn-light btn-sm justify-self-start" disabled={busy}>{busy ? 'Sending…' : 'Send to the team'}</button>
+          <button type="submit" className="btn btn-light btn-sm justify-self-start" disabled={busy}>{busy ? 'Sending…' : 'Send to support'}</button>
         </form>
       )}
       {mine?.length > 0 && (

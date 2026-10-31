@@ -6,7 +6,7 @@ import { SparkRating } from '../components/SparkStars'
 import { useAccount } from '../lib/account'
 import { useMembers, memberHit } from '../lib/members'
 import { joinAnd } from '../lib/time'
-import { priceFor } from '../components/BookForm'
+import { lowestRate, priceFor, rateFor } from '../components/BookForm'
 
 const SHOWN_LANGS = 6
 const SORTS = [
@@ -38,7 +38,7 @@ export default function Find() {
   const real = useMemo(() => {
     const order = {
       best: (a, b) => Number(b.m.rating ?? 0) - Number(a.m.rating ?? 0) || b.m.reviews - a.m.reviews,
-      cheap: (a, b) => a.m.rate - b.m.rate,
+      cheap: (a, b) => (a.hit ? rateFor(a.m, a.hit) : lowestRate(a.m)) - (b.hit ? rateFor(b.m, b.hit) : lowestRate(b.m)),
       new: (a, b) => new Date(b.m.created_at) - new Date(a.m.created_at),
     }[sort]
     return members
@@ -126,8 +126,8 @@ function MemberCard({ m, hit, you }) {
           <span className="pill pill-quiet">You</span>
         ) : (
           <div className="mentor-price">
-            <b className="spark-text">{priceFor(m.rate, 30)}</b>
-            <span>per 30 min</span>
+            <b className="spark-text">{hit ? priceFor(rateFor(m, hit), 30) : lowestRate(m)}</b>
+            <span>{hit ? `per 30 min of ${hit}` : m.teaches.some((t) => rateFor(m, t) !== lowestRate(m)) ? 'from, per 30 min' : 'per 30 min'}</span>
           </div>
         )}
       </div>

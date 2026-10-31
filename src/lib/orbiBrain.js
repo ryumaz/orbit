@@ -9,9 +9,9 @@ const T = (id, keys, reply, actions = []) => ({ id, keys, reply, actions })
 
 const TOPICS = [
   T('greet', [/\b(hi|hii+|hello|hey|yo|namaste|hola|sup|good (morning|evening|afternoon))\b/],
-    (c) => `Hi${c.first ? ` ${c.first}` : ''}! I'm Vortex. Ask me anything about orbit: credits, booking, calls, your profile. If I don't know, I'll pass you to the team.`),
+    (c) => `Hi${c.first ? ` ${c.first}` : ''}! I'm Vortex. Ask me anything about orbit: credits, booking, calls, your profile. If I don't know, I'll pass you to support.`),
   T('who', [/who are you|your name|are you (a |an )?(bot|ai|robot|human|real)/, /\bvortex\b/],
-    () => "I'm Vortex, orbit's helper. I answer the common questions from what I know about orbit. For anything personal or tricky, press \"Talk to the team\" and a real person reads it."),
+    () => "I'm Vortex, orbit's helper. I answer the common questions from what I know about orbit. For anything personal or tricky, press \"Talk to support\" and a real person reads it."),
   T('what', [/what is (this|orbit|it)|how (does|do) (it|orbit|this|the site) work|explain|about orbit|what can i do/, /\bhow it works\b/],
     () => 'orbit is a skill swap. You teach what you know (guitar, coding, cooking, a game, a language) and earn credits. You spend credits learning from other members. Sessions are 15 to 60 minutes by video, voice or in person, and credits only move when the learner says it helped.',
     [['See how it works', '/#how'], ['Find someone to learn from', '/find']]),
@@ -30,7 +30,7 @@ const TOPICS = [
     () => 'To learn: go to Learn something, search a skill, open someone\'s page, pick a length and send a request. Nothing is charged until they accept; then the credits wait on hold until you say it helped.',
     [['Learn something', '/find']]),
   T('price', [/price|cost|how much|\brate\b|charge|expensive|cheap|per (hour|minute)/],
-    () => 'Each teacher sets a price per 30 minutes. A 15-minute session costs half that, an hour costs double (rounded up). You can see the exact total before you send a request.',
+    () => 'Each teacher sets a price per 30 minutes, and can give each skill its own price (exam prep might cost more than game tips). A 15-minute session costs half, an hour costs double (rounded up). You see the exact total before you send a request.',
     [['Set my price', '/me/skills']]),
   T('hold', [/\bhold|held|escrow|refund|get (it|them|my credits) back|didn'?t help|not helpful|scam|cheat/],
     () => 'When a teacher accepts, your credits go on hold: they leave your wallet but don\'t reach the teacher yet. They\'re sent only when you press "It worked". If you both agree to stop early, you split them the way you agreed and the rest comes back to you.',
@@ -69,14 +69,14 @@ const TOPICS = [
     () => 'Add the languages you speak on your profile. In Learn something you can filter teachers by the language they speak.',
     [['Edit my languages', '/me/skills'], ['Learn something', '/find']]),
   T('activity', [/activity|history|audit|receipt|ledger|what happened/],
-    () => 'The Activity page lists everything that happened on your sessions and profile, written by the database itself. Credits has every single credit movement.',
-    [['Open Activity', '/activity']]),
+    () => 'The audit log lists everything that happened on your sessions and profile, written by the database itself. Credits has every single credit movement.',
+    [['Open the audit log', '/activity']]),
   T('report', [/report|abuse|harass|unsafe|\bblock\b|rude|spam|fake/],
-    () => 'Sorry that happened. Please tell the team: press below, say who it was (their @handle) and what happened. A person reads every report.',
-    [['Report to the team', 'human']]),
+    () => 'Sorry that happened. Please tell support: press below, say who it was (their @handle) and what happened. A person reads every report.',
+    [['Report to support', 'human']]),
   T('delete', [/delete|remove (my )?account|close (my )?account|privacy|my data/],
     () => 'The team can delete your account and data. Send a request below from the email on your account.',
-    [['Ask the team', 'human']]),
+    [['Ask support', 'human']]),
   T('thanks', [/\b(thanks|thank you|thx|ty|tysm|great|nice|cool|awesome|perfect)\b/],
     () => 'Anytime! Ask me whenever you need a hand.'),
 ]
@@ -96,8 +96,8 @@ export function answer(text, ctx) {
   }
   if (!best) {
     return {
-      text: "I'm not sure about that one yet. Try one of these, or send it to the team and a person will reply.",
-      actions: [['Talk to the team', 'human']],
+      text: "I'm not sure about that one yet. Try one of these, or send it to support and a person will reply.",
+      actions: [['Talk to support', 'human']],
       chips: STARTERS,
     }
   }

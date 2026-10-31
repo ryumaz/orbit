@@ -46,7 +46,7 @@ const GROUPS = [
     sub: 'Never miss a booking, and never get stuck.',
     items: [
       ['bell', 'Booking notifications', 'A card and a chime when someone books you, accepts or pays, even from another tab.', '/me/notifications'],
-      ['robot', 'Vortex, your helper', 'Ask the little robot in the corner anything about orbit, or pass a message to the team.', 'help'],
+      ['robot', 'Vortex, your helper', 'Ask the little robot in the corner anything about orbit, or pass a message to support.', 'help'],
       ['key', 'Sign in your way', 'Email and password, or GitHub and Discord in one click. Ready in under a minute.', '/join'],
     ],
   },
@@ -128,7 +128,7 @@ const QUESTIONS = [
   ['What is orbit?', 'A place to swap skills. You teach what you know (a game, an instrument, a subject, a recipe) and earn credits, then spend those credits learning from someone else. Sessions run 15 to 60 minutes by video, voice or in person.'],
   ['Does it cost money?', 'No. orbit runs on credits, never money. Everyone starts with 30 credits, and you earn more by teaching.'],
   ['What can I learn or teach?', 'Anything someone else wants to know: study subjects, coding, gaming, music, cooking, languages, fitness, art. If you can explain it in half an hour, it belongs here.'],
-  ['What if the lesson didn\'t help?', 'Then don\'t press "It worked". Your credits stay on hold, and you can agree an early end and a fair split with the teacher. If something went wrong, tell the team through Vortex.'],
+  ['What if the lesson didn\'t help?', 'Then don\'t press "It worked". Your credits stay on hold, and you can agree an early end and a fair split with the teacher. If something went wrong, tell support through Vortex.'],
   ['Do I need to install anything?', 'No. Everything runs in your browser on a phone or a computer. Allow the microphone (and camera if you want video) when the browser asks.'],
   ['Can we meet in person?', 'Yes. Add your country to your profile and agree on a place in chat. Credits work exactly the same way.'],
   ['Who can see my details?', 'Only your public profile: name, handle, photo, bio, skills and reviews. Your email is never shown, and calls go straight between the two browsers and aren\'t recorded.'],
@@ -175,7 +175,7 @@ export function Community() {
         <div className="grid gap-2">
           <p className="label m-0">community</p>
           <h2>Make orbit work for you.</h2>
-          <p className="m-0 dim">Get help on Discord, share what you learned, or report a problem straight to the team.</p>
+          <p className="m-0 dim">Get help on Discord, share what you learned, or report a problem straight to support.</p>
         </div>
         <div className="community-actions">
           <a href={SOCIAL.discord} target="_blank" rel="noreferrer" className="btn btn-light community-discord">

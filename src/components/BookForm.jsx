@@ -5,6 +5,13 @@ import { useAccount } from '../lib/account'
 
 export const LENGTHS = [15, 30, 45, 60]
 export const priceFor = (rate, minutes) => Math.ceil((rate * minutes) / 30)
+// a member's price for 30 minutes of one skill: its own price if set, else their default
+export const rateFor = (p, skill) => {
+  const key = Object.keys(p.skill_rates ?? {}).find((k) => k.toLowerCase() === String(skill ?? '').toLowerCase())
+  return key ? p.skill_rates[key] : p.rate
+}
+// the cheapest of their skills, for "from …" labels
+export const lowestRate = (p) => Math.min(...(p.teaches.length ? p.teaches.map((t) => rateFor(p, t)) : [p.rate]))
 
 // Book a member: pick a skill and a length, say what you need. Nothing is charged
 // until they accept; then the credits are held until you say it worked.
@@ -16,7 +23,8 @@ export default function BookForm({ p, initialSkill }) {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
-  const cost = priceFor(p.rate, minutes)
+  const rate = rateFor(p, skill)
+  const cost = priceFor(rate, minutes)
   const short = balance < cost
   const open = sessions.find((s) => s.mentor?.handle === p.handle && ['requested', 'accepted', 'live'].includes(s.status))
 
@@ -64,17 +72,19 @@ export default function BookForm({ p, initialSkill }) {
         <span className="label">What</span>
         <div role="group" aria-label="Skill" className="flex flex-wrap gap-2">
           {p.teaches.map((t) => (
-            <button key={t} type="button" className="chip" aria-pressed={skill === t} onClick={() => setSkill(t)}>{t}</button>
+            <button key={t} type="button" className="chip" aria-pressed={skill === t} onClick={() => setSkill(t)}>
+              <span translate="no">{t}</span> <span className="chip-price">{rateFor(p, t)}</span>
+            </button>
           ))}
         </div>
       </div>
 
       <div className="grid gap-2">
-        <span className="label">How long <span className="dim">· {p.rate} credits per 30 min</span></span>
+        <span className="label">How long <span className="dim">· {rate} credits per 30 min of {skill}</span></span>
         <div role="group" aria-label="Length" className="flex flex-wrap gap-2">
           {LENGTHS.map((m) => (
             <button key={m} type="button" className="chip" aria-pressed={minutes === m} onClick={() => setMinutes(m)}>
-              {m} min · {priceFor(p.rate, m)}
+              {m} min · {priceFor(rate, m)}
             </button>
           ))}
         </div>

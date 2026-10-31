@@ -27,7 +27,7 @@ export const LANGS = [
 export const flagUrl = (flag) => `https://flagcdn.com/${flag}.svg`
 
 const KEY = 'orbit:lang'
-const cacheKey = (code) => `orbit:i18n:${code}`
+const cacheKey = (code) => `orbit:i18n2:${code}` // bump with the server's VERSION
 
 export function getLang() {
   try {

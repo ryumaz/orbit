@@ -1,16 +1,54 @@
 // POST /api/translate { lang, texts: [...] } → { translations: { [english]: translated } }
-// Uses the m2m100 translation model on Cloudflare Workers AI. Every phrase is cached
-// at the edge for 30 days, so each one is translated once per language, not per visit.
+// Translates orbit's interface on Cloudflare Workers AI. A multilingual model (Gemma 3)
+// gets whole batches with context about the site, so short labels keep their meaning;
+// the m2m100 translation model is the fallback. Every phrase is cached at the edge for
+// 30 days, so each one is translated once per language, not per visit.
 //
 // Needs a Workers AI binding named AI on the Pages project (Settings → Bindings).
 // Without it this answers 404 and orbit stays in English.
-const MODEL = '@cf/meta/m2m100-1.2b'
-const LANGS = new Set(['hi', 'es', 'pt', 'fr', 'de', 'tr', 'ru', 'id', 'it', 'pl', 'vi', 'ja', 'ko', 'zh', 'bn', 'ta'])
+const LLM = '@cf/google/gemma-3-12b-it'
+const MT = '@cf/meta/m2m100-1.2b'
+const VERSION = 'v2' // bump to retranslate everything
+const NAMES = {
+  hi: 'Hindi', es: 'Spanish (Spain)', pt: 'Brazilian Portuguese', fr: 'French', de: 'German', tr: 'Turkish', ru: 'Russian',
+  id: 'Indonesian', it: 'Italian', pl: 'Polish', vi: 'Vietnamese', ja: 'Japanese', ko: 'Korean', zh: 'Simplified Chinese', bn: 'Bengali', ta: 'Tamil',
+}
 const ALLOWED = [/^https:\/\/orbit\.voids\.wtf$/, /^https:\/\/([a-z0-9-]+\.)?orbit-34w\.pages\.dev$/, /^http:\/\/localhost:\d+$/]
 
 async function hash(text) {
   const d = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text))
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+const system = (lang) => `You translate the user interface of "orbit", a website where people teach each other skills (games, music, cooking, school subjects, languages) and pay with credits instead of money. A "session" is a lesson between a learner and a teacher; credits are "held" until the learner says it helped.
+Translate every English string in the JSON array into ${NAMES[lang]}. Rules:
+- Keep the meaning exactly; these are buttons, labels, headings and short help texts. Use a friendly, plain tone and the informal "you" where the language has one.
+- Keep these as they are: orbit, Vortex, Void Century, Discord, GitHub, Google, anything starting with @, web addresses, numbers, emoji and symbols like ✦ → ↗ ·.
+- Keep leading and trailing punctuation and the same capitalisation style.
+- Answer with ONLY a JSON array of strings, the same length and order as the input. No notes.`
+
+async function llmBatch(env, lang, texts) {
+  const r = await env.AI.run(LLM, {
+    messages: [
+      { role: 'system', content: system(lang) },
+      { role: 'user', content: JSON.stringify(texts) },
+    ],
+    max_tokens: 4096,
+    temperature: 0.2,
+  })
+  const raw = typeof r?.response === 'string' ? r.response : JSON.stringify(r?.response ?? '')
+  const list = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1))
+  if (!Array.isArray(list) || list.length !== texts.length) throw new Error('shape')
+  return list.map((t, i) => (typeof t === 'string' && t.trim() ? t.trim() : texts[i]))
+}
+
+async function mtOne(env, lang, text) {
+  try {
+    const r = await env.AI.run(MT, { text, source_lang: 'en', target_lang: lang })
+    return (r?.translated_text ?? '').trim() || text
+  } catch {
+    return text
+  }
 }
 
 export async function onRequestPost({ request, env, waitUntil }) {
@@ -26,32 +64,38 @@ export async function onRequestPost({ request, env, waitUntil }) {
   }
   const lang = String(body.lang ?? '')
   const texts = [...new Set((Array.isArray(body.texts) ? body.texts : []).filter((t) => typeof t === 'string' && t.trim() && t.length <= 600))].slice(0, 60)
-  if (!LANGS.has(lang) || !texts.length) return new Response('Bad request', { status: 400 })
+  if (!NAMES[lang] || !texts.length) return new Response('Bad request', { status: 400 })
 
   const cache = caches.default
   const out = {}
   const todo = []
   await Promise.all(
     texts.map(async (text) => {
-      const key = new Request(`https://i18n.orbit.voids.wtf/${lang}/${await hash(text)}`)
+      const key = new Request(`https://i18n.orbit.voids.wtf/${VERSION}/${lang}/${await hash(text)}`)
       const hit = await cache.match(key)
       if (hit) out[text] = await hit.text()
       else todo.push({ text, key })
     }),
   )
 
-  // a few at a time, so one page doesn't flood the model
-  const translateOne = async ({ text, key }) => {
-    try {
-      const r = await env.AI.run(MODEL, { text, source_lang: 'en', target_lang: lang })
-      const t = (r?.translated_text ?? '').trim()
-      out[text] = t || text
-      if (t) waitUntil(cache.put(key, new Response(t, { headers: { 'cache-control': 'public, max-age=2592000', 'content-type': 'text/plain; charset=utf-8' } })))
-    } catch {
-      out[text] = text
+  const keep = (item, t) => {
+    out[item.text] = t
+    if (t && t !== item.text) {
+      waitUntil(cache.put(item.key, new Response(t, { headers: { 'cache-control': 'public, max-age=2592000', 'content-type': 'text/plain; charset=utf-8' } })))
     }
   }
-  for (let i = 0; i < todo.length; i += 10) await Promise.all(todo.slice(i, i + 10).map(translateOne))
+  // batches of 20 for the model, two at a time; a batch that comes back wrong goes phrase by phrase
+  const batches = []
+  for (let i = 0; i < todo.length; i += 20) batches.push(todo.slice(i, i + 20))
+  const runBatch = async (batch) => {
+    try {
+      const list = await llmBatch(env, lang, batch.map((b) => b.text))
+      batch.forEach((item, i) => keep(item, list[i]))
+    } catch {
+      await Promise.all(batch.map(async (item) => keep(item, await mtOne(env, lang, item.text))))
+    }
+  }
+  for (let i = 0; i < batches.length; i += 2) await Promise.all(batches.slice(i, i + 2).map(runBatch))
 
   return Response.json({ translations: out }, { headers: { 'cache-control': 'no-store' } })
 }

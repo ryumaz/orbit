@@ -17,7 +17,7 @@ export default function AccountSecurity({ user }) {
 
   useEffect(() => {
     reloadIdentities()
-    enabledProviders().then(setEnabled)
+    enabledProviders().then((e) => setEnabled(e ?? {}))
   }, [])
 
   const hasPassword = identities?.some((i) => i.provider === 'email')
@@ -146,7 +146,7 @@ function Connected({ identities, enabled, onChange, reauth }) {
     <div className="grid gap-2">
       <p className="label m-0">Quick sign-in <span className="dim">· log in to this same account with one click</span></p>
       <ul className="sec-links">
-        {PROVIDERS.filter(([id]) => enabled[id] || linked(id)).map(([id, label]) => {
+        {PROVIDERS.filter(([id]) => enabled[id] !== false || linked(id)).map(([id, label]) => {
           const Icon = PROVIDER_ICON[id]
           const identity = linked(id)
           const who = identity?.identity_data?.user_name ?? identity?.identity_data?.full_name ?? identity?.identity_data?.email

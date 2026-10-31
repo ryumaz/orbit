@@ -14,9 +14,9 @@ export const safeNext = (v) => (/^\/[a-z0-9/_-]*$/i.test(v ?? '') ? v : '/home')
 let enabled = null
 export function enabledProviders() {
   enabled ??= fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_KEY } })
-    .then((r) => (r.ok ? r.json() : {}))
-    .then((s) => s.external ?? {})
-    .catch(() => ({}))
+    .then((r) => (r.ok ? r.json() : null))
+    .then((s) => s?.external ?? null)
+    .catch(() => null) // unknown: every button stays usable
   return enabled
 }
 

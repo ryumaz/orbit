@@ -110,9 +110,10 @@ export default function Join({ mode }) {
               {!forgot && (
                 <>
                   <div className="signin-quick" role="group" aria-label="Quick sign-in">
-                    {PROVIDERS.filter(([id]) => !providers || providers[id]).map(([id, label]) => {
+                    {PROVIDERS.map(([id, label]) => {
                       const Icon = PROVIDER_ICON[id]
-                      const off = providers && !providers[id]
+                      // only switched off when Supabase clearly says so; if that check failed, let people try
+                      const off = Boolean(providers) && providers[id] === false
                       return (
                         <button
                           key={id}
@@ -125,6 +126,7 @@ export default function Join({ mode }) {
                         >
                           {busy === id ? <span className="signin-spinner" aria-hidden="true" /> : <Icon />}
                           <span>{label}</span>
+                          {off && <span className="signin-soon">soon</span>}
                         </button>
                       )
                     })}

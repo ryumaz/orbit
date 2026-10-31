@@ -2,7 +2,6 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAccount } from '../lib/account'
 import Icon from './Icons'
 import { Spark } from './Spark'
-import OrbitMark from './OrbitMark'
 import { MemberAvatar } from './ProfileCard'
 import LogOut from './LogOut'
 import AccountMenu from './AccountMenu'
@@ -12,7 +11,7 @@ import SiteNotice from './SiteNotice'
 export function Brand({ compact = false }) {
   return (
     <Link to="/" className="brand" aria-label="orbit home" translate="no">
-      <OrbitMark height={20} className="brand-mark" />
+      <Spark className="brand-spark" />
       {!compact && <span>orbit<em> / void century</em></span>}
     </Link>
   )
@@ -202,7 +201,7 @@ export function Footer({ full = false }) {
       <div className="bigfoot-top">
         <div className="bigfoot-brand">
           <div className="flex items-center gap-4">
-            <span className="bigfoot-mark" aria-hidden="true"><OrbitMark height={30} /></span>
+            <span className="bigfoot-mark" aria-hidden="true"><Spark /></span>
             <p className="bigfoot-line">Teach one.<br />Learn one.</p>
           </div>
           <div className="flex flex-wrap gap-2.5">

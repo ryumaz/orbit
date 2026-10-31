@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { db, errText, useData } from './db'
-import OrbitMark from '../components/OrbitMark'
 import { Disputes, Members, Overview, Reports, Sessions, Support } from './views'
 import { Classes, Logs, Reviews } from './insights'
 import { Settings } from './settings'
@@ -95,7 +94,7 @@ function Login() {
   return (
     <div className="ad-login">
       <form className="ad-login-card" onSubmit={submit}>
-        <div className="ad-brand ad-brand-dark"><OrbitMark height={22} />orbit <b>control</b></div>
+        <div className="ad-brand ad-brand-dark"><span className="ad-logo" aria-hidden="true" />orbit <b>control</b></div>
         <div>
           <h1>Sign in</h1>
           <p className="ad-muted">For the people who run orbit. Use your orbit email and password.</p>
@@ -120,7 +119,7 @@ function NotAdmin() {
   return (
     <div className="ad-login">
       <div className="ad-login-card">
-        <div className="ad-brand ad-brand-dark"><OrbitMark height={22} />orbit <b>control</b></div>
+        <div className="ad-brand ad-brand-dark"><span className="ad-logo" aria-hidden="true" />orbit <b>control</b></div>
         <h1>No access</h1>
         <p className="ad-muted">This account isn't an orbit admin. Sign in with an admin account instead.</p>
         <button type="button" className="ad-btn" onClick={() => db.auth.signOut()}>Sign out</button>
@@ -161,7 +160,7 @@ function Console({ me }) {
   return (
     <div className="ad">
       <aside className="ad-side">
-        <div className="ad-brand"><OrbitMark height={22} />orbit <b>control</b></div>
+        <div className="ad-brand"><span className="ad-logo" aria-hidden="true" />orbit <b>control</b></div>
         <nav className="ad-nav" aria-label="Sections">
           {NAV.map(([k, label, icon, badge]) => {
             const n = badge && counts.data?.[badge]

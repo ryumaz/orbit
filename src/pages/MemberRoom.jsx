@@ -17,8 +17,8 @@ import { stageOfReal } from './MySessions'
 import '../room.css'
 
 const first = (p) => p.name.split(' ')[0]
-// coding skills open on the code editor; everything else on the whiteboard
-const CODE = /code|coding|program|python|java|react|sql|c\+\+|c#|javascript|typescript|html|css|git|web|app|excel|data|machine learning|rust|go\b|kotlin|swift|php|linux|docker/i
+// coding skills get the code editor (and open on it); everything else only the whiteboard
+const CODE = /code|coding|program|python|java|react|sql|c\+\+|c#|\bc\b|javascript|typescript|html|css|git|web dev|app dev|excel|data|machine learning|\bml\b|\bai\b|\bdsa\b|algorithm|rust|golang|\bgo\b|kotlin|swift|php|ruby|dart|flutter|node|django|flask|pandas|numpy|linux|bash|docker/i
 
 // The live room for a real session between two members: call, chat, shared editor,
 // a timer, and the one button that pays the mentor.
@@ -115,7 +115,9 @@ export default function MemberRoom() {
   }
 
   const { teaching, other } = sessionView(s, uid)
-  const tab = work ?? (CODE.test(s.skill) ? 'code' : 'board')
+  // the code editor is only for coding skills; games, music, languages and the rest get the whiteboard
+  const coding = CODE.test(s.skill)
+  const tab = coding ? work ?? 'code' : 'board'
   const isLearner = !teaching
   const mentor = teaching ? profile : s.mentor
   const learner = teaching ? s.learner : profile
@@ -214,13 +216,13 @@ export default function MemberRoom() {
           <CallPanel live={live} other={other} ended={ended} calling={calling} declined={wasDeclined} onRingAgain={() => setRingStart(Date.now())} />
           <div className="room-tabs" role="tablist" aria-label="Workspace">
             <button type="button" role="tab" aria-selected={tab === 'board'} className={`room-tab-btn ${tab === 'board' ? 'on' : ''}`} onClick={() => setWork('board')}>Whiteboard</button>
-            <button type="button" role="tab" aria-selected={tab === 'code'} className={`room-tab-btn ${tab === 'code' ? 'on' : ''}`} onClick={() => setWork('code')}>Code editor</button>
+            {coding && <button type="button" role="tab" aria-selected={tab === 'code'} className={`room-tab-btn ${tab === 'code' ? 'on' : ''}`} onClick={() => setWork('code')}>Code editor</button>}
             <span className="dim ml-auto self-center text-[11px]">{ended ? 'read only' : `${first(other)} sees it live`}</span>
           </div>
           <div className={`flex-auto ${tab === 'board' ? '' : 'hidden'}`}>
             <Whiteboard roomKey={`m${s.id}`} live={live} me={uid} readOnly={ended} onConfirm={confirm} />
           </div>
-          <div className={`flex-auto ${tab === 'code' ? '' : 'hidden'}`}>
+          {coding && <div className={`flex-auto ${tab === 'code' ? '' : 'hidden'}`}>
             <CodeSpace
               roomKey={`m${s.id}`}
               initial={startsInPython(s.skill)
@@ -233,7 +235,7 @@ export default function MemberRoom() {
               skill={s.skill}
               active={tab === 'code'}
             />
-          </div>
+          </div>}
         </main>
 
         <aside className="room-side room-right">

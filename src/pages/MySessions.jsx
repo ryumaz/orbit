@@ -71,7 +71,7 @@ export default function MySessions() {
                   <h3>{teaching ? `Teaching ${first(other)} ${s.skill}` : `${first(other)} teaching you ${s.skill}`}</h3>
                   <HoldStatus s={s} isLearner={!teaching} mentor={mentor} learner={learner} />
                   <div className="need-actions">
-                    <Link to={`/s/${s.id}`} className="btn btn-line">Open the room</Link>
+                    <Link to={`/s/${s.id}`} className="btn btn-light">{s.dispute_claimed_by ? 'Open the dispute ticket' : 'See the dispute'}</Link>
                   </div>
                 </article>
               )

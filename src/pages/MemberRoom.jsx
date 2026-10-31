@@ -7,6 +7,7 @@ import { MemberAvatar } from '../components/ProfileCard'
 import { CallPanel, Notes } from '../components/RoomParts'
 import SessionChat from '../components/SessionChat'
 import { DisputeDialog, HoldStatus } from '../components/Dispute'
+import DisputeTicket from '../components/DisputeTicket'
 import ReportDialog from '../components/ReportDialog'
 import Whiteboard from '../components/Whiteboard'
 import { useConfirm } from '../components/Confirm'
@@ -368,6 +369,7 @@ export default function MemberRoom() {
               Ended early by agreement. {first(mentor)} kept {s.mentor_share}, {first(learner)} got {s.cost - s.mentor_share} back.
             </p>
           )}
+          {['disputed', 'resolved'].includes(status) && s.dispute_at && <DisputeTicket s={s} uid={uid} isLearner={isLearner} other={other} />}
           {s.message && (
             <div className="grid gap-2">
               <h2 className="label m-0">{isLearner ? 'What you asked for' : `${first(learner)} asked for`}</h2>

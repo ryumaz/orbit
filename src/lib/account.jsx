@@ -208,6 +208,10 @@ export function AccountProvider({ children }) {
       if (s.mentor_id === uid && before.status !== 'disputed' && s.status === 'disputed') {
         fresh.push({ kind: 'disputed', s, who: s.learner, title: `${name(s.learner)} opened a dispute on ${s.skill}`, body: `“${s.dispute_reason}” The credits stay on hold until orbit support decides.` })
       }
+      if (s.status === 'disputed' && s.dispute_claimed_by && !before.dispute_claimed_by) {
+        const other = s.mentor_id === uid ? s.learner : s.mentor
+        fresh.push({ kind: 'ticket', s, who: other, title: 'orbit support opened your dispute ticket', body: `${s.skill}: tell them your side. They read the class chat too.` })
+      }
       if (before.status === 'disputed' && s.status === 'resolved') {
         fresh.push({ kind: 'resolved', s, who: s.mentor_id === uid ? s.learner : s.mentor, title: `Support settled ${s.skill}`, body: `${name(s.mentor)} kept ${s.mentor_share}, ${name(s.learner)} got ${s.cost - s.mentor_share} back.` })
       }
@@ -254,6 +258,27 @@ export function AccountProvider({ children }) {
       alive = false
     }
   }, [myHandle, data.sessions, data.ledger, data.myReviews])
+
+  // a reply in one of my dispute tickets (row level security only sends me my own)
+  useEffect(() => {
+    if (!uid) return
+    const ch = supabase
+      .channel(`orbit-tickets-${uid}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dispute_messages' }, ({ new: m }) => {
+        if (m.author_id === uid || m.role === 'system') return
+        if (location.hash.startsWith(`#/s/${m.session_id}`)) return // already looking at it
+        const s = sessionsRef.current.find((x) => x.id === m.session_id)
+        if (!s) return
+        const title = m.role === 'staff' ? 'orbit support replied in your dispute' : `${(m.role === 'teacher' ? s.mentor : s.learner)?.name.split(' ')[0] ?? 'They'} replied in your dispute`
+        chime()
+        setToasts((t) => [...t.filter((x) => !(x.kind === 'ticket' && x.s.id === s.id)), { kind: 'ticket', s, who: null, title, body: m.body.slice(0, 140), id: `ticket-${m.id}` }].slice(-4))
+        systemNotify({ title, body: m.body.slice(0, 140), onClick: () => { location.hash = `#/s/${s.id}` } })
+      })
+      .subscribe()
+    return () => {
+      supabase.removeChannel(ch)
+    }
+  }, [uid])
 
   // the tab title shows how many requests are waiting for me: "(2) orbit"
   useEffect(() => {

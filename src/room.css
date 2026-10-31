@@ -215,3 +215,20 @@
   .runner-bar { padding: 10px 12px; }
   .runner-check { flex-basis: 100%; order: 3; }
 }
+
+/* dispute ticket, inside the room */
+.ticket { display: grid; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid rgba(255, 148, 85, .4); background: linear-gradient(160deg, rgba(255, 148, 85, .07), rgba(155, 130, 255, .05)); }
+.ticket-closed { border-color: var(--line-strong); background: var(--raise-2); }
+.ticket-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ticket-head b { font-weight: 500; font-size: 14px; }
+.ticket-state { font-size: 10.5px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--color-ash); }
+.ticket-open .ticket-state { color: var(--color-amber); border-color: rgba(255, 148, 85, .5); }
+.ticket-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 280px; overflow-y: auto; font-size: 12.5px; line-height: 1.5; }
+.ticket-list li { display: grid; gap: 2px; padding: 8px 11px; border-radius: 12px; background: rgba(255, 255, 255, .05); max-width: 92%; justify-self: start; overflow-wrap: anywhere; white-space: pre-wrap; }
+.ticket-list li small { font-size: 10.5px; color: var(--color-ash); }
+.ticket-list li.mine { justify-self: end; background: linear-gradient(135deg, rgba(155, 130, 255, .22), rgba(255, 148, 85, .18)); }
+.ticket-list li.is-staff { background: var(--color-chalk); color: #000; }
+.ticket-list li.is-staff small { color: rgba(0, 0, 0, .55); }
+.ticket-list li.is-system { max-width: none; background: none; border: 1px dashed var(--line-strong); color: var(--color-ash); font-size: 12px; }
+.ticket-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.ticket-form .input { min-height: 44px; resize: vertical; font-size: 12.5px; }

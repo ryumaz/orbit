@@ -353,25 +353,13 @@ export default function MemberRoom() {
             }}
           />
           {error && <p role="alert" className="m-0 text-[13px] text-amber">{error}</p>}
-          {canReview && (
-            <Link to={`/review/${s.id}`} className="card card-hot review-nudge">
-              <span className="spark-stars-mini" aria-hidden="true">✦✦✦✦✦</span>
-              <b>Rate {first(other)}</b>
-              <span className="dim text-[12px]">Takes ten seconds. It shows on their profile.</span>
-            </Link>
-          )}
-          {done && (
-            <div role="status" className="grid">
-              <div className="receipt printing">
-                <span className="text-[17px] font-bold">Done. {first(mentor)} got {s.cost}.</span>
-                <hr />
-                <span className="receipt-line"><span>{first(learner).toLowerCase()} · held</span><b>−{s.cost}</b></span>
-                <span className="receipt-line"><span>{first(mentor).toLowerCase()} · earned</span><b>+{s.cost}</b></span>
-                <hr />
-                <span className="receipt-note">{teaching ? 'nice teaching.' : 'thanks for asking a good question'}</span>
-              </div>
-              <div aria-hidden="true" className="receipt-edge" />
-              <Link to="/credits" className="link mt-4 justify-self-start text-[12px]">See your credits</Link>
+          {(done || canReview) && (
+            <div role="status" className="room-done">
+              <span>
+                {done ? <>✓ Done · <b>{first(mentor)} got {s.cost}</b></> : 'Class finished'}
+                <span className="dim"> · details in Session</span>
+              </span>
+              {canReview && <Link to={`/review/${s.id}`} className="btn btn-light btn-sm">Rate {first(other)}</Link>}
             </div>
           )}
           {status === 'cancelled' && <p className="card m-0 text-[13px]">This request was cancelled before it started. Nothing was charged.</p>}
@@ -381,12 +369,6 @@ export default function MemberRoom() {
             </p>
           )}
           {['disputed', 'resolved'].includes(status) && s.dispute_at && <DisputeTicket s={s} uid={uid} isLearner={isLearner} other={other} />}
-          {s.message && (
-            <div className="grid gap-2">
-              <h2 className="label m-0">{isLearner ? 'What you asked for' : `${first(learner)} asked for`}</h2>
-              <p className="room-question">“{s.message}”</p>
-            </div>
-          )}
           <div className="room-talk">
             <div role="tablist" aria-label="Talk" className="flex gap-2">
               <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'chat'} aria-pressed={side === 'chat'} onClick={() => setSide('chat')}>
@@ -403,6 +385,26 @@ export default function MemberRoom() {
             {side === 'notes' && <Notes roomKey={`m${s.id}`} title={`${s.skill} with ${first(other)}`} />}
             {side === 'session' && (
               <div className="room-session">
+                {done && (
+                  <div role="status" className="grid">
+                    <div className="receipt printing">
+                      <span className="text-[17px] font-bold">Done. {first(mentor)} got {s.cost}.</span>
+                      <hr />
+                      <span className="receipt-line"><span>{first(learner).toLowerCase()} · held</span><b>−{s.cost}</b></span>
+                      <span className="receipt-line"><span>{first(mentor).toLowerCase()} · earned</span><b>+{s.cost}</b></span>
+                      <hr />
+                      <span className="receipt-note">{teaching ? 'nice teaching.' : 'thanks for asking a good question'}</span>
+                    </div>
+                    <div aria-hidden="true" className="receipt-edge" />
+                    <Link to="/credits" className="link mt-4 justify-self-start text-[12px]">See your credits</Link>
+                  </div>
+                )}
+                {s.message && (
+                  <div className="grid gap-2">
+                    <h2 className="label m-0">{isLearner ? 'What you asked for' : `${first(learner)} asked for`}</h2>
+                    <p className="room-question">“{s.message}”</p>
+                  </div>
+                )}
                 <div className="grid gap-4">
                   <Person p={mentor} role={teaching ? 'Teaching (you)' : 'Teaching'} here={teaching || here} hot />
                   <Person p={learner} role={isLearner ? 'Learning (you)' : 'Learning'} here={isLearner || here} />

@@ -932,3 +932,7 @@ select.input option { background: #111110; color: var(--color-chalk); }
   .week-scale { padding: 0 112px 0 40px; font-size: 9px; }
   .week-scale span:nth-child(even) { visibility: hidden; }
 }
+.book-anchor { display: block; height: 0; scroll-margin-top: 90px; }
+/* a finished class: one small line above the chat instead of the whole receipt */
+.room-done { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 12px 10px 14px; border-radius: 14px; border: 1px solid rgba(155, 130, 255, .45); background: rgba(155, 130, 255, .07); font-size: 12.5px; }
+.room-done b { font-weight: 600; }

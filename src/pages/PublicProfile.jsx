@@ -91,6 +91,18 @@ export default function PublicProfile() {
                   <span className="text-[12px] dim">No reviews yet</span>
                 )}
                 {p.bio && <p className="m-0 font-[family-name:var(--font-hand)] text-[30px] leading-none opacity-85">“{p.bio}”</p>}
+                {!mine && p.teaches.length > 0 && (
+                  <a
+                    href="#book"
+                    className="btn btn-light mt-2 self-start"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      document.getElementById('book')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                  >
+                    <Spark /> Learn from {first}
+                  </a>
+                )}
               </div>
 
               <section className="block" aria-labelledby="h-teaches">
@@ -101,29 +113,6 @@ export default function PublicProfile() {
                   <p className="empty m-0">Nothing listed yet.</p>
                 )}
               </section>
-
-              {/* booking first; hours, activity, badges and reviews below it */}
-              {mine ? (
-                <>
-                  <div className="card text-[12.5px]">
-                    This is your public page. Anyone with the link sees exactly this.{' '}
-                    <Link to="/me" className="link">Edit your profile</Link>
-                  </div>
-                  <ShareProfile handle={p.handle} name={p.name} />
-                </>
-              ) : account.session ? (
-                account.live ? (
-                  <>
-                    <BookForm p={p} initialSkill={params.get('skill')} />
-                  </>
-                ) : <p className="dim">Opening…</p>
-              ) : (
-                <div className="card card-hot grid gap-3">
-                  <p className="m-0 text-[15px]">Learn from {first} on orbit.</p>
-                  <p className="m-0 text-[12.5px] dim">Make a free account and get 30 credits to start. Teach what you know to earn more.</p>
-                  <Link to={`/join?next=/u/${p.handle}`} className="btn btn-light self-start"><Spark /> Join and learn from {first}</Link>
-                </div>
-              )}
 
               {p.teaches.length > 0 && <WeekHours handle={p.handle} first={first} />}
 
@@ -166,11 +155,29 @@ export default function PublicProfile() {
                 </dl>
               )}
 
-              {!mine && account.live && (
+              <span id="book" className="book-anchor" aria-hidden="true" />
+              {mine ? (
                 <>
-                  <button type="button" className="link self-start text-[11.5px] dim" onClick={() => setReporting(true)}>Report {first}</button>
-                  {reporting && <ReportDialog handle={p.handle} name={p.name} onClose={() => setReporting(false)} />}
+                  <div className="card text-[12.5px]">
+                    This is your public page. Anyone with the link sees exactly this.{' '}
+                    <Link to="/me" className="link">Edit your profile</Link>
+                  </div>
+                  <ShareProfile handle={p.handle} name={p.name} />
                 </>
+              ) : account.session ? (
+                account.live ? (
+                  <>
+                    <BookForm p={p} initialSkill={params.get('skill')} />
+                    <button type="button" className="link self-start text-[11.5px] dim" onClick={() => setReporting(true)}>Report {first}</button>
+                    {reporting && <ReportDialog handle={p.handle} name={p.name} onClose={() => setReporting(false)} />}
+                  </>
+                ) : <p className="dim">Opening…</p>
+              ) : (
+                <div className="card card-hot grid gap-3">
+                  <p className="m-0 text-[15px]">Learn from {first} on orbit.</p>
+                  <p className="m-0 text-[12.5px] dim">Make a free account and get 30 credits to start. Teach what you know to earn more.</p>
+                  <Link to={`/join?next=/u/${p.handle}`} className="btn btn-light self-start"><Spark /> Join and learn from {first}</Link>
+                </div>
               )}
             </div>
           </div>

@@ -208,10 +208,15 @@ export default function Orbi() {
       const vw = window.innerWidth
       const vh = window.innerHeight
       const w = Math.min(390, vw - 16)
-      const h = Math.min(600, vh - r.height - 32)
+      let h = Math.min(600, vh - r.height - 32)
       const left = r.left + r.width / 2 < vw / 2
       let y = r.top - 8 - h >= 8 ? r.top - 8 - h : r.bottom + 8
       if (y + h > vh - 8) y = Math.max(8, (vh - h) / 2)
+      // short screens: the chat gets the whole height, over the robot
+      if (h < 340) {
+        h = Math.min(600, vh - 16)
+        y = 8
+      }
       let x = left ? r.left : r.right - w
       x = Math.min(Math.max(8, x), vw - w - 8)
       setPanelBox({ left: x, top: y, width: w, height: h })

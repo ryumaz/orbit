@@ -637,3 +637,12 @@ html.is-translating body::before {
   padding: 8px 14px; border-radius: 99px; background: rgba(17, 17, 16, .95); border: 1px solid var(--line-strong); color: var(--color-chalk); font-size: 12px; white-space: nowrap; pointer-events: none;
 }
 @media (min-width: 960px) { html.is-translating body::before { bottom: 22px; } }
+
+/* native dropdowns that look like orbit inputs */
+select.input { appearance: none; -webkit-appearance: none; padding-right: 42px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d8c87' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 16px center; }
+select.input option { background: #111110; color: var(--color-chalk); }
+/* confirm it's you */
+.reauth { gap: 14px; }
+.reauth-lock { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: rgba(155, 130, 255, .14); color: var(--color-violet); }

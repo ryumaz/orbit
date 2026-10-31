@@ -130,7 +130,7 @@ const QUESTIONS = [
   ['What can I learn or teach?', 'Anything someone else wants to know: study subjects, coding, gaming, music, cooking, languages, fitness, art. If you can explain it in half an hour, it belongs here.'],
   ['What if the lesson didn\'t help?', 'Then don\'t press "It worked". Your credits stay on hold, and you can agree an early end and a fair split with the teacher. If something went wrong, tell the team through Vortex.'],
   ['Do I need to install anything?', 'No. Everything runs in your browser on a phone or a computer. Allow the microphone (and camera if you want video) when the browser asks.'],
-  ['Can we meet in person?', 'Yes. Add your city to your profile and agree on a place in chat. Credits work exactly the same way.'],
+  ['Can we meet in person?', 'Yes. Add your country to your profile and agree on a place in chat. Credits work exactly the same way.'],
   ['Who can see my details?', 'Only your public profile: name, handle, photo, bio, skills and reviews. Your email is never shown, and calls go straight between the two browsers and aren\'t recorded.'],
   ['How do I get more credits?', 'Teach. Add what you know on your profile and set a price; every session you teach adds that price to your balance once the learner says it worked.'],
 ]

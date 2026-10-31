@@ -11,6 +11,7 @@ import NotifySetting from '../components/NotifySetting'
 import AccountSecurity from '../components/AccountSecurity'
 import LanguagePicker from '../components/LanguagePicker'
 import LineIcon from '../components/LineIcons'
+import { countries } from '../lib/countries'
 
 // Widely spoken languages, searchable. Anything else can be typed in.
 const LANGS = [
@@ -151,8 +152,13 @@ export default function Me() {
                     <textarea id="me-bio" className="input resize-y" rows={2} maxLength={160} value={form.bio} onChange={(e) => set('bio')(e.target.value)} placeholder="I can make anyone's dal taste like home" />
                   </div>
                   <div className="grid gap-1.5">
-                    <label htmlFor="me-city" className="label">City <span className="dim">· optional, for meeting in person. Only this is shown.</span></label>
-                    <input id="me-city" className="input" maxLength={60} value={form.city} onChange={(e) => set('city')(e.target.value)} placeholder="City, country" />
+                    <label htmlFor="me-city" className="label">Country <span className="dim">· optional, shown on your profile</span></label>
+                    <select id="me-city" className="input select" value={form.city} onChange={(e) => set('city')(e.target.value)}>
+                      <option value="">Don't show a country</option>
+                      {/* an older free-text place stays selectable until it's changed */}
+                      {form.city && !countries().includes(form.city) && <option value={form.city}>{form.city}</option>}
+                      {countries().map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
                   </div>
                 </section>
               </form>

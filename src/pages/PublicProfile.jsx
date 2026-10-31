@@ -127,7 +127,7 @@ export default function PublicProfile() {
               {(p.langs.length > 0 || p.city) && (
                 <dl className="public-facts">
                   {p.langs.length > 0 && <div><dt>Speaks</dt><dd>{joinAnd(p.langs)}</dd></div>}
-                  {p.city && <div><dt>Area</dt><dd>{p.city}</dd></div>}
+                  {p.city && <div><dt>Country</dt><dd>{p.city}</dd></div>}
                 </dl>
               )}
 

@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase, friendly } from '../lib/supabase'
 import { PROVIDERS, enabledProviders } from '../lib/oauth'
 import { PROVIDER_ICON } from './AuthIcons'
+import { useReauth } from './Reauth'
 
 // Sign-in and security on the You page: email, password, and which quick sign-ins
-// (GitHub, Discord, Google) open this same account.
+// (GitHub, Discord, Google) open this same account. Every change here first checks
+// it's really you (components/Reauth.jsx).
 export default function AccountSecurity({ user }) {
   const [identities, setIdentities] = useState(null)
   const [enabled, setEnabled] = useState({})
@@ -16,15 +18,22 @@ export default function AccountSecurity({ user }) {
   }, [])
 
   const hasPassword = identities?.some((i) => i.provider === 'email')
+  const [reauth, reauthDialog] = useReauth(user, Boolean(hasPassword))
 
   return (
     <section className="block grid gap-6" aria-labelledby="h-security">
       <div className="block-head">
         <h2 id="h-security">Sign-in and security</h2>
       </div>
-      <EmailForm user={user} />
-      <PasswordForm hasPassword={hasPassword} />
-      <Connected identities={identities} enabled={enabled} onChange={reloadIdentities} />
+      <p className="m-0 text-[12px] dim">
+        {hasPassword === false
+          ? 'Changes here ask you to sign in again first, so only you can make them.'
+          : 'Changes here ask for your current password first, so only you can make them.'}
+      </p>
+      <EmailForm user={user} reauth={reauth} ready={identities !== null} />
+      <PasswordForm hasPassword={hasPassword} reauth={reauth} ready={identities !== null} />
+      <Connected identities={identities} enabled={enabled} onChange={reloadIdentities} reauth={reauth} />
+      {reauthDialog}
     </section>
   )
 }
@@ -34,7 +43,7 @@ function Note({ note }) {
   return <p role={note.ok ? 'status' : 'alert'} className={`m-0 text-[12px] ${note.ok ? 'text-mint' : 'text-amber'}`}>{note.text}</p>
 }
 
-function EmailForm({ user }) {
+function EmailForm({ user, reauth, ready }) {
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState(null)
@@ -42,6 +51,7 @@ function EmailForm({ user }) {
     e.preventDefault()
     const next = email.trim().toLowerCase()
     if (next === user.email) return setNote({ ok: false, text: "That's already your email." })
+    if (!ready || !(await reauth('change your email'))) return
     setBusy(true)
     const { data, error } = await supabase.auth.updateUser({ email: next }, { emailRedirectTo: `${location.origin}/?next=/me` })
     setBusy(false)
@@ -64,7 +74,7 @@ function EmailForm({ user }) {
   )
 }
 
-function PasswordForm({ hasPassword }) {
+function PasswordForm({ hasPassword, reauth, ready }) {
   const [pw, setPw] = useState('')
   const [again, setAgain] = useState('')
   const [busy, setBusy] = useState(false)
@@ -73,6 +83,7 @@ function PasswordForm({ hasPassword }) {
     e.preventDefault()
     if (pw.length < 8) return setNote({ ok: false, text: 'Use at least 8 characters.' })
     if (pw !== again) return setNote({ ok: false, text: "The two passwords don't match." })
+    if (!ready || !(await reauth(hasPassword ? 'change your password' : 'set a password'))) return
     setBusy(true)
     const { error } = await supabase.auth.updateUser({ password: pw })
     setBusy(false)
@@ -101,7 +112,7 @@ function PasswordForm({ hasPassword }) {
   )
 }
 
-function Connected({ identities, enabled, onChange }) {
+function Connected({ identities, enabled, onChange, reauth }) {
   const [busy, setBusy] = useState('')
   const [note, setNote] = useState(null)
   if (!identities) return <p className="m-0 dim text-[12px]">Loading your sign-ins…</p>
@@ -117,6 +128,8 @@ function Connected({ identities, enabled, onChange }) {
     }
   }
   const disconnect = async (identity) => {
+    const label = PROVIDERS.find(([id]) => id === identity.provider)?.[1] ?? identity.provider
+    if (!(await reauth(`disconnect ${label}`))) return
     setBusy(identity.provider)
     const { error } = await supabase.auth.unlinkIdentity(identity)
     setBusy('')

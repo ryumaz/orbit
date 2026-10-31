@@ -3,13 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAccount } from '../lib/account'
 import { supabase, friendly } from '../lib/supabase'
 import { answer, STARTERS } from '../lib/orbiBrain'
-import { createMind, pick, SECTION_THOUGHTS, PAGE_THOUGHTS, IDLE_THOUGHTS, DRAG_THOUGHTS } from '../lib/orbiMind'
+import { createMind, pick, SECTION_THOUGHTS, PAGE_THOUGHTS, IDLE_THOUGHTS } from '../lib/orbiMind'
 import { mountRobot } from '../lib/robot3d'
 
-// Orbi: orbit's helper, a little 3D robot on every page except the rooms (the same
-// robot as Vortex on voids.wtf). It floats, watches your cursor, can be dragged to
-// either side, and thinks out loud now and then (lib/orbiMind.js).
-// "Ask Orbi" answers from lib/orbiBrain.js; "Talk to the team" files a support request.
+// Vortex: orbit's helper, the same little 3D robot as on voids.wtf, on every page
+// except the rooms. It floats, watches your cursor, and thinks out loud now and then
+// (lib/orbiMind.js). Click it to chat: "Ask Vortex" answers from lib/orbiBrain.js,
+// "Talk to the team" files a support request.
 const TOPICS = [
   ['account', 'Account or login'],
   ['credits', 'Credits'],
@@ -43,17 +43,6 @@ export function RobotFace({ size = 44 }) {
   )
 }
 
-const POS_KEY = 'orbit:orbi-pos'
-const EDGE = 8
-
-function loadPos() {
-  try {
-    return JSON.parse(localStorage.getItem(POS_KEY)) ?? null
-  } catch {
-    return null
-  }
-}
-
 export default function Orbi() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -66,8 +55,6 @@ export default function Orbi() {
   const [text, setText] = useState('')
   const [typing, setTyping] = useState(false)
   const [has3d, setHas3d] = useState(false)
-  const [pos, setPos] = useState(loadPos) // { side, y } once dragged; null = default corner
-  const [dragAt, setDragAt] = useState(null) // { x, y } while dragging
   const [panelBox, setPanelBox] = useState(null)
   const listRef = useRef(null)
   const inputRef = useRef(null)
@@ -78,8 +65,6 @@ export default function Orbi() {
   mindRef.current ??= createMind()
   const mind = mindRef.current
   const thoughts = useRef({ count: 0, last: 0, seen: new Set() })
-  const drag = useRef(null)
-  const justDragged = useRef(false)
   const hidden = /^\/(s|room)\//.test(pathname)
 
   const first = account.live ? account.profile.name.split(' ')[0] : ''
@@ -96,7 +81,6 @@ export default function Orbi() {
   const openRef = useRef(open)
   openRef.current = open
   robot.current.open = open
-  robot.current.side = pos?.side ?? 'right'
 
   // ---------- the 3D body ----------
   useEffect(() => {
@@ -130,7 +114,7 @@ export default function Orbi() {
 
   // first visit: an offer of help; later visits: welcome back (or a late-night remark)
   useEffect(() => {
-    const t = setTimeout(() => think(mind.visits <= 1 ? "Hi, I'm Orbi. Need a hand? Click me." : mind.arrival(ctx)), mind.visits <= 1 ? 5000 : 9000)
+    const t = setTimeout(() => think(mind.visits <= 1 ? "Hi, I'm Vortex. Need a hand? Click me." : mind.arrival(ctx)), mind.visits <= 1 ? 5000 : 9000)
     return () => clearTimeout(t)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -224,70 +208,13 @@ export default function Orbi() {
     place()
     window.addEventListener('resize', place)
     return () => window.removeEventListener('resize', place)
-  }, [open, pos])
+  }, [open])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
   }, [log, typing])
 
-  // ---------- drag to move: snaps to the nearest side and remembers the spot ----------
-  const launchStyle = () => {
-    if (dragAt) return { left: dragAt.x, top: dragAt.y, right: 'auto', bottom: 'auto' }
-    if (!pos) return undefined
-    const h = launchRef.current?.offsetHeight ?? 112
-    const top = Math.min(Math.max(EDGE, pos.y * window.innerHeight), window.innerHeight - h - EDGE)
-    return pos.side === 'left' ? { left: EDGE, right: 'auto', top, bottom: 'auto' } : { right: EDGE, left: 'auto', top, bottom: 'auto' }
-  }
-  const onDown = (e) => {
-    if (e.button !== 0) return
-    const r = launchRef.current.getBoundingClientRect()
-    drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, moved: false }
-    try {
-      launchRef.current.setPointerCapture(e.pointerId)
-    } catch {
-      /* ignore */
-    }
-  }
-  const onMove = (e) => {
-    const d = drag.current
-    if (!d || e.pointerId !== d.id) return
-    const dx = e.clientX - d.sx
-    const dy = e.clientY - d.sy
-    if (!d.moved) {
-      if (Math.hypot(dx, dy) < 6) return
-      d.moved = true
-      setThought(null)
-    }
-    const r = launchRef.current
-    setDragAt({
-      x: Math.min(Math.max(EDGE, d.ox + dx), window.innerWidth - r.offsetWidth - EDGE),
-      y: Math.min(Math.max(EDGE, d.oy + dy), window.innerHeight - r.offsetHeight - EDGE),
-    })
-  }
-  const onUp = (e) => {
-    const d = drag.current
-    if (!d || e.pointerId !== d.id) return
-    drag.current = null
-    if (!d.moved) return
-    justDragged.current = true
-    setTimeout(() => (justDragged.current = false), 0)
-    const r = launchRef.current.getBoundingClientRect()
-    const next = { side: r.left + r.width / 2 < window.innerWidth / 2 ? 'left' : 'right', y: r.top / window.innerHeight }
-    setDragAt(null)
-    setPos(next)
-    try {
-      localStorage.setItem(POS_KEY, JSON.stringify(next))
-    } catch {
-      /* ignore */
-    }
-    robot.current.spin = 0.18
-    if (!thoughts.current.dragged) {
-      thoughts.current.dragged = true
-      think(pick(DRAG_THOUGHTS), true)
-    }
-  }
   const onClick = () => {
-    if (justDragged.current) return
     setOpen(!open)
     const dizzy = mind.poked()
     if (dizzy) {
@@ -322,23 +249,22 @@ export default function Orbi() {
   }
 
   if (hidden) return null
-  const side = pos?.side ?? 'right'
 
   return (
-    <div className={`orbi is-${side} ${dragAt ? 'is-dragging' : ''}`}>
+    <div className="orbi">
       {open && (
-        <section className="orbi-panel" role="dialog" aria-label="Orbi, orbit's helper" style={panelBox ?? undefined}>
+        <section className="orbi-panel" role="dialog" aria-label="Vortex, orbit's helper" style={panelBox ?? undefined}>
           <header className="orbi-head">
             <span className="orbi-avatar" aria-hidden="true"><RobotFace size={34} /></span>
             <div className="orbi-title">
-              <b>Orbi</b>
+              <b>Vortex</b>
               <span>orbit's helper · feeling {mind.mood()}</span>
             </div>
-            <button type="button" className="orbi-x" aria-label="Close Orbi" onClick={() => setOpen(false)}>×</button>
+            <button type="button" className="orbi-x" aria-label="Close Vortex" onClick={() => setOpen(false)}>×</button>
           </header>
 
           <div className="orbi-modes" role="tablist" aria-label="Who to ask">
-            <button type="button" role="tab" aria-selected={mode === 'ai'} onClick={() => setMode('ai')}>Ask Orbi</button>
+            <button type="button" role="tab" aria-selected={mode === 'ai'} onClick={() => setMode('ai')}>Ask Vortex</button>
             <button type="button" role="tab" aria-selected={mode === 'human'} onClick={() => setMode('human')}>Talk to the team</button>
           </div>
 
@@ -357,7 +283,7 @@ export default function Orbi() {
                     )}
                   </li>
                 ))}
-                {typing && <li className="orbi-msg is-orbi orbi-typing" aria-label="Orbi is typing"><i /><i /><i /></li>}
+                {typing && <li className="orbi-msg is-orbi orbi-typing" aria-label="Vortex is typing"><i /><i /><i /></li>}
               </ol>
               {chips.length > 0 && (
                 <div className="orbi-chips">
@@ -366,7 +292,7 @@ export default function Orbi() {
               )}
               <form className="orbi-compose" onSubmit={(e) => { e.preventDefault(); ask(text) }}>
                 <label htmlFor="orbi-q" className="sr-only">Your question</label>
-                <input id="orbi-q" ref={inputRef} className="input" value={text} maxLength={300} autoComplete="off" onChange={(e) => setText(e.target.value)} placeholder="Ask Orbi anything…" />
+                <input id="orbi-q" ref={inputRef} className="input" value={text} maxLength={300} autoComplete="off" onChange={(e) => setText(e.target.value)} placeholder="Ask Vortex anything…" />
                 <button type="submit" className="btn btn-light btn-sm" disabled={!text.trim() || typing} aria-label="Send">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
                 </button>
@@ -381,7 +307,7 @@ export default function Orbi() {
         </section>
       )}
 
-      <div className="orbi-dock" ref={launchRef} style={launchStyle()}>
+      <div className="orbi-dock" ref={launchRef}>
         {thought && !open && (
           <div className="orbi-thought" role="status">
             <button type="button" className="orbi-thought-text" onClick={() => setOpen(true)}>{thought.text}</button>
@@ -392,12 +318,8 @@ export default function Orbi() {
           type="button"
           className={`orbi-launch ${open ? 'is-open' : ''} ${has3d ? 'has-3d' : ''}`}
           aria-expanded={open}
-          aria-label={open ? 'Close Orbi' : "Open Orbi, orbit's helper"}
-          title="Click for help · drag to move me"
-          onPointerDown={onDown}
-          onPointerMove={onMove}
-          onPointerUp={onUp}
-          onPointerCancel={onUp}
+          aria-label={open ? 'Close Vortex' : "Ask Vortex, orbit's helper"}
+          title="Ask Vortex"
           onClick={onClick}
         >
           <canvas ref={canvasRef} className="orbi-canvas" aria-hidden="true" />

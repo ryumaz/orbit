@@ -1,17 +1,17 @@
-// What Orbi knows. Each topic has a few patterns; the topic with the most matches
+// What Vortex knows. Each topic has a few patterns; the topic with the most matches
 // answers. Answers can use the signed-in member's own numbers, and offer buttons
 // that go to the right page (or hand over to the team).
 //
-// To put a real model behind Orbi later, replace answer() with a call to your own
+// To put a real model behind Vortex later, replace answer() with a call to your own
 // endpoint and keep these topics as its first try.
 
 const T = (id, keys, reply, actions = []) => ({ id, keys, reply, actions })
 
 const TOPICS = [
   T('greet', [/\b(hi|hii+|hello|hey|yo|namaste|hola|sup|good (morning|evening|afternoon))\b/],
-    (c) => `Hi${c.first ? ` ${c.first}` : ''}! I'm Orbi. Ask me anything about orbit: credits, booking, calls, your profile. If I don't know, I'll pass you to the team.`),
-  T('who', [/who are you|your name|are you (a |an )?(bot|ai|robot|human|real)/, /\borbi\b/],
-    () => "I'm Orbi, orbit's helper. I answer the common questions from what I know about orbit. For anything personal or tricky, press \"Talk to the team\" and a real person reads it."),
+    (c) => `Hi${c.first ? ` ${c.first}` : ''}! I'm Vortex. Ask me anything about orbit: credits, booking, calls, your profile. If I don't know, I'll pass you to the team.`),
+  T('who', [/who are you|your name|are you (a |an )?(bot|ai|robot|human|real)/, /\bvortex\b/],
+    () => "I'm Vortex, orbit's helper. I answer the common questions from what I know about orbit. For anything personal or tricky, press \"Talk to the team\" and a real person reads it."),
   T('what', [/what is (this|orbit|it)|how (does|do) (it|orbit|this|the site) work|explain|about orbit|what can i do/, /\bhow it works\b/],
     () => 'orbit is a skill swap. You teach what you know (guitar, coding, cooking, a game, a language) and earn credits. You spend credits learning from other members. Sessions are 15 to 60 minutes by video, voice or in person, and credits only move when the learner says it helped.',
     [['See how it works', '/#how'], ['Find someone to learn from', '/find']]),

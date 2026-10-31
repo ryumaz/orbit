@@ -3,15 +3,34 @@ import { starPath } from './particles'
 
 // Static halftone pictures: a shape lit from the top right, printed as dots.
 const SHAPES = {
-  hand(g, S) {
-    g.lineWidth = S * 0.085
-    ;[[0.41, 0.24], [0.49, 0.17], [0.57, 0.19], [0.645, 0.27]].forEach(([x, top]) => {
-      g.beginPath(); g.moveTo(x * S, 0.52 * S); g.lineTo(x * S, top * S); g.stroke()
+  // an open book with a spark rising from the spine: teaching what you know
+  book(g, S, H) {
+    const page = (dir) => {
+      const x = (v) => (0.5 + dir * v) * S
+      g.beginPath()
+      g.moveTo(x(0), 0.42 * H)
+      g.quadraticCurveTo(x(0.2), 0.32 * H, x(0.4), 0.36 * H)
+      g.lineTo(x(0.4), 0.8 * H)
+      g.quadraticCurveTo(x(0.2), 0.76 * H, x(0), 0.86 * H)
+      g.closePath()
+      g.fill()
+    }
+    page(-1)
+    page(1)
+    // the gutter and a few lines of text, cut out of the pages
+    g.globalCompositeOperation = 'destination-out'
+    g.lineWidth = S * 0.025
+    g.beginPath(); g.moveTo(0.5 * S, 0.42 * H); g.lineTo(0.5 * S, 0.86 * H); g.stroke()
+    g.lineWidth = S * 0.03
+    ;[0.5, 0.59, 0.68].forEach((y, i) => {
+      ;[-1, 1].forEach((dir) => {
+        const len = i === 2 ? 0.16 : 0.24
+        g.beginPath(); g.moveTo((0.5 + dir * 0.08) * S, y * H); g.lineTo((0.5 + dir * (0.08 + len)) * S, (y - 0.02) * H); g.stroke()
+      })
     })
-    g.beginPath(); g.roundRect(0.36 * S, 0.44 * S, 0.33 * S, 0.3 * S, 0.09 * S); g.fill()
-    g.lineWidth = S * 0.08
-    g.beginPath(); g.moveTo(0.39 * S, 0.66 * S); g.lineTo(0.27 * S, 0.47 * S); g.stroke()
-    g.fillRect(0.4 * S, 0.7 * S, 0.25 * S, 0.34 * S)
+    g.globalCompositeOperation = 'source-over'
+    starPath(g, 0.5 * S, 0.17 * H, 0.12 * S, undefined, 0.2); g.fill()
+    ;[[0.3, 0.2, 0.035], [0.7, 0.24, 0.045]].forEach(([x, y, r]) => { starPath(g, x * S, y * H, r * S, undefined, 0.22); g.fill() })
   },
   spark(g, S) { starPath(g, S * 0.5, S * 0.5, S * 0.42, undefined, 0.2); g.fill() },
   moon(g, S) {

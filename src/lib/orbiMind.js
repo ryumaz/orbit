@@ -1,4 +1,4 @@
-// Orbi's personality, carried over from Vortex on voids.wtf: it remembers you on this
+// Vortex's personality, the same as on voids.wtf: it remembers you on this
 // device (name, visits), has a mood, thinks out loud now and then, and answers
 // questions about itself before the help topics get a turn.
 const KEY = 'orbit:orbi-mind'
@@ -55,8 +55,8 @@ export function createMind() {
     },
     greeting(ctx) {
       const n = mind.name(ctx)
-      if (m.visits <= 1) return `Hey${n ? ` ${n}` : ''}, I'm Orbi. I float around orbit and know it inside out. What do you need?`
-      if (m.visits < 4) return `Hey${n ? ` ${n}` : ''}, welcome back! Orbi here, in case you forgot. What can I do for you?`
+      if (m.visits <= 1) return `Hey${n ? ` ${n}` : ''}, I'm Vortex. I float around orbit and know it inside out. What do you need?`
+      if (m.visits < 4) return `Hey${n ? ` ${n}` : ''}, welcome back! Vortex here, in case you forgot. What can I do for you?`
       return `${n || 'Hey you'}! Visit number ${m.visits}. I'd say I missed you, but I mostly just hovered. What do you need?`
     },
     // a welcome-back thought for returning visitors, or a late-night one
@@ -75,7 +75,7 @@ export function createMind() {
       dizzyUntil = t + 20000
       return pick(['Whoa, whoa! Stop spinning me... the whole orbit is tilting.', "I'm dizzy now. Happy? (I'm a little happy. Do it again.)", 'Okay, I felt that one. Is that what feelings are?'])
     },
-    // questions about Orbi itself; null when it's a help question
+    // questions about Vortex itself; null when it's a help question
     reply(text, ctx) {
       chats += 1
       const q = ` ${text.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()} `
@@ -89,7 +89,7 @@ export function createMind() {
       if (has('forget me', 'forget my name', 'clear memory', 'forget everything')) {
         m = { first: Date.now(), last: Date.now(), visits: 1 }
         save()
-        return "Done. Everything I knew about you is gone. ...Who are you, again? Hi, I'm Orbi."
+        return "Done. Everything I knew about you is gone. ...Who are you, again? Hi, I'm Vortex."
       }
       if (has('be quiet', 'stop talking', 'shut up', 'shush', 'stop thinking')) {
         m.quiet = true
@@ -132,9 +132,9 @@ export function createMind() {
       if (has('meaning of life', 'your purpose', 'why do you exist', 'why are you here')) {
         return 'My purpose is to help you learn and teach on orbit. The meaning of life is probably 42. Or 30 free credits.'
       }
-      if (has('vortex')) return "Vortex is my older sibling on voids.wtf. Same body, different job: they look after links, I look after lessons."
+      if (has('voids', 'void links')) return "Yes, I also live on voids.wtf, looking after links. Here my job is lessons. Same body, two jobs, zero days off."
       if (has('who are you', 'what are you', 'your name', 'are you a bot', 'are you ai', 'are you human', 'robot', 'chatbot')) {
-        return `I'm Orbi, the little robot floating around orbit. I know how everything here works, I remember you (on this device), and I'm feeling ${mind.mood()} right now. When a question is past me, I'll hand you to a real person.`
+        return `I'm Vortex, the little robot floating around orbit. I know how everything here works, I remember you (on this device), and I'm feeling ${mind.mood()} right now. When a question is past me, I'll hand you to a real person.`
       }
       return null
     },
@@ -164,6 +164,5 @@ export const IDLE_THOUGHTS = [
   'Fun fact about me: I run entirely in your browser. No servers were harmed.',
   "Somebody out there is learning guitar right now. I can't hear it, but I believe in them.",
   'Am I hovering, or is the page moving? Hard to tell from here.',
-  'If you need me, I am right here. Literally. You can drag me to the other side, though.',
+  'If you need me, I am right here. Literally. Click me and I come running. Well, floating.',
 ]
-export const DRAG_THOUGHTS = ['New neighbourhood. I like it here.', 'Wheee! Where are we going?', 'You moved me. I will remember this spot. Really, I write it down.']

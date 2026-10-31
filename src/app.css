@@ -458,7 +458,6 @@
 .orbi-dock { position: fixed; z-index: 105; right: 6px; bottom: var(--orbi-b); width: var(--orbi-size); height: var(--orbi-size); touch-action: none; }
 .orbi-launch { position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: grab; transition: transform .25s var(--ease); touch-action: none; }
 .orbi-launch:hover { transform: translateY(-3px) scale(1.04); }
-.orbi.is-dragging .orbi-launch { cursor: grabbing; transform: scale(1.06); transition: none; }
 .orbi-launch:focus-visible { outline: 2px solid var(--color-violet); outline-offset: -6px; }
 .orbi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .6)); }
 /* the flat robot until (or unless) the 3D one loads */
@@ -474,7 +473,6 @@
   border-radius: 16px 16px 4px 16px; background: var(--color-chalk); color: #000; font-size: 12.5px; line-height: 1.45;
   box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .8); animation: toastIn .35s var(--ease) both;
 }
-.orbi.is-left .orbi-thought { right: auto; left: calc(100% - 6px); border-radius: 16px 16px 16px 4px; }
 .orbi-thought-text { border: 0; background: none; padding: 7px 0; font: inherit; color: inherit; text-align: left; cursor: pointer; font-style: italic; }
 .orbi-thought-text::before { content: '\201C'; opacity: .55; }
 .orbi-thought-text::after { content: '\201D'; opacity: .55; }
@@ -486,7 +484,6 @@
   background: rgba(12, 12, 11, .97); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 30px 80px -24px rgba(0, 0, 0, .95); animation: toastIn .3s var(--ease) both;
 }
-.orbi.is-dragging .orbi-panel { display: none; }
 .orbi-head { position: relative; display: flex; align-items: center; gap: 12px; padding: 16px 52px 14px 16px; border-bottom: 1px solid var(--line); background: radial-gradient(90% 160% at 10% 0%, rgba(155, 130, 255, .2), transparent 60%), radial-gradient(60% 120% at 90% 0%, rgba(255, 148, 85, .1), transparent 60%); }
 .orbi-avatar { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 14px; background: rgba(0, 0, 0, .45); border: 1px solid var(--line); }
 .orbi-title { display: grid; gap: 4px; min-width: 0; }

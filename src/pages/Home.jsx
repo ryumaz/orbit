@@ -11,6 +11,7 @@ import { priceFor } from '../components/BookForm'
 import { useAccount } from '../lib/account'
 import { useMembers } from '../lib/members'
 import { useRecent, useStats } from '../lib/pulse'
+import { Community, Faq, Features } from './HomeMore'
 import '../landing.css'
 
 const firstName = (name) => name?.split(' ')[0] ?? ''
@@ -19,7 +20,28 @@ const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'sm
 // What people can learn here, for the ticker when there aren't many sessions yet.
 const EXAMPLES = ['Guitar chords', 'Valorant aim', 'Sourdough', 'Calculus', 'Spanish', 'Figma', 'Chess openings', 'Python', 'Public speaking', 'Biryani', 'Yoga basics', 'Photography']
 
+// Hides the nav while scrolling down, shows it again on the way back up.
+function useNavOnScroll() {
+  const [nav, setNav] = useState({ hidden: false, scrolled: false })
+  useEffect(() => {
+    let last = window.scrollY
+    const onScroll = () => {
+      const y = window.scrollY
+      const delta = y - last
+      if (y < 40) setNav({ hidden: false, scrolled: false })
+      // small wiggles don't count
+      else if (Math.abs(delta) > 6) setNav({ hidden: delta > 0 && y > 160, scrolled: true })
+      else return
+      last = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return nav
+}
+
 export default function Home() {
+  const nav = useNavOnScroll()
   const { state } = useLocation()
   const { session } = useAccount()
   const { members } = useMembers()
@@ -36,13 +58,14 @@ export default function Home() {
 
   return (
     <div className="landing">
-      <header className="lnav">
+      <header className={`lnav ${nav.hidden ? 'is-hidden' : ''} ${nav.scrolled ? 'is-scrolled' : ''}`}>
         <Brand />
         <nav className="lnav-pill" aria-label="Sections">
           <button type="button" onClick={() => jump('how')}>How it works</button>
+          <button type="button" onClick={() => jump('features')}>Features</button>
           <button type="button" onClick={() => jump('topics')}>Topics</button>
           <button type="button" onClick={() => jump('escrow')}>Credits</button>
-          <button type="button" onClick={() => jump('numbers')}>Community</button>
+          <button type="button" onClick={() => jump('faq')}>FAQ</button>
         </nav>
         <div className="lnav-auth">
           {session ? (
@@ -89,11 +112,13 @@ export default function Home() {
             <p>The whole thing is a loop. You give a little of what you know, and that pays for learning what you don't.</p>
           </div>
           <ol className="steps">
-            <Step shape="hand" n="1" title="Teach what you know" body="Add what you can teach and set your price. People book you for 15 to 60 minutes, by video, voice or in person." />
+            <Step shape="book" n="1" title="Teach what you know" body="Add what you can teach and set your price. People book you for 15 to 60 minutes, by video, voice or in person." />
             <Step shape="spark" n="2" title="Earn when it helped" body="Credits wait on hold until the learner says it worked. Then they're yours, and they move exactly once." />
             <Step shape="ask" n="3" title="Spend them on anything" body="Search by skill and language, book someone, learn something new. Everyone starts with 30 credits." />
           </ol>
         </section>
+
+        <Features />
 
         <Topics members={members} />
 
@@ -102,6 +127,10 @@ export default function Home() {
         <Trust top={top} />
 
         <Numbers />
+
+        <Faq />
+
+        <Community />
 
         <section className="join">
           <Burst />

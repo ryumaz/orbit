@@ -27,7 +27,7 @@ const GUEST_NAV = [['/find', 'find', 'Learn something']]
 // Team links in the footer.
 export const SOCIAL = { github: 'https://github.com/ryumaz', discord: 'https://discord.gg/dJ5ba3BmgR' }
 
-// opens Orbi, the help assistant, from anywhere ("human" goes straight to the team form)
+// opens Vortex, the help assistant, from anywhere ("human" goes straight to the team form)
 export const openHelp = (mode = 'ai') => window.dispatchEvent(new CustomEvent('orbit:help', { detail: { mode } }))
 
 // Sidebar on desktop, top bar and thumb-reach tab bar on phones.
@@ -176,7 +176,7 @@ export function Footer({ full = false }) {
     return (
       <footer className="foot">
         <p className="m-0">orbit by Void Century · teach one, learn one.</p>
-        <button type="button" className="link" onClick={() => openHelp()}>Need help? Ask Orbi</button>
+        <button type="button" className="link" onClick={() => openHelp()}>Need help? Ask Vortex</button>
       </footer>
     )
   }
@@ -218,7 +218,7 @@ export function Footer({ full = false }) {
                 ['Log in', <Link to="/login">Log in</Link>],
               ])}
           {col('Help', [
-            ['Ask Orbi', <button type="button" onClick={() => openHelp()}>Ask Orbi</button>],
+            ['Ask Vortex', <button type="button" onClick={() => openHelp()}>Ask Vortex</button>],
             ['Contact', <button type="button" onClick={() => openHelp('human')}>Talk to the team</button>],
           ])}
         </nav>

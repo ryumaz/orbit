@@ -29,7 +29,7 @@ export default function Profile() {
   const isMe = id === me
   const free = freeStatus(person)
   const badges = [
-    ['First session given', 'hand', helped >= 1],
+    ['First session given', 'book', helped >= 1],
     ['Five sessions given', 'spark', helped >= 5],
     ['Asked for help', 'ask', taken >= 1],
     [`Speaks ${person.langs.length} languages`, 'ring', person.langs.length >= 3],

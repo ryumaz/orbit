@@ -18,12 +18,12 @@ export function Brand({ compact = false }) {
 }
 
 const LIVE_NAV = [
-  ['/home', 'home', 'Home'],
+  ['/home', 'overview', 'Overview'],
   ['/find', 'find', 'Learn something'],
   ['/sessions', 'sessions', 'Sessions'],
   ['/credits', 'credits', 'Credits'],
   ['/activity', 'activity', 'Audit log'],
-  ['/me', 'me', 'Settings'],
+  ['/me', 'settings', 'Settings'],
 ]
 const GUEST_NAV = [['/find', 'find', 'Learn something']]
 

@@ -8,6 +8,7 @@ import { SparkRating } from '../components/SparkStars'
 import { MemberAvatar } from '../components/ProfileCard'
 import { supabase } from '../lib/supabase'
 import { useAccount } from '../lib/account'
+import ReportDialog from '../components/ReportDialog'
 import { joinAnd } from '../lib/time'
 
 // A member's public page, the link they share: orbit.voids.wtf/u/<handle>.
@@ -32,6 +33,7 @@ export default function PublicProfile() {
 
   const p = state.p
   const mine = account.live && p && account.profile.handle === p.handle
+  const [reporting, setReporting] = useState(false)
   const first = p?.name.split(' ')[0]
   const since = p && new Date(p.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
 
@@ -140,7 +142,13 @@ export default function PublicProfile() {
                   <ShareProfile handle={p.handle} name={p.name} />
                 </>
               ) : account.session ? (
-                account.live ? <BookForm p={p} initialSkill={params.get('skill')} /> : <p className="dim">Opening…</p>
+                account.live ? (
+                  <>
+                    <BookForm p={p} initialSkill={params.get('skill')} />
+                    <button type="button" className="link self-start text-[11.5px] dim" onClick={() => setReporting(true)}>Report {first}</button>
+                    {reporting && <ReportDialog handle={p.handle} name={p.name} onClose={() => setReporting(false)} />}
+                  </>
+                ) : <p className="dim">Opening…</p>
               ) : (
                 <div className="card card-hot grid gap-3">
                   <p className="m-0 text-[15px]">Learn from {first} on orbit.</p>

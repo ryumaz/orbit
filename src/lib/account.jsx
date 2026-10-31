@@ -5,6 +5,15 @@ import { chime, systemNotify } from './notify'
 
 const AccountContext = createContext(null)
 
+// Expiry and auto-release run in the database every 5 minutes; opening orbit also
+// nudges them (at most once a minute), so a stale request never sits on screen.
+let lastSweep = 0
+const sweep = async () => {
+  if (Date.now() - lastSweep < 60000) return
+  lastSweep = Date.now()
+  await supabase.rpc('sweep_due')
+}
+
 const SESSION_FIELDS =
   '*, learner:profiles!sessions_learner_id_fkey(handle, name, avatar_url), mentor:profiles!sessions_mentor_id_fkey(handle, name, avatar_url)'
 
@@ -24,11 +33,13 @@ export function AccountProvider({ children }) {
 
   const load = useCallback(async () => {
     if (!uid) return setData({ uid, loading: false })
-    const [p, l, s, rv] = await Promise.all([
+    await sweep().catch(() => {})
+    const [p, l, s, rv, adm] = await Promise.all([
       supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, skill_rates, created_at, onboarded').eq('id', uid).single(),
       supabase.from('ledger').select('id, amount, type, note, session_id, created_at').order('created_at'),
       supabase.from('sessions').select(SESSION_FIELDS).order('created_at', { ascending: false }).limit(100),
       supabase.from('reviews').select('session_id, stars').eq('reviewer_id', uid),
+      supabase.rpc('is_admin'),
     ])
     const rows = l.data ?? []
     setData({
@@ -40,6 +51,7 @@ export function AccountProvider({ children }) {
       balance: rows.reduce((a, r) => a + r.amount, 0),
       sessions: s.data ?? [],
       myReviews: rv.data ?? [],
+      isAdmin: adm.data === true,
     })
   }, [uid])
 
@@ -165,7 +177,19 @@ export function AccountProvider({ children }) {
         fresh.push({ kind: 'end', s, who: from, title: `${name(from)} wants to end ${s.skill} early`, body: `${name(s.mentor)} keeps ${s.end_share}, ${name(s.learner)} gets ${s.cost - s.end_share} back. Agree or say no.` })
       }
       if (s.mentor_id === uid && before.status !== 'completed' && s.status === 'completed') {
-        fresh.push({ kind: 'paid', s, who: s.learner, title: `${name(s.learner)} said it worked`, body: `+${s.cost} credits are yours. Nice teaching.` })
+        const auto = s.resolution?.startsWith('Paid automatically')
+        fresh.push({ kind: 'paid', s, who: s.learner, title: auto ? `${s.skill} paid automatically` : `${name(s.learner)} said it worked`, body: auto ? `+${s.cost} credits are yours: no dispute within 24 hours.` : `+${s.cost} credits are yours. Nice teaching.` })
+      }
+      if (before.status === 'requested' && s.status === 'expired') {
+        fresh.push(s.learner_id === uid
+          ? { kind: 'expired', s, who: s.mentor, title: `Your ${s.skill} request expired`, body: `${name(s.mentor)} didn't answer within 5 hours. Nothing was charged.` }
+          : { kind: 'expired', s, who: s.learner, title: `${name(s.learner)}'s ${s.skill} request expired`, body: 'It waited 5 hours without an answer.' })
+      }
+      if (s.mentor_id === uid && before.status !== 'disputed' && s.status === 'disputed') {
+        fresh.push({ kind: 'disputed', s, who: s.learner, title: `${name(s.learner)} opened a dispute on ${s.skill}`, body: `“${s.dispute_reason}” The credits stay on hold until orbit support decides.` })
+      }
+      if (before.status === 'disputed' && s.status === 'resolved') {
+        fresh.push({ kind: 'resolved', s, who: s.mentor_id === uid ? s.learner : s.mentor, title: `Support settled ${s.skill}`, body: `${name(s.mentor)} kept ${s.mentor_share}, ${name(s.learner)} got ${s.cost - s.mentor_share} back.` })
       }
     }
     if (!fresh.length) return
@@ -177,7 +201,7 @@ export function AccountProvider({ children }) {
         body: f.body,
         icon: f.who?.avatar_url,
         onClick: () => {
-          location.hash = f.kind === 'request' || f.kind === 'declined' ? '#/sessions' : f.kind === 'paid' ? `#/review/${f.s.id}` : `#/s/${f.s.id}`
+          location.hash = ['request', 'declined', 'expired', 'resolved'].includes(f.kind) ? '#/sessions' : f.kind === 'paid' ? `#/review/${f.s.id}` : `#/s/${f.s.id}`
         },
       })
     }
@@ -209,6 +233,7 @@ export function AccountProvider({ children }) {
     ledger: data.ledger ?? [],
     balance: data.balance ?? 0,
     sessions: data.sessions ?? [],
+    isAdmin: data.isAdmin ?? false,
     reviewed: new Set((data.myReviews ?? []).map((r) => r.session_id)),
     myReviews: data.myReviews ?? [],
     loading,

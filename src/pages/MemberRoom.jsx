@@ -4,7 +4,10 @@ import Editor from '../components/Editor'
 import { Brand, Tracker } from '../components/Shell'
 import { Spark } from '../components/Spark'
 import { MemberAvatar } from '../components/ProfileCard'
-import { CallPanel, Chat, Notes } from '../components/RoomParts'
+import { CallPanel, Notes } from '../components/RoomParts'
+import SessionChat from '../components/SessionChat'
+import { DisputeDialog, HoldStatus } from '../components/Dispute'
+import ReportDialog from '../components/ReportDialog'
 import Whiteboard from '../components/Whiteboard'
 import { useConfirm } from '../components/Confirm'
 import { EndDialog, EndProposal } from '../components/EndEarly'
@@ -24,6 +27,8 @@ export default function MemberRoom() {
   const { user, profile, sessions, act, toInbox, declined, reviewed, setActiveCall } = useAccount()
   const navigate = useNavigate()
   const [ending, setEnding] = useState(false)
+  const [disputing, setDisputing] = useState(false)
+  const [reporting, setReporting] = useState(false)
   const [params, setParams] = useSearchParams()
   const [confirm, dialog] = useConfirm()
   const s = sessions.find((x) => x.id === Number(id))
@@ -132,7 +137,15 @@ export default function MemberRoom() {
     if (r.error) setError(r.error)
   }
   const earlyEnd = status === 'ended'
-  const canReview = (done || earlyEnd) && !reviewed.has(s.id)
+  const settled = status === 'resolved'
+  const canReview = (done || earlyEnd || settled) && !reviewed.has(s.id)
+  const openDispute = async (reason) => {
+    const r = await act('open_dispute', { sid: s.id, reason })
+    if (r.error) return r.error
+    setDisputing(false)
+    if (live.inCall) live.leave()
+    return null
+  }
 
   return (
     <div className="room">
@@ -150,7 +163,10 @@ export default function MemberRoom() {
             ? `${s.cost} sent to ${first(mentor)}`
             : earlyEnd
               ? `ended early · ${s.mentor_share} kept, ${s.cost - s.mentor_share} back`
-              : status === 'cancelled' ? 'cancelled' : `${s.cost} on hold until it works`}
+              : status === 'cancelled' ? 'cancelled'
+                : status === 'disputed' ? `${s.cost} on hold · in dispute`
+                  : settled ? `settled · ${s.mentor_share} kept, ${s.cost - s.mentor_share} back`
+                    : `${s.cost} on hold until it works`}
         </span>
         {!ended && isLearner && (
           <button type="button" className="btn btn-light btn-sm" onClick={() => setConfirming(true)}>Got it</button>
@@ -172,8 +188,9 @@ export default function MemberRoom() {
               <span className="dim text-[11px]">{left === 0 ? 'Time is up. Wrap up, then confirm.' : `of ${s.minutes} minutes`}</span>
             </div>
           )}
-          {!ended && teaching && <p className="m-0 text-[12px] dim">Waiting for {first(learner)} to say it worked. Credits stay on hold until then.</p>}
+          <HoldStatus s={s} isLearner={isLearner} mentor={mentor} learner={learner} onDispute={() => setDisputing(true)} />
           {!ended && !s.end_by && <button type="button" onClick={() => setEnding(true)} className="link self-start text-[12px]">End early</button>}
+          <button type="button" onClick={() => setReporting(true)} className="link self-start text-[11.5px] dim">Report {first(other)}</button>
         </aside>
 
         <main className="room-main">
@@ -258,17 +275,23 @@ export default function MemberRoom() {
           <div className="grid gap-3">
             <div role="tablist" aria-label="Talk" className="flex gap-2">
               <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'chat'} aria-pressed={side === 'chat'} onClick={() => setSide('chat')}>
-                Chat{live.messages.length > 0 && ` · ${live.messages.length}`}
+                Chat
               </button>
               <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'notes'} aria-pressed={side === 'notes'} onClick={() => setSide('notes')}>
                 My notes
               </button>
             </div>
-            {side === 'chat' ? <Chat live={live} me={uid} other={other} /> : <Notes roomKey={`m${s.id}`} />}
+            {side === 'chat' ? (
+              <SessionChat sessionId={s.id} me={uid} other={other} canWrite={!['declined', 'cancelled', 'expired'].includes(status)} />
+            ) : (
+              <Notes roomKey={`m${s.id}`} />
+            )}
           </div>
         </aside>
       </div>
       {ending && <EndDialog s={s} uid={uid} mentor={mentor} learner={learner} onClose={() => setEnding(false)} onSend={propose} />}
+      {disputing && <DisputeDialog s={s} mentor={mentor} onClose={() => setDisputing(false)} onSend={openDispute} />}
+      {reporting && <ReportDialog handle={other.handle} name={other.name} sessionId={s.id} onClose={() => setReporting(false)} />}
       {dialog}
     </div>
   )

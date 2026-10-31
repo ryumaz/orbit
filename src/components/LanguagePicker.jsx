@@ -6,6 +6,7 @@ import { LANGS, flagUrl, getLang, setLang } from '../lib/i18n'
 export default function LanguagePicker({ full = false, up = false }) {
   const current = LANGS.find((l) => l.code === getLang()) ?? LANGS[0]
   const [open, setOpen] = useState(false)
+  const [q, setQ] = useState('')
   const [failed, setFailed] = useState(false)
   const box = useRef(null)
 
@@ -40,8 +41,10 @@ export default function LanguagePicker({ full = false, up = false }) {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="lang-chev"><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {open && (
+        <div className="lang-pop">
+        <input className="lang-search" type="search" autoFocus placeholder="Search languages" aria-label="Search languages" value={q} onChange={(e) => setQ(e.target.value)} />
         <ul className="lang-list" role="listbox" aria-label="Language">
-          {LANGS.map((l) => (
+          {LANGS.filter((l) => !q.trim() || `${l.name} ${l.region} ${l.code} ${new Intl.DisplayNames(['en'], { type: 'language' }).of(l.code) ?? ''}`.toLowerCase().includes(q.trim().toLowerCase())).map((l) => (
             <li key={l.code} role="option" aria-selected={l.code === current.code}>
               <button type="button" lang={l.code} onClick={() => (l.code === current.code ? setOpen(false) : setLang(l.code))}>
                 <img src={flagUrl(l.flag)} alt="" width="22" height="16" className="lang-flag" loading="lazy" />
@@ -50,6 +53,7 @@ export default function LanguagePicker({ full = false, up = false }) {
             </li>
           ))}
         </ul>
+        </div>
       )}
       {failed && full && <p className="m-0 mt-2 text-[11.5px] text-amber">Translation isn't available right now, so orbit is showing English.</p>}
     </div>

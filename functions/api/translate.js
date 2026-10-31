@@ -15,6 +15,8 @@ const VERSION = 'v4' // bump to retranslate everything
 const NAMES = {
   hi: 'Hindi', es: 'Spanish (Spain)', pt: 'Brazilian Portuguese', fr: 'French', de: 'German', tr: 'Turkish', ru: 'Russian',
   id: 'Indonesian', it: 'Italian', pl: 'Polish', vi: 'Vietnamese', ja: 'Japanese', ko: 'Korean', zh: 'Simplified Chinese', bn: 'Bengali', ta: 'Tamil',
+  mr: 'Marathi', te: 'Telugu', ml: 'Malayalam', kn: 'Kannada', gu: 'Gujarati', pa: 'Punjabi (Gurmukhi script)', th: 'Thai', uk: 'Ukrainian',
+  nl: 'Dutch', sw: 'Swahili', fil: 'Filipino (Tagalog)', ar: 'Modern Standard Arabic', ur: 'Urdu', fa: 'Persian (Farsi)', he: 'Hebrew',
 }
 const ALLOWED = [/^https:\/\/orbit\.voids\.wtf$/, /^https:\/\/([a-z0-9-]+\.)?orbit-34w\.pages\.dev$/, /^http:\/\/localhost:\d+$/]
 

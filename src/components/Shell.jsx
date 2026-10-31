@@ -188,7 +188,9 @@ export function Footer({ full = false }) {
         <p className="m-0">orbit by Void Century · teach one, learn one.</p>
         <span className="flex flex-wrap items-center gap-4">
           <LanguagePicker up />
-          <button type="button" className="link" onClick={() => openHelp()}>Need help? Ask Vortex</button>
+          <Link to="/support" className="link">Support</Link>
+          <Link to="/docs/privacy" className="link">Privacy</Link>
+          <Link to="/docs/terms" className="link">Terms</Link>
         </span>
       </footer>
     )
@@ -232,7 +234,9 @@ export function Footer({ full = false }) {
               ])}
           {col('Help', [
             ['Ask Vortex', <button type="button" onClick={() => openHelp()}>Ask Vortex</button>],
-            ['Contact', <button type="button" onClick={() => openHelp('human')}>Contact support</button>],
+            ['Support', <Link to="/support">Support</Link>],
+            ['Privacy', <Link to="/docs/privacy">Privacy policy</Link>],
+            ['Terms', <Link to="/docs/terms">Terms of use</Link>],
           ])}
         </nav>
       </div>

@@ -3,6 +3,9 @@ import { supabase, friendly } from '../lib/supabase'
 import { PROVIDERS, enabledProviders } from '../lib/oauth'
 import { PROVIDER_ICON } from './AuthIcons'
 import { useReauth } from './Reauth'
+import { useNavigate } from 'react-router-dom'
+import { useAccount } from '../lib/account'
+import { removeAvatar } from '../lib/avatar'
 
 // Sign-in and security on the You page: email, password, and which quick sign-ins
 // (GitHub, Discord, Google) open this same account. Every change here first checks
@@ -33,6 +36,7 @@ export default function AccountSecurity({ user }) {
       <EmailForm user={user} reauth={reauth} ready={identities !== null} />
       <PasswordForm hasPassword={hasPassword} reauth={reauth} ready={identities !== null} />
       <Connected identities={identities} enabled={enabled} onChange={reloadIdentities} reauth={reauth} />
+      <DeleteAccount reauth={reauth} ready={identities !== null} />
       {reauthDialog}
     </section>
   )
@@ -169,6 +173,72 @@ function Connected({ identities, enabled, onChange, reauth }) {
         })}
       </ul>
       <Note note={note} />
+    </div>
+  )
+}
+
+// The danger zone: what deleting means, typing your username, then proving it's you.
+function DeleteAccount({ reauth, ready }) {
+  const { user, profile, sessions, balance, signOut } = useAccount()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [sure, setSure] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const openOnes = sessions.filter((x) => ['requested', 'accepted', 'live', 'disputed'].includes(x.status)).length
+
+  const go = async () => {
+    setError('')
+    if (!ready || !(await reauth('delete your account'))) return
+    setBusy(true)
+    try {
+      if (profile.avatar_url) await removeAvatar(user.id, profile.avatar_url)
+    } catch {
+      /* the photo is unlinked by the database anyway */
+    }
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) {
+      setBusy(false)
+      return setError(friendly(error))
+    }
+    await signOut().catch(() => {})
+    navigate('/', { replace: true })
+  }
+
+  return (
+    <div className="danger">
+      <p className="label m-0">Delete account</p>
+      {!open ? (
+        <>
+          <p className="m-0 text-[12.5px] dim">Remove your account and personal data from orbit for good.</p>
+          <button type="button" className="btn btn-sm btn-danger-line self-start" onClick={() => setOpen(true)}>Delete my account…</button>
+        </>
+      ) : (
+        <div className="grid gap-3">
+          <p className="m-0 text-[13px]"><b>This can't be undone.</b> Deleting your account:</p>
+          <ul className="danger-list">
+            <li>removes your email, password and GitHub/Discord/Google sign-ins, and logs you out everywhere;</li>
+            <li>wipes your profile: name, username, photo, bio, skills and prices; your public link stops working;</li>
+            <li>deletes your chat messages and support messages;</li>
+            <li>throws away your <b>{balance}</b> credits. They can't be moved or refunded;</li>
+            <li>keeps past sessions and reviews under the name "Deleted member", so other people's history stays honest.</li>
+          </ul>
+          {openOnes > 0 && <p className="m-0 text-[12.5px] text-amber">You have {openOnes} open {openOnes === 1 ? 'session' : 'sessions'}. Finish, cancel or settle {openOnes === 1 ? 'it' : 'them'} first.</p>}
+          <label className="flex items-start gap-2 text-[12.5px]">
+            <input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} /> I understand my account and credits are gone for good.
+          </label>
+          <label htmlFor="del-confirm" className="label">Type your username <b translate="no">{profile.handle}</b> to confirm</label>
+          <input id="del-confirm" className="input" autoComplete="off" spellCheck={false} value={typed} onChange={(e) => setTyped(e.target.value.trim().toLowerCase())} />
+          {error && <p role="alert" className="m-0 text-[12.5px] text-amber">{error}</p>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-line btn-sm" onClick={() => { setOpen(false); setTyped(''); setSure(false) }}>Keep my account</button>
+            <button type="button" className="btn btn-sm btn-danger" disabled={busy || !sure || typed !== profile.handle || openOnes > 0} onClick={go}>
+              {busy ? 'Deleting…' : 'Delete my account'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

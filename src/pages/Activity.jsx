@@ -18,8 +18,8 @@ const FILTERS = [
   ['profile', 'Profile'],
 ]
 const GROUP = {
-  requested: 'sessions', accepted: 'sessions', live: 'sessions', completed: 'sessions', declined: 'sessions', cancelled: 'sessions',
-  ended: 'endings', 'end-proposed': 'endings', 'end-rejected': 'endings', 'end-withdrawn': 'endings',
+  requested: 'sessions', accepted: 'sessions', live: 'sessions', completed: 'sessions', declined: 'sessions', cancelled: 'sessions', expired: 'sessions',
+  ended: 'endings', 'end-proposed': 'endings', 'end-rejected': 'endings', 'end-withdrawn': 'endings', disputed: 'endings', resolved: 'endings',
   reviewed: 'reviews',
   'profile-updated': 'profile',
 }
@@ -28,7 +28,7 @@ const first = (p) => p?.name.split(' ')[0] ?? 'Someone'
 
 // One plain sentence per event, written from my side.
 function describe(e, uid) {
-  const who = e.actor_id === uid ? 'You' : first(e.actor)
+  const who = e.actor_id === uid ? 'You' : e.actor_id ? first(e.actor) : 'orbit'
   const d = e.detail ?? {}
   const m = first(e.session?.mentor)
   const l = first(e.session?.learner)
@@ -37,7 +37,11 @@ function describe(e, uid) {
     case 'requested': return `${who} asked ${m} for ${d.minutes} min of ${skill} · ${d.cost} credits`
     case 'accepted': return `${who} accepted ${skill} · ${d.cost} credits from ${l} held`
     case 'live': return `${who} opened the room for ${skill}`
-    case 'completed': return `${who} said it worked · ${m} got ${d.cost} credits`
+    case 'completed': return d.resolution?.startsWith('Paid automatically') ? `${skill} paid automatically · ${m} got ${d.cost} credits (no dispute within 24 hours)` : `${who} said it worked · ${m} got ${d.cost} credits`
+    case 'expired': return `The ${skill} request expired · no answer within 5 hours`
+    case 'disputed': return `${who} opened a dispute on ${skill}${d.reason ? ` · “${d.reason}”` : ''}`
+    case 'resolved': return `orbit support settled ${skill} · ${m} kept ${d.mentor_share}, ${l} got ${(d.cost ?? 0) - (d.mentor_share ?? 0)} back`
+    case 'account-deleted': return 'Account deleted'
     case 'declined': return `${who} declined ${skill}`
     case 'cancelled': return `${who} withdrew the ${skill} request`
     case 'end-proposed': return `${who} proposed ending ${skill} early · ${m} keeps ${d.share} of ${d.cost}`

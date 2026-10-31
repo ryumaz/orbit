@@ -331,7 +331,7 @@ export default function Orbi() {
 }
 
 // A message to a real person. Signed-in members see their requests and replies here.
-function TeamForm({ account }) {
+export function TeamForm({ account }) {
   const [email, setEmail] = useState(account.user?.email ?? '')
   const [topic, setTopic] = useState('account')
   const [message, setMessage] = useState('')

@@ -23,6 +23,21 @@ export const LANGS = [
   { code: 'zh', name: '中文', region: '中国', flag: 'cn' },
   { code: 'bn', name: 'বাংলা', region: 'বাংলাদেশ', flag: 'bd' },
   { code: 'ta', name: 'தமிழ்', region: 'இந்தியா', flag: 'in' },
+  { code: 'mr', name: 'मराठी', region: 'भारत', flag: 'in' },
+  { code: 'te', name: 'తెలుగు', region: 'భారతదేశం', flag: 'in' },
+  { code: 'ml', name: 'മലയാളം', region: 'ഇന്ത്യ', flag: 'in' },
+  { code: 'kn', name: 'ಕನ್ನಡ', region: 'ಭಾರತ', flag: 'in' },
+  { code: 'gu', name: 'ગુજરાતી', region: 'ભારત', flag: 'in' },
+  { code: 'pa', name: 'ਪੰਜਾਬੀ', region: 'ਭਾਰਤ', flag: 'in' },
+  { code: 'th', name: 'ไทย', region: 'ประเทศไทย', flag: 'th' },
+  { code: 'uk', name: 'Українська', region: 'Україна', flag: 'ua' },
+  { code: 'nl', name: 'Nederlands', region: 'Nederland', flag: 'nl' },
+  { code: 'sw', name: 'Kiswahili', region: 'Kenya', flag: 'ke' },
+  { code: 'fil', name: 'Filipino', region: 'Pilipinas', flag: 'ph' },
+  { code: 'ar', name: 'العربية', region: 'السعودية', flag: 'sa', rtl: true },
+  { code: 'ur', name: 'اردو', region: 'پاکستان', flag: 'pk', rtl: true },
+  { code: 'fa', name: 'فارسی', region: 'ایران', flag: 'ir', rtl: true },
+  { code: 'he', name: 'עברית', region: 'ישראל', flag: 'il', rtl: true },
 ]
 export const flagUrl = (flag) => `https://flagcdn.com/${flag}.svg`
 
@@ -65,6 +80,8 @@ const WORTH = /\p{L}{2,}/u // at least one real word
 export function startTranslating() {
   const lang = getLang()
   document.documentElement.lang = lang
+  // Arabic, Urdu, Persian and Hebrew read right to left
+  document.documentElement.dir = LANGS.find((l) => l.code === lang)?.rtl ? 'rtl' : 'ltr'
   if (lang === 'en') return
   // shown in the "Translating to …" badge while a page is translated for the first time
   document.body.dataset.i18nName = LANGS.find((l) => l.code === lang)?.name ?? lang

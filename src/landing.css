@@ -49,6 +49,8 @@
 
 /* ---------- sections ---------- */
 .lsection { max-width: var(--maxw); margin-inline: auto; padding: clamp(96px, 13vw, 180px) var(--gutter) 0; position: relative; }
+/* jumping to a section lands its content just under the nav, not its big top padding */
+.lsection { scroll-margin-top: calc(100px - clamp(96px, 13vw, 180px)); }
 .section-head { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px 64px; align-items: end; margin-bottom: clamp(40px, 6vw, 72px); }
 .section-head h2 { margin: 0; font-weight: 300; font-size: clamp(28px, 3.6vw, 50px); line-height: 1.08; letter-spacing: -.035em; max-width: 18ch; }
 .section-head p { margin: 0; color: var(--color-ash); max-width: 46ch; font-size: 14px; }

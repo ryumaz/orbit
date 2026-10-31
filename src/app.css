@@ -478,6 +478,10 @@
 .orbi-thought-text { border: 0; background: none; padding: 7px 0; font: inherit; color: inherit; text-align: left; cursor: pointer; font-style: italic; }
 .orbi-thought-text::before { content: '\201C'; opacity: .55; }
 .orbi-thought-text::after { content: '\201D'; opacity: .55; }
+/* dragged to the left half: the bubble opens to the right; near the top: below */
+.orbi-dock.is-left .orbi-thought { right: auto; left: calc(100% - 6px); border-radius: 16px 16px 16px 4px; }
+.orbi-dock.is-high .orbi-thought { bottom: auto; top: 58%; }
+.orbi-launch:active { cursor: grabbing; }
 .orbi-thought-x { flex: none; width: 26px; height: 26px; border: 0; border-radius: 50%; background: none; color: #5e5d58; font-size: 16px; cursor: pointer; }
 
 .orbi-panel {
@@ -560,7 +564,8 @@
 .side-wallet-n .spark-svg { width: 14px; height: 14px; }
 .side-wallet small { font-size: 11px; color: var(--color-ash); }
 .side-who { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 8px; border-radius: 14px; border: 1px solid var(--line); }
-.side-who-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--color-chalk); }
+.side-who-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 2px; border: 0; border-radius: 10px; background: none; font: inherit; text-align: left; text-decoration: none; color: var(--color-chalk); cursor: pointer; }
+.side-who-link:hover, .side-who-link[aria-expanded="true"] { background: rgba(255, 255, 255, .05); }
 .side-who-text { display: grid; min-width: 0; }
 .side-who-text b, .side-who-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .side-who-text b { font-weight: 500; font-size: 12.5px; }
@@ -831,12 +836,19 @@ select.input option { background: #111110; color: var(--color-chalk); }
 .act-streak.is-on b { background: var(--spark); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .act-scroll { overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
 .act-grid { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr; gap: 4px 6px; width: max-content; }
-.act-months { grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 13px; gap: 3px; font-size: 9.5px; color: var(--color-ash); height: 12px; }
+.act-months { grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 11px; gap: 3px; font-size: 9.5px; color: var(--color-ash); height: 12px; }
 .act-months span { white-space: nowrap; overflow: visible; }
-.act-days { grid-row: 2; display: grid; grid-template-rows: repeat(7, 10px); gap: 3px; font-size: 9px; color: var(--color-ash); line-height: 10px; }
-.act-weeks { grid-row: 2; grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 10px; gap: 3px; }
-.act-week { display: grid; grid-template-rows: repeat(7, 10px); gap: 3px; }
-.act-cell { display: block; width: 10px; height: 10px; border-radius: 2.5px; background: #1a1a19; }
+.act-days { grid-row: 2; display: grid; grid-template-rows: repeat(7, 11px); gap: 3px; font-size: 9px; color: var(--color-ash); line-height: 11px; }
+.act-weeks { grid-row: 2; grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 11px; gap: 3px; }
+.act-week { display: grid; grid-template-rows: repeat(7, 11px); gap: 3px; }
+.act-cell { display: block; width: 11px; height: 11px; border-radius: 3px; background: #1a1a19; transition: transform .12s, outline-color .12s; outline: 1px solid transparent; outline-offset: 1px; }
+.act-weeks .act-cell:not(.is-future) { cursor: default; }
+.act-cell.is-hover { outline-color: var(--color-chalk); transform: scale(1.15); }
+.act-tip { position: fixed; z-index: 80; transform: translate(-50%, calc(-100% - 9px)); display: grid; gap: 2px; padding: 7px 11px; border-radius: 8px; background: var(--color-chalk); color: #000; font-size: 11.5px; line-height: 1.35; white-space: nowrap; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,.5); animation: act-tip .12s ease-out; }
+.act-tip b { font-weight: 700; }
+.act-tip small { font-size: 10.5px; opacity: .6; }
+.act-tip::after { content: ""; position: absolute; left: 50%; bottom: -4px; width: 8px; height: 8px; background: inherit; transform: translateX(-50%) rotate(45deg); }
+@keyframes act-tip { from { opacity: 0; transform: translate(-50%, calc(-100% - 4px)); } }
 .act-cell.is-future { background: transparent; }
 .act-cell.l1 { background: rgba(155, 130, 255, .35); }
 .act-cell.l2 { background: rgba(155, 130, 255, .65); }
@@ -884,3 +896,19 @@ select.input option { background: #111110; color: var(--color-chalk); }
   .hours-day { grid-template-columns: 38px 1fr; }
   .hours-day > .link { grid-column: 2; justify-self: start; }
 }
+
+/* ---------- sidebar "me" card, Discord style ---------- */
+.side-me { position: relative; }
+.me-pop { position: absolute; z-index: 120; left: 0; right: 0; bottom: calc(100% + 10px); overflow: hidden; border-radius: 18px; border: 1px solid var(--line-strong); background: #111110; box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .95); animation: toastIn .2s var(--ease) both; }
+.me-pop-banner { height: 54px; background: linear-gradient(135deg, var(--card), color-mix(in srgb, var(--card) 30%, #000)); }
+.me-pop-avatar { margin: -28px 0 0 14px; width: max-content; padding: 4px; border-radius: 50%; background: #111110; }
+.me-pop-who { display: grid; gap: 1px; padding: 6px 16px 10px; }
+.me-pop-who b { font-size: 15px; font-weight: 600; }
+.me-pop-who small { font-size: 11.5px; color: var(--color-ash); }
+.me-pop-who p { margin: 8px 0 0; font-size: 12px; color: var(--color-ash); line-height: 1.45; }
+.me-pop-list { display: grid; gap: 2px; margin: 0 8px 8px; padding: 4px; border-radius: 12px; background: rgba(255, 255, 255, .04); }
+.me-pop-list > a, .me-pop-list > button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 9px; background: none; color: var(--color-chalk); font: inherit; font-size: 13px; text-align: left; text-decoration: none; cursor: pointer; }
+.me-pop-list > a:hover, .me-pop-list > button:hover { background: rgba(255, 255, 255, .07); }
+.me-pop-list .acct-statuses { margin: 0 0 2px; }
+/* on a computer the sidebar card does what the top-right menu does */
+@media (min-width: 960px) { .acct { display: none; } }

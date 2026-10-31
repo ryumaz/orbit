@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Spark } from '../components/Spark'
 import { MemberAvatar, CARD_COLORS } from '../components/ProfileCard'
@@ -14,6 +14,48 @@ const SORTS = [
   ['cheap', 'Lowest price'],
   ['new', 'Newest'],
 ]
+
+// One example at a time, typed out and erased, so the big search box never cuts a word off.
+const HINTS = ['valorant aim', 'sourdough', 'calculus', 'guitar chords', 'python', 'chess openings', 'spanish', 'figma']
+function useTypedHint() {
+  const [text, setText] = useState('')
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setText(HINTS[0])
+      return
+    }
+    let word = 0
+    let n = 0
+    let back = false
+    let timer
+    const tick = () => {
+      const w = HINTS[word]
+      n += back ? -1 : 1
+      setText(w.slice(0, n))
+      let wait = back ? 35 : 75
+      if (!back && n === w.length) {
+        back = true
+        wait = 1700
+      } else if (back && n === 0) {
+        back = false
+        word = (word + 1) % HINTS.length
+        wait = 350
+      }
+      timer = setTimeout(tick, wait)
+    }
+    timer = setTimeout(tick, 400)
+    return () => clearTimeout(timer)
+  }, [])
+  return text
+}
+
+// the input owns the typing hint, so the page around it doesn't redraw on every letter
+function SearchBox({ value, onChange }) {
+  const hint = useTypedHint()
+  return (
+    <input id="q" type="search" autoComplete="off" value={value} onChange={(e) => onChange(e.target.value)} placeholder={hint} className="search" />
+  )
+}
 
 export default function Find() {
   const account = useAccount()
@@ -55,15 +97,7 @@ export default function Find() {
     <>
       <div className="view-head">
         <label htmlFor="q" className="label">What do you want to learn?</label>
-        <input
-          id="q"
-          type="search"
-          autoComplete="off"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="valorant aim, sourdough, calculus"
-          className="search"
-        />
+        <SearchBox value={query} onChange={setQuery} />
       </div>
 
       <div className="filters mb-8">

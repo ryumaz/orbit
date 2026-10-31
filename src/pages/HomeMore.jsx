@@ -136,7 +136,7 @@ const QUESTIONS = [
 ]
 
 export function Faq() {
-  const [open, setOpen] = useState(0)
+  const [open, setOpen] = useState(-1) // all closed until you pick one
   return (
     <section className="lsection faq" id="faq">
       <div className="faq-head">

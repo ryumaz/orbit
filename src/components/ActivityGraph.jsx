@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 
 const DAY = 86400000
@@ -12,6 +13,7 @@ const levelOf = (n) => (n === 0 ? 0 : n === 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 : 4)
 export default function ActivityGraph({ handle, title = 'Activity' }) {
   const [rows, setRows] = useState(null)
   const scroller = useRef(null)
+  const [tip, setTip] = useState(null) // the hovered day and where its square is
   useEffect(() => {
     let alive = true
     supabase.rpc('activity_for', { h: handle }).then(({ data }) => alive && setRows(data ?? []))
@@ -79,10 +81,13 @@ export default function ActivityGraph({ handle, title = 'Activity' }) {
   }, [g])
 
   if (!g) return null
-  const tip = (c) => {
-    if (!c.r) return `Nothing on ${c.date}`
-    const parts = [c.r.taught && `${c.r.taught} taught`, c.r.learned && `${c.r.learned} learned`, c.r.reviews && `${c.r.reviews} review${c.r.reviews === 1 ? '' : 's'}`].filter(Boolean)
-    return `${parts.join(', ')} on ${new Date(`${c.date}T00:00:00Z`).toLocaleDateString([], { day: 'numeric', month: 'short', timeZone: 'UTC' })}`
+  const show = (e) => {
+    const el = e.target.closest('[data-w]')
+    if (!el) return setTip(null)
+    const c = g.weeks[el.dataset.w][el.dataset.d]
+    if (!c) return setTip(null)
+    const r = el.getBoundingClientRect()
+    setTip({ c, x: r.left + r.width / 2, y: r.top })
   }
   return (
     <section className="block" aria-label={title}>
@@ -94,24 +99,40 @@ export default function ActivityGraph({ handle, title = 'Activity' }) {
         <span className={`act-streak ${g.current ? 'is-on' : ''}`}><b>{g.current}</b> day streak {g.current >= 3 ? '🔥' : ''}</span>
         <span className="dim">longest <b>{g.longest}</b></span>
       </div>
-      <div ref={scroller} className="act-scroll">
+      <div ref={scroller} className="act-scroll" onScroll={() => setTip(null)}>
         <div className="act-grid" role="img" aria-label={`${g.classes} classes in the last year, current streak ${g.current} days`}>
           <div className="act-months" aria-hidden="true">{g.months.map((m, i) => <span key={i}>{m}</span>)}</div>
           <div className="act-days" aria-hidden="true"><span /><span>Mon</span><span /><span>Wed</span><span /><span>Fri</span><span /></div>
-          <div className="act-weeks">
+          <div className="act-weeks" onMouseOver={show} onMouseLeave={() => setTip(null)}>
             {g.weeks.map((col, i) => (
               <div key={i} className="act-week">
-                {col.map((c, d) => (c ? <i key={d} className={`act-cell l${levelOf(c.n)}`} title={tip(c)} /> : <i key={d} className="act-cell is-future" />))}
+                {col.map((c, d) => (c ? <i key={d} data-w={i} data-d={d} className={`act-cell l${levelOf(c.n)} ${tip?.c === c ? 'is-hover' : ''}`} /> : <i key={d} className="act-cell is-future" />))}
               </div>
             ))}
           </div>
         </div>
       </div>
+      {tip && <DayTip {...tip} />}
       <div className="act-legend" aria-hidden="true">
         <span className="dim">less</span>
         {[0, 1, 2, 3, 4].map((l) => <i key={l} className={`act-cell l${l}`} />)}
         <span className="dim">more</span>
       </div>
     </section>
+  )
+}
+
+// GitHub-style bubble over the hovered square: "3 classes on 31 October" and what they were
+function DayTip({ c, x, y }) {
+  const date = new Date(`${c.date}T00:00:00Z`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', timeZone: 'UTC' })
+  const classes = c.r ? c.r.taught + c.r.learned : 0
+  const parts = c.r ? [c.r.taught && `${c.r.taught} taught`, c.r.learned && `${c.r.learned} learned`, c.r.reviews && `${c.r.reviews} review${c.r.reviews === 1 ? '' : 's'} given`].filter(Boolean) : []
+  // on <body>, so no moving parent can shift it
+  return createPortal(
+    <div className="act-tip" role="tooltip" style={{ left: x, top: y }}>
+      <b>{classes ? `${classes} ${classes === 1 ? 'class' : 'classes'}` : c.r ? 'Reviews only' : 'No classes'}</b> on {date}
+      {parts.length > 0 && <small>{parts.join(' · ')}</small>}
+    </div>,
+    document.body,
   )
 }

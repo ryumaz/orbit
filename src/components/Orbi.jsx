@@ -56,6 +56,15 @@ export default function Orbi() {
   const [typing, setTyping] = useState(false)
   const [has3d, setHas3d] = useState(false)
   const [panelBox, setPanelBox] = useState(null)
+  // where you dragged the robot to (top-left corner, in px); null = its corner spot
+  const [pos, setPos] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('orbi:pos')) ?? null
+    } catch {
+      return null
+    }
+  })
+  const drag = useRef(null)
   const listRef = useRef(null)
   const inputRef = useRef(null)
   const launchRef = useRef(null)
@@ -208,13 +217,66 @@ export default function Orbi() {
     place()
     window.addEventListener('resize', place)
     return () => window.removeEventListener('resize', place)
-  }, [open])
+  }, [open, pos])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
   }, [log, typing])
 
+  // Hold and drag the robot anywhere; it stays there (this device remembers). A press
+  // that doesn't move is a normal click.
+  const keepOnScreen = (x, y) => {
+    const size = launchRef.current?.offsetWidth ?? 92
+    return { x: Math.min(Math.max(4, x), window.innerWidth - size - 4), y: Math.min(Math.max(4, y), window.innerHeight - size - 4) }
+  }
+  const onPointerDown = (e) => {
+    if (e.button !== 0) return
+    const r = launchRef.current.getBoundingClientRect()
+    drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, moved: false }
+  }
+  const onPointerMove = (e) => {
+    const d = drag.current
+    if (!d || d.id !== e.pointerId) return
+    const dx = e.clientX - d.sx
+    const dy = e.clientY - d.sy
+    if (!d.moved && Math.hypot(dx, dy) < 6) return
+    if (!d.moved) {
+      d.moved = true
+      e.currentTarget.setPointerCapture(e.pointerId)
+      setThought(null)
+    }
+    setPos(keepOnScreen(d.ox + dx, d.oy + dy))
+  }
+  const onPointerUp = (e) => {
+    const d = drag.current
+    if (!d || d.id !== e.pointerId) return
+    if (d.moved) {
+      d.justDragged = true
+      setPos((p) => {
+        try {
+          localStorage.setItem('orbi:pos', JSON.stringify(p))
+        } catch {}
+        return p
+      })
+    }
+    drag.current = d.moved ? d : null
+  }
+  // the window got smaller: pull the robot back on screen
+  useEffect(() => {
+    if (!pos) return
+    const fit = () => setPos((p) => (p ? keepOnScreen(p.x, p.y) : p))
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [pos === null]) // eslint-disable-line react-hooks/exhaustive-deps
+  const onLeft = pos ? pos.x + 46 < window.innerWidth / 2 : false
+  robot.current.side = onLeft ? 'left' : 'right'
+
   const onClick = () => {
+    if (drag.current?.justDragged) {
+      drag.current = null
+      return
+    }
     setOpen(!open)
     const dizzy = mind.poked()
     if (dizzy) {
@@ -330,7 +392,15 @@ export default function Orbi() {
         </section>
       )}
 
-      <div className="orbi-dock" ref={launchRef}>
+      <div
+        className={`orbi-dock ${onLeft ? 'is-left' : ''} ${pos && pos.y < 140 ? 'is-high' : ''}`}
+        ref={launchRef}
+        style={pos ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => (drag.current = null)}
+      >
         {thought && !open && (
           <div className="orbi-thought" role="status">
             <button type="button" className="orbi-thought-text" onClick={() => setOpen(true)}>{thought.text}</button>
@@ -342,7 +412,7 @@ export default function Orbi() {
           className={`orbi-launch ${open ? 'is-open' : ''} ${has3d ? 'has-3d' : ''}`}
           aria-expanded={open}
           aria-label={open ? 'Close Vortex' : "Ask Vortex, orbit's helper"}
-          title="Ask Vortex"
+          title="Ask Vortex · hold and drag to move me"
           onClick={onClick}
         >
           <canvas ref={canvasRef} className="orbi-canvas" aria-hidden="true" />

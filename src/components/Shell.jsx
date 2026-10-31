@@ -4,7 +4,7 @@ import Icon from './Icons'
 import { Spark } from './Spark'
 import { MemberAvatar } from './ProfileCard'
 import LogOut from './LogOut'
-import AccountMenu from './AccountMenu'
+import AccountMenu, { SideMe } from './AccountMenu'
 import LanguagePicker from './LanguagePicker'
 import SiteNotice from './SiteNotice'
 
@@ -81,16 +81,7 @@ export function AppShell({ children }) {
                 <span className="side-wallet-n"><b className="dot-num">{balance}</b><Spark /></span>
                 <small>{held ? `${held} on hold` : 'nothing on hold'}</small>
               </Link>
-              <div className="side-who">
-                <Link to="/me" className="side-who-link">
-                  <MemberAvatar name={name} url={account.profile.avatar_url} handle={account.profile.handle} />
-                  <span className="side-who-text">
-                    <b>{name}</b>
-                    <small>@{account.profile.handle}</small>
-                  </span>
-                </Link>
-                <LogOut icon />
-              </div>
+              <SideMe />
             </>
           ) : (
             <p className="m-0 dim">

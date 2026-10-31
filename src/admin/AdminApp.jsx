@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
 import { db, errText, useData } from './db'
 import { Disputes, Members, Overview, Reports, Sessions, Support } from './views'
+import { Classes, Logs } from './insights'
 
 // orbit control: the admin app. A separate page with its own login; the database
 // answers only for accounts in public.admins, whatever this page shows.
 
 const NAV = [
   ['overview', 'Overview', 'grid'],
+  ['classes', 'Classes', 'chart'],
   ['disputes', 'Disputes', 'scale', 'open_disputes'],
   ['reports', 'Reports', 'flag', 'open_reports'],
   ['support', 'Support', 'inbox', 'open_support'],
   ['members', 'Members', 'users'],
   ['sessions', 'Sessions', 'clock'],
+  ['logs', 'Logs', 'list'],
 ]
-const VIEWS = { overview: Overview, disputes: Disputes, reports: Reports, support: Support, members: Members, sessions: Sessions }
+const VIEWS = { overview: Overview, classes: Classes, logs: Logs, disputes: Disputes, reports: Reports, support: Support, members: Members, sessions: Sessions }
 
 const PATHS = {
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
@@ -25,6 +28,8 @@ const PATHS = {
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
   out: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
   ext: 'M14 4h6v6M20 4l-9 9M18 14v6H4V6h6',
+  chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  list: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
 }
 export function Ico({ name, size = 17 }) {
   return (

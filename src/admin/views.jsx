@@ -19,14 +19,14 @@ const Pill = ({ status }) => {
   const [label, tone] = STATUS[status] ?? [status, 'gray']
   return <span className={`ad-pill is-${tone}`}>{label}</span>
 }
-const Person = ({ name, handle }) => (
+export const Person = ({ name, handle }) => (
   <a href={profileUrl(handle)} target="_blank" rel="noreferrer" className="ad-person">{name}<small>@{handle}</small></a>
 )
-const Empty = ({ title, children }) => (
+export const Empty = ({ title, children }) => (
   <div className="ad-empty"><b>{title}</b><span>{children}</span></div>
 )
-const Loading = () => <div className="ad-empty"><span>Loading…</span></div>
-const Problem = ({ text }) => (text ? <p className="ad-error" role="alert">{text}</p> : null)
+export const Loading = () => <div className="ad-empty"><span>Loading…</span></div>
+export const Problem = ({ text }) => (text ? <p className="ad-error" role="alert">{text}</p> : null)
 
 // ---------- overview ----------
 export function Overview({ counts: o }) {
@@ -400,7 +400,7 @@ export function Sessions({ tick }) {
 }
 
 // ---------- shared ----------
-function Filter({ value, onChange, options }) {
+export function Filter({ value, onChange, options }) {
   return (
     <div className="ad-seg" role="group" aria-label="Filter">
       {options.map(([k, label, count]) => (

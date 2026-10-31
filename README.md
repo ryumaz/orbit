@@ -84,3 +84,7 @@ Accounts and credits run on Supabase (project `orbit`, org Void Century).
 - The app only ships the publishable key. Members can read their own ledger but never write it.
 
 Offers, booking and live rooms still use the sample data in `src/lib/store.js` until their tables are added.
+
+## Credits
+
+The 3D robot, fonts and libraries orbit uses are listed in [CREDITS.md](CREDITS.md).

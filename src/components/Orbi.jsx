@@ -301,9 +301,6 @@ export default function Orbi() {
           ) : (
             <TeamForm account={account} />
           )}
-          <p className="orbi-credit">
-            3D robot: <a href="https://sketchfab.com/mshayan02" target="_blank" rel="noreferrer">"Futuristic flying animated Robot" by Shayan</a>, CC BY 4.0
-          </p>
         </section>
       )}
 

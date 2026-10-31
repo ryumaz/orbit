@@ -53,7 +53,7 @@ export default function MemberRoom() {
     }
   })
   const bodyRef = useRef(null)
-  const clampW = (w) => Math.round(Math.min(Math.max(w, 280), Math.max(280, (bodyRef.current?.clientWidth ?? 1400) - 250 - 420)))
+  const clampW = (w) => Math.round(Math.min(Math.max(w, 280), Math.max(280, (bodyRef.current?.clientWidth ?? 1400) - 480)))
   const keepW = (w) => {
     setChatW(w)
     try {
@@ -219,7 +219,17 @@ export default function MemberRoom() {
           <span className="label">{s.skill} · {s.minutes} min · with {other.name}</span>
           <h1>{s.message || `${s.skill} with ${first(other)}`}</h1>
         </div>
-        {!ended && <span className="pill pill-live">Live</span>}
+        <span className={`room-here ${here ? 'is-here' : ''}`}>
+          <MemberAvatar name={other.name} url={other.avatar_url} handle={other.handle} />
+          <span>{first(other)} {here ? 'is here' : 'not here yet'}</span>
+        </span>
+        {!ended && (
+          <span className={`room-timer-pill ${left === 0 ? 'is-up' : left < 120000 ? 'is-low' : ''}`} title={`${s.minutes}-minute class`} role="timer" aria-label={left === 0 ? "Time's up" : `${mins} minutes ${secs} seconds left`}>
+            <b className="dot-num">{mins}:{secs}</b>
+            <small>{left === 0 ? "time's up" : 'left'}</small>
+            <i style={{ '--v': `${(left / length) * 100}%` }} aria-hidden="true" />
+          </span>
+        )}
         <span className={`pill ${done ? 'pill-quiet' : 'pill-spark'}`}>
           <Spark />
           {done
@@ -237,24 +247,6 @@ export default function MemberRoom() {
       </header>
 
       <div className="room-body" ref={bodyRef} style={{ '--chat-w': `${chatW}px` }}>
-        <aside className="room-side room-left">
-          <div className="grid gap-4">
-            <Person p={mentor} role={teaching ? 'Teaching (you)' : 'Teaching'} here={teaching || here} hot />
-            <Person p={learner} role={isLearner ? 'Learning (you)' : 'Learning'} here={isLearner || here} />
-          </div>
-          <Tracker stage={stageOfReal(s)} />
-          {!ended && (
-            <div className="room-timer">
-              <span className="label">Time left</span>
-              <span className="room-clock">{mins}:{secs}</span>
-              <span className="meter"><span className="meter-fill" style={{ '--v': `${(left / length) * 100}%` }} /></span>
-              <span className="dim text-[11px]">{left === 0 ? 'Time is up. The class has ended.' : `of ${s.minutes} minutes`}</span>
-            </div>
-          )}
-          <HoldStatus s={s} isLearner={isLearner} mentor={mentor} learner={learner} onDispute={() => setDisputing(true)} />
-          {!ended && !timeUp && !s.end_by && <button type="button" onClick={() => setEnding(true)} className="link self-start text-[12px]">End early</button>}
-          <button type="button" onClick={() => setReporting(true)} className="link self-start text-[11.5px] dim">Report {first(other)}</button>
-        </aside>
 
         <main className="room-main">
           {timeUp && (
@@ -387,14 +379,36 @@ export default function MemberRoom() {
               <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'chat'} aria-pressed={side === 'chat'} onClick={() => setSide('chat')}>
                 Chat
               </button>
-              <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'notes'} aria-pressed={side === 'notes'} onClick={() => setSide('notes')}>
-                Private notes
+              <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'notes'} aria-pressed={side === 'notes'} onClick={() => setSide('notes')} title="Private notes, only you see them">
+                Notes
+              </button>
+              <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'session'} aria-pressed={side === 'session'} onClick={() => setSide('session')}>
+                Session
               </button>
             </div>
-            {side === 'chat' ? (
-              <SessionChat sessionId={s.id} me={uid} other={other} canWrite={!['declined', 'cancelled', 'expired'].includes(status)} />
-            ) : (
-              <Notes roomKey={`m${s.id}`} title={`${s.skill} with ${first(other)}`} />
+            {side === 'chat' && <SessionChat sessionId={s.id} me={uid} other={other} canWrite={!['declined', 'cancelled', 'expired'].includes(status)} />}
+            {side === 'notes' && <Notes roomKey={`m${s.id}`} title={`${s.skill} with ${first(other)}`} />}
+            {side === 'session' && (
+              <div className="room-session">
+                <div className="grid gap-4">
+                  <Person p={mentor} role={teaching ? 'Teaching (you)' : 'Teaching'} here={teaching || here} hot />
+                  <Person p={learner} role={isLearner ? 'Learning (you)' : 'Learning'} here={isLearner || here} />
+                </div>
+                <Tracker stage={stageOfReal(s)} />
+                {!ended && (
+                  <div className="room-timer">
+                    <span className="label">Time left</span>
+                    <span className="room-clock">{mins}:{secs}</span>
+                    <span className="meter"><span className="meter-fill" style={{ '--v': `${(left / length) * 100}%` }} /></span>
+                    <span className="dim text-[11px]">{left === 0 ? 'Time is up. The class has ended.' : `of ${s.minutes} minutes`}</span>
+                  </div>
+                )}
+                <HoldStatus s={s} isLearner={isLearner} mentor={mentor} learner={learner} onDispute={() => setDisputing(true)} />
+                <div className="flex flex-wrap gap-4">
+                  {!ended && !timeUp && !s.end_by && <button type="button" onClick={() => setEnding(true)} className="link text-[12px]">End early</button>}
+                  <button type="button" onClick={() => setReporting(true)} className="link text-[11.5px] dim">Report {first(other)}</button>
+                </div>
+              </div>
             )}
           </div>
         </aside>

@@ -82,6 +82,10 @@ const DOCS = {
         'orbit is a student project. It can change, have bugs, or go offline. We do our best to keep your data safe and your credits correct, but we provide the site as it is, without guarantees, as far as the law allows.',
         `We may update these terms; the date at the top will change. Last updated ${UPDATED}.`,
       ]],
+      ['thanks', 'Credits', [
+        'Vortex, our helper robot, is the 3D model "Futuristic flying animated Robot - Low Poly" by Shayan (sketchfab.com/mshayan02), used under the Creative Commons Attribution 4.0 licence (CC BY 4.0).',
+        'Fonts: Doto, Martian Mono and Reenie Beanie, from Google Fonts under the SIL Open Font License. The full list is in CREDITS.md in our GitHub repository.',
+      ]],
     ],
   },
 }

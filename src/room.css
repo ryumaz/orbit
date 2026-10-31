@@ -37,7 +37,7 @@
   .room-brand { display: block; }
 }
 @media (min-width: 1100px) {
-  .room-body { grid-template-columns: 250px minmax(0, 1fr) 300px; }
+  .room-body { grid-template-columns: minmax(0, 1fr) 340px; }
   .room-left { border-bottom: 0; border-right: 1px solid var(--line); }
   .room-right { border-top: 0; border-left: 1px solid var(--line); }
   .room-side { padding: 24px 24px; }
@@ -158,8 +158,8 @@
 .room-resize { display: none; }
 @media (min-width: 1100px) {
   .room { height: 100svh; min-height: 0; }
-  .room-body { min-height: 0; overflow: hidden; grid-template-columns: 250px minmax(0, 1fr) var(--chat-w, 360px); }
-  .room-left, .room-main { overflow-y: auto; }
+  .room-body { min-height: 0; overflow: hidden; grid-template-columns: minmax(0, 1fr) var(--chat-w, 380px); }
+  .room-main { overflow-y: auto; }
   .room-right { position: relative; display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; }
   .room-talk { flex: 1; min-height: 320px; display: flex; flex-direction: column; }
   .room-talk .chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -177,3 +177,16 @@
   background: linear-gradient(#0d0d0c, #0d0d0c) padding-box, var(--spark) border-box; border: 1.5px solid transparent; animation: toastIn .3s var(--ease) both; }
 .time-up-text { display: grid; gap: 4px; flex: 1 1 280px; min-width: 0; }
 .time-up-text b { font-weight: 500; font-size: 14px; }
+
+/* header: who's here and the clock, so the class needs no left column */
+.room-here { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 99px; border: 1px solid var(--line); font-size: 11.5px; color: var(--color-ash); }
+.room-here .avatar { width: 26px; height: 26px; font-size: 10px; }
+.room-here.is-here { color: var(--color-chalk); }
+.room-timer-pill { position: relative; overflow: hidden; display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 14px 8px; border-radius: 12px; border: 1px solid var(--line-strong); }
+.room-timer-pill b { font-family: var(--font-dot); font-weight: 900; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
+.room-timer-pill small { font-size: 10.5px; color: var(--color-ash); }
+.room-timer-pill i { position: absolute; left: 0; bottom: 0; height: 2px; width: var(--v); background: var(--spark); transition: width 1s linear; }
+.room-timer-pill.is-low { border-color: rgba(255, 148, 85, .55); }
+.room-timer-pill.is-low b { color: var(--color-amber); }
+.room-timer-pill.is-up { border-color: rgba(255, 148, 85, .55); color: var(--color-amber); }
+.room-session { display: grid; gap: 22px; align-content: start; }

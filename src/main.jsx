@@ -9,8 +9,9 @@ import { startTranslating } from './lib/i18n'
 import './index.css'
 
 // Hash routes (#/find) work from file:// and on any static host without rewrites.
-// Shared profile links are clean paths (/u/name): turn them into the hash route.
-if (/^\/u\/[a-z0-9_]{3,20}\/?$/i.test(location.pathname)) {
+// Shared profile links and public pages have clean paths (/u/name, /docs/privacy,
+// /support): turn them into the hash route.
+if (/^\/(u\/[a-z0-9_]{3,20}|docs\/(privacy|terms)|privacy|terms|support)\/?$/i.test(location.pathname)) {
   history.replaceState(null, '', `/#${location.pathname.replace(/\/$/, '').toLowerCase()}`)
 }
 // back from Discord, GitHub, Google or a reset email

@@ -74,7 +74,7 @@ export default function PublicProfile() {
 
         {p && (
           <div className="public-grid">
-            <ProfileCard name={p.name} bio={p.bio} city={p.city} teaches={p.teaches} avatarUrl={p.avatar_url} color={p.card_color} label={`${p.name}'s card`} />
+            <ProfileCard name={p.name} bio={p.bio} city={p.city} teaches={p.teaches} avatarUrl={p.avatar_url} color={p.card_color} label={`${p.name}'s card`} placeholder={null} />
 
             <div className="stack">
               <div className="grid gap-2">

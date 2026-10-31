@@ -141,7 +141,7 @@
 .mentor-price { text-align: right; }
 .mentor-price b { display: block; font-family: var(--font-dot); font-weight: 900; font-size: 30px; line-height: .9; }
 .mentor-price span { font-size: 10px; color: var(--color-ash); }
-.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tags { display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; gap: 6px; } /* never stretch tags to fill a taller card */
 .tag { font-size: 11px; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--color-ash); }
 .tag.hit { border-color: var(--color-chalk); color: var(--color-chalk); }
 .mentor-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; color: var(--color-ash); }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { db, errText, useData } from './db'
 import { Disputes, Members, Overview, Reports, Sessions, Support } from './views'
-import { Classes, Logs } from './insights'
+import { Classes, Logs, Reviews } from './insights'
 import { Settings } from './settings'
 
 // orbit control: the admin app. A separate page with its own login; the database
@@ -10,6 +10,7 @@ import { Settings } from './settings'
 const NAV = [
   ['overview', 'Overview', 'grid'],
   ['classes', 'Classes', 'chart'],
+  ['reviews', 'Reviews', 'star'],
   ['disputes', 'Disputes', 'scale', 'open_disputes'],
   ['reports', 'Reports', 'flag', 'open_reports'],
   ['support', 'Support', 'inbox', 'open_support'],
@@ -18,7 +19,7 @@ const NAV = [
   ['logs', 'Logs', 'list'],
   ['settings', 'Settings', 'cog'],
 ]
-const VIEWS = { overview: Overview, classes: Classes, logs: Logs, disputes: Disputes, reports: Reports, support: Support, members: Members, sessions: Sessions, settings: Settings }
+const VIEWS = { overview: Overview, classes: Classes, reviews: Reviews, logs: Logs, disputes: Disputes, reports: Reports, support: Support, members: Members, sessions: Sessions, settings: Settings }
 
 const PATHS = {
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
@@ -31,6 +32,7 @@ const PATHS = {
   out: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
   ext: 'M14 4h6v6M20 4l-9 9M18 14v6H4V6h6',
   chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  star: 'm12 3.8 2.5 5.1 5.6.8-4 3.9 1 5.6-5.1-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z',
   list: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
   cog: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1',
 }

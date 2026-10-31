@@ -16,7 +16,8 @@ export const CARD_COLORS = {
 }
 
 // The member's ID card: photo (or a halftone bust), name, one line, stats.
-export default function ProfileCard({ name, bio, city, teaches = [], avatarUrl, color = 'chalk', stats = [], label = 'Profile card' }) {
+// `placeholder` shows while someone is writing their own card; other people's cards leave it out
+export default function ProfileCard({ name, bio, city, teaches = [], avatarUrl, color = 'chalk', stats = [], label = 'Profile card', placeholder = 'one line about you' }) {
   const c = CARD_COLORS[color] ?? CARD_COLORS.chalk
   return (
     <article className="idcard" aria-label={label} style={{ '--card-bg': c.bg, '--card-ink': c.ink }}>
@@ -30,7 +31,7 @@ export default function ProfileCard({ name, bio, city, teaches = [], avatarUrl, 
         <Halftone shape="bust" bg="#000" cells={34} className="idcard-portrait" />
       )}
       <h3 translate="no">{name || 'Your name'}</h3>
-      <p className="quote" translate={bio ? 'no' : undefined}>{bio || 'one line about you'}</p>
+      {(bio || placeholder) && <p className="quote" translate={bio ? 'no' : undefined}>{bio || placeholder}</p>}
       {stats.length > 0 && (
         <dl className="idcard-stats">
           {stats.map(([k, v]) => (

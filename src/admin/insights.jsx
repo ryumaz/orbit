@@ -13,17 +13,7 @@ const Stars = ({ n }) => (
 
 export function Classes({ tick }) {
   const stats = useData(() => db.rpc('admin_classes'), tick)
-  const reviews = useData(() => db.rpc('admin_reviews'), tick)
-  const [show, setShow] = useState('all')
   const c = stats.data
-  // for abusive or fake reviews; logged with who deleted it
-  const removeReview = async (x) => {
-    if (!window.confirm(`Delete ${x.reviewer}'s ${x.stars}-star review for good?`)) return
-    const { error } = await db.rpc('admin_delete_review', { rid: x.id })
-    if (error) return window.alert(errText(error))
-    reviews.reload()
-    stats.reload()
-  }
   if (!c) return stats.error ? <Problem text={stats.error} /> : <Loading />
   const r = c.reviews ?? {}
   const done = c.completed + c.ended
@@ -47,8 +37,6 @@ export function Classes({ tick }) {
     ['Still open', c.open, 'blue', 'Requested, held or in the room right now.'],
   ]
   const max = Math.max(1, ...outcomes.map((o) => o[1]))
-  const all = reviews.data ?? []
-  const list = all.filter((x) => (show === 'teachers' ? x.of_teacher : show === 'learners' ? !x.of_teacher : show === 'low' ? x.stars <= 2 : true))
   return (
     <div className="ad-stack">
       <section className="ad-kpis">
@@ -130,33 +118,59 @@ export function Classes({ tick }) {
       </section>
 
       <section className="ad-stack">
-        <div className="ad-row">
-          <h2 className="ad-h2">Every review</h2>
-          <Filter value={show} onChange={setShow} options={[['all', 'All', all.length], ['teachers', 'Of teachers'], ['learners', 'Of learners'], ['low', '1–2 stars', all.filter((x) => x.stars <= 2).length]]} />
-        </div>
-        <Problem text={reviews.error} />
-        <div className="ad-card ad-flush">
-          <div className="ad-scroll">
-            <table className="ad-table">
-              <thead><tr><th>Stars</th><th>Review</th><th>Class</th><th>From</th><th>About</th><th>When</th><th /></tr></thead>
-              <tbody>
-                {list.map((x) => (
-                  <tr key={x.id}>
-                    <td><Stars n={x.stars} /></td>
-                    <td className="ad-wrap">{x.body || <span className="ad-muted">No words, just stars.</span>}</td>
-                    <td><span className="ad-mono ad-muted">#{x.session_id}</span> {x.skill}</td>
-                    <td><Person name={x.reviewer} handle={x.reviewer_handle} /></td>
-                    <td><span className="ad-member"><Person name={x.reviewee} handle={x.reviewee_handle} /><span className={`ad-pill is-${x.of_teacher ? 'purple' : 'blue'}`}>{x.of_teacher ? 'teacher' : 'learner'}</span></span></td>
-                    <td title={full(x.created_at)}>{ago(x.created_at)}</td>
-                    <td><button type="button" className="ad-link ad-link-danger" onClick={() => removeReview(x)}>Delete</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {reviews.data && list.length === 0 && <Empty title="No reviews here">Reviews appear after a class is paid or ended early.</Empty>}
-          </div>
-        </div>
+        <h2 className="ad-h2">Every review</h2>
+        <Reviews tick={tick} onChange={stats.reload} />
       </section>
+    </div>
+  )
+}
+
+// ---------- reviews: every rating, with delete for fake or abusive ones ----------
+export function Reviews({ tick, onChange }) {
+  const reviews = useData(() => db.rpc('admin_reviews'), tick)
+  const [show, setShow] = useState('all')
+  const [q, setQ] = useState('')
+  // logged with the admin who deleted it; the member's rating updates straight away
+  const removeReview = async (x) => {
+    if (!window.confirm(`Delete ${x.reviewer}'s ${x.stars}-star review of ${x.reviewee} for good?`)) return
+    const { error } = await db.rpc('admin_delete_review', { rid: x.id })
+    if (error) return window.alert(errText(error))
+    reviews.reload()
+    onChange?.()
+  }
+  if (!reviews.data) return reviews.error ? <Problem text={reviews.error} /> : <Loading />
+  const all = reviews.data
+  const s = q.trim().toLowerCase().replace(/^@/, '')
+  const list = all
+    .filter((x) => (show === 'teachers' ? x.of_teacher : show === 'learners' ? !x.of_teacher : show === 'low' ? x.stars <= 2 : true))
+    .filter((x) => !s || `${x.reviewer} ${x.reviewer_handle} ${x.reviewee} ${x.reviewee_handle} ${x.skill} ${x.body}`.toLowerCase().includes(s))
+  return (
+    <div className="ad-stack">
+      <div className="ad-row">
+        <Filter value={show} onChange={setShow} options={[['all', 'All', all.length], ['teachers', 'Of teachers'], ['learners', 'Of learners'], ['low', '1–2 stars', all.filter((x) => x.stars <= 2).length]]} />
+        <input className="ad-search" type="search" placeholder="Search name, skill or words" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search reviews" />
+      </div>
+      <div className="ad-card ad-flush">
+        <div className="ad-scroll">
+          <table className="ad-table">
+            <thead><tr><th>Stars</th><th>Review</th><th>Class</th><th>From</th><th>About</th><th>When</th><th /></tr></thead>
+            <tbody>
+              {list.map((x) => (
+                <tr key={x.id}>
+                  <td><Stars n={x.stars} /></td>
+                  <td className="ad-wrap">{x.body || <span className="ad-muted">No words, just stars.</span>}</td>
+                  <td><span className="ad-mono ad-muted">#{x.session_id}</span> {x.skill}</td>
+                  <td><Person name={x.reviewer} handle={x.reviewer_handle} /></td>
+                  <td><span className="ad-member"><Person name={x.reviewee} handle={x.reviewee_handle} /><span className={`ad-pill is-${x.of_teacher ? 'purple' : 'blue'}`}>{x.of_teacher ? 'teacher' : 'learner'}</span></span></td>
+                  <td title={full(x.created_at)}>{ago(x.created_at)}</td>
+                  <td><button type="button" className="ad-btn ad-btn-sm ad-btn-danger" onClick={() => removeReview(x)}>Delete</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {list.length === 0 && <Empty title="No reviews here">Reviews appear after a class is paid or ended early.</Empty>}
+        </div>
+      </div>
     </div>
   )
 }

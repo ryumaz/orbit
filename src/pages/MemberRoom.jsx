@@ -140,6 +140,13 @@ export default function MemberRoom() {
     setRingStart(live.inCall ? Date.now() : 0)
   }, [live.inCall])
 
+  // when the booked time runs out, the call ends for both (each side hangs up on its own clock)
+  const bookedStart = s ? new Date(s.started_at ?? s.accepted_at ?? s.created_at).getTime() : 0
+  const timeUp = Boolean(s) && ['accepted', 'live'].includes(s.status) && now - bookedStart >= s.minutes * 60000
+  useEffect(() => {
+    if (timeUp && liveRef.current.inCall) liveRef.current.leave()
+  }, [timeUp])
+
   if (!s) {
     return (
       <div className="mx-auto grid min-h-svh max-w-[720px] content-center gap-5 px-6">
@@ -241,16 +248,43 @@ export default function MemberRoom() {
               <span className="label">Time left</span>
               <span className="room-clock">{mins}:{secs}</span>
               <span className="meter"><span className="meter-fill" style={{ '--v': `${(left / length) * 100}%` }} /></span>
-              <span className="dim text-[11px]">{left === 0 ? 'Time is up. Wrap up, then confirm.' : `of ${s.minutes} minutes`}</span>
+              <span className="dim text-[11px]">{left === 0 ? 'Time is up. The class has ended.' : `of ${s.minutes} minutes`}</span>
             </div>
           )}
           <HoldStatus s={s} isLearner={isLearner} mentor={mentor} learner={learner} onDispute={() => setDisputing(true)} />
-          {!ended && !s.end_by && <button type="button" onClick={() => setEnding(true)} className="link self-start text-[12px]">End early</button>}
+          {!ended && !timeUp && !s.end_by && <button type="button" onClick={() => setEnding(true)} className="link self-start text-[12px]">End early</button>}
           <button type="button" onClick={() => setReporting(true)} className="link self-start text-[11.5px] dim">Report {first(other)}</button>
         </aside>
 
         <main className="room-main">
-          <CallPanel live={live} other={other} ended={ended} calling={calling} declined={wasDeclined} onRingAgain={() => setRingStart(Date.now())} />
+          {timeUp && (
+            <section className="time-up" role="status" aria-live="polite">
+              <div className="time-up-text">
+                <b>Time's up. This class has ended.</b>
+                <span className="dim text-[12.5px]">
+                  {isLearner
+                    ? `Did ${first(mentor)} help? Send the ${s.cost} credits on hold, or open a dispute within 24 hours if something went wrong.`
+                    : `Waiting for ${first(learner)} to confirm. If they don't open a dispute, the ${s.cost} credits reach you automatically within 24 hours.`}
+                </span>
+              </div>
+              {isLearner && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-light btn-sm"
+                    onClick={async () => {
+                      const ok = await confirm({ title: `Send ${s.cost} credits to ${first(mentor)}?`, body: "Credits move once and can't come back. Next you can rate the class.", yes: `Send ${s.cost} credits` })
+                      if (ok) release()
+                    }}
+                  >
+                    <Spark /> It worked · release {s.cost}
+                  </button>
+                  <button type="button" className="btn btn-line btn-sm" onClick={() => setDisputing(true)}>Something went wrong</button>
+                </div>
+              )}
+            </section>
+          )}
+          <CallPanel live={live} other={other} ended={ended || timeUp} calling={calling} declined={wasDeclined} onRingAgain={() => setRingStart(Date.now())} />
           <div className="room-tabs" role="tablist" aria-label="Workspace">
             <button type="button" role="tab" aria-selected={tab === 'board'} className={`room-tab-btn ${tab === 'board' ? 'on' : ''}`} onClick={() => setWork('board')}>Whiteboard</button>
             {coding && <button type="button" role="tab" aria-selected={tab === 'code'} className={`room-tab-btn ${tab === 'code' ? 'on' : ''}`} onClick={() => setWork('code')}>Code editor</button>}

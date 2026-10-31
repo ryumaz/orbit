@@ -171,3 +171,9 @@
   .room-resize:focus-visible { outline: none; }
   .is-resizing, .is-resizing * { cursor: col-resize !important; user-select: none !important; }
 }
+
+/* time's up: the class is over, say how it went */
+.time-up { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 18px; margin: 14px 16px 0; padding: 14px 16px; border-radius: 16px;
+  background: linear-gradient(#0d0d0c, #0d0d0c) padding-box, var(--spark) border-box; border: 1.5px solid transparent; animation: toastIn .3s var(--ease) both; }
+.time-up-text { display: grid; gap: 4px; flex: 1 1 280px; min-width: 0; }
+.time-up-text b { font-weight: 500; font-size: 14px; }

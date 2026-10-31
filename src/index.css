@@ -93,7 +93,7 @@
     transition: background .15s, color .15s, border-color .15s;
   }
   .chip:hover { border-color: var(--color-chalk); }
-  .chip[aria-pressed="true"] { background: var(--color-chalk); color: #000; border-color: var(--color-chalk); }
+  .chip[aria-pressed="true"], .chip[aria-checked="true"] { background: var(--color-chalk); color: #000; border-color: var(--color-chalk); }
 
   .pill {
     display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 99px;

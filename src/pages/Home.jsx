@@ -83,7 +83,7 @@ export default function Home() {
 
       <main>
         <section className="hero">
-          <ParticleHero leftNote="that's you. curious about something new." rightNote={top ? `that's ${firstName(top.name)}. teaches ${top.teaches[0]}.` : "that's someone who already knows it."} />
+          <ParticleHero leftNote="that's you. curious about something new." rightNote="that's someone who knows it. teaching you keeps them sharp." />
           <div className="hero-fade" aria-hidden="true" />
           <div className="hero-meta" aria-hidden="true">
             <span>skill exchange / person to person / live</span>
@@ -104,7 +104,7 @@ export default function Home() {
         <Ticker members={members} />
 
         <section className="lsection statement">
-          <Reveal text="Everyone is good at something. One friend plays guitar, another cooks a perfect biryani, another carries ranked games. orbit turns that into a fair trade: teach for half an hour, earn credits, spend them learning anything you like." />
+          <Reveal text="Everyone is good at something. Somewhere, someone you haven't met plays guitar, cooks a perfect biryani or carries ranked games. orbit finds them and makes it a fair trade: teach for half an hour and revise your own skill as you explain it, earn credits, spend them learning anything you like." />
           <p className="scribble statement-note">no money. no favours. just credits.</p>
         </section>
 
@@ -124,7 +124,7 @@ export default function Home() {
 
         <Topics members={members} />
 
-        <Escrow mentor={top} />
+        <Escrow />
 
         <Trust top={top} />
 
@@ -286,14 +286,14 @@ function Topics({ members }) {
 
 const ESC = [
   ['Request sent', 'You say what you want to learn in one line. Nothing charged.'],
-  ['Credits held', 'Dev accepts. 10 credits leave your wallet, but not to Dev yet.'],
+  ['Credits held', 'Sam accepts. 10 credits leave your wallet, but not to Sam yet.'],
   ['In the room', 'Video or voice, a shared whiteboard, the clock running.'],
   ['It worked', 'You say it helped. Only you can.'],
-  ['Credits sent', 'Dev gets paid. Once. Done.'],
+  ['Credits sent', 'Sam gets paid. Once. Done.'],
 ]
 const LEDGER = [[30, 0, 40], [20, 10, 40], [20, 10, 40], [20, 10, 40], [20, 0, 50]]
 
-function Escrow({ mentor }) {
+function Escrow() {
   const ref = useRef(null)
   const [p, setP] = useState(0)
   const stage = Math.min(4, Math.floor(p * 4 + 0.08))
@@ -312,7 +312,6 @@ function Escrow({ mentor }) {
     }
   }, [])
   const [you, held, them] = LEDGER[stage]
-  const name = mentor ? firstName(mentor.name) : 'Sam'
   return (
     <section className="escrow" id="escrow" ref={ref} style={{ '--p': p }}>
       <div className="escrow-sticky">
@@ -326,7 +325,7 @@ function Escrow({ mentor }) {
               <li key={b} className={i <= stage ? 'on' : ''}>
                 <span className="node" />
                 <b>{b}</b>
-                <small>{small.replaceAll('Dev', name)}</small>
+                <small>{small}</small>
               </li>
             ))}
           </ol>
@@ -338,7 +337,7 @@ function Escrow({ mentor }) {
         <div className="ledger-wallets" aria-live="polite">
           <div className="wallet-col"><span>Your wallet</span><b className="dot-num">{you}</b></div>
           <div className="wallet-col"><span>On hold</span><b className="dot-num spark-text">{held}</b></div>
-          <div className="wallet-col"><span>{name}'s wallet</span><b className="dot-num">{them}</b></div>
+          <div className="wallet-col"><span>Sam's wallet</span><b className="dot-num">{them}</b></div>
         </div>
         <p className="escrow-foot">Want to stop early? You both agree on a fair split, and the rest comes back to you. Press "It worked" twice and nothing happens the second time.</p>
       </div>

@@ -30,8 +30,10 @@
 .hero-arrow { width: 64px; height: 44px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .hero-copy { position: absolute; left: var(--gutter); right: var(--gutter); bottom: clamp(28px, 6vh, 64px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 360px); align-items: end; gap: 32px; }
 .hero-word { margin: 0 0 0 -.04em; font-family: var(--font-dot); font-weight: 900; font-size: clamp(64px, 13vw, 230px); line-height: .78; letter-spacing: -.02em; white-space: nowrap; animation: ink 2.2s .3s var(--ease) both; }
-.hero-sub { display: grid; gap: 20px; padding-bottom: 8px; }
-.hero-sub p { margin: 0; color: #c9c8c3; font-size: 14px; }
+.hero-sub { display: grid; gap: 20px; padding-bottom: 8px; position: relative; isolation: isolate; }
+/* a soft dark pool behind the text, so the dotted ground doesn't run through the words */
+.hero-sub::before { content: ''; position: absolute; inset: -36px -44px -20px; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgba(0, 0, 0, .82), rgba(0, 0, 0, .55) 62%, transparent); }
+.hero-sub p { margin: 0; color: #e6e5e0; font-size: 14px; text-shadow: 0 0 2px #000, 0 1px 14px #000; }
 @media (max-width: 820px) {
   .hero-copy { grid-template-columns: 1fr; gap: 20px; }
   .hero-meta-right { display: none; }

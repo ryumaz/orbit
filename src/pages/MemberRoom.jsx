@@ -300,13 +300,13 @@ export default function MemberRoom() {
                 Chat
               </button>
               <button type="button" role="tab" className="chip chip-sm" aria-selected={side === 'notes'} aria-pressed={side === 'notes'} onClick={() => setSide('notes')}>
-                My notes
+                Private notes
               </button>
             </div>
             {side === 'chat' ? (
               <SessionChat sessionId={s.id} me={uid} other={other} canWrite={!['declined', 'cancelled', 'expired'].includes(status)} />
             ) : (
-              <Notes roomKey={`m${s.id}`} />
+              <Notes roomKey={`m${s.id}`} title={`${s.skill} with ${first(other)}`} />
             )}
           </div>
         </aside>

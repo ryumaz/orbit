@@ -211,7 +211,9 @@ export function Chat({ live, me, other }) {
   )
 }
 
-export function Notes({ roomKey }) {
+// A private scratchpad for the session: only you see it (the chat is for both of
+// you). Kept on this device; "Save as file" takes it with you.
+export function Notes({ roomKey, title = 'orbit session' }) {
   const key = `unstuck:notes:${roomKey}`
   const [text, setText] = useState(() => {
     try {
@@ -225,14 +227,23 @@ export function Notes({ roomKey }) {
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
   }, [key])
+  const save = () => {
+    const url = URL.createObjectURL(new Blob([`${title}\n${new Date().toLocaleString()}\n\n${text}\n`], { type: 'text/plain' }))
+    const a = Object.assign(document.createElement('a'), { href: url, download: `${title.replace(/[^\w-]+/g, '-').toLowerCase()}-notes.txt` })
+    a.click()
+    URL.revokeObjectURL(url)
+  }
   return (
     <div className="grid gap-2">
-      <label htmlFor="notes" className="label">Notes <span className="dim">· kept in this browser</span></label>
+      <label htmlFor="notes" className="label">Private notes</label>
+      <p className="m-0 text-[11.5px] leading-relaxed dim">
+        Only you see these. Jot down steps, links or what clicked, so you can revise later. They stay on this device.
+      </p>
       <textarea
         id="notes"
-        rows={6}
+        rows={7}
         value={text}
-        placeholder="what you learned, in one or two lines"
+        placeholder={'e.g.\n· list.sort() changes the list, sorted() makes a new one\n· practise: two-pointer problems'}
         onChange={(e) => {
           setText(e.target.value)
           try {
@@ -243,6 +254,7 @@ export function Notes({ roomKey }) {
         }}
         className="input room-notes resize-y"
       />
+      {text.trim() && <button type="button" className="link self-start text-[11.5px]" onClick={save}>Save as a file ↓</button>}
     </div>
   )
 }

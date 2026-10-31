@@ -182,6 +182,7 @@ function DiscordMark() {
 // giant dotted wordmark sinking into the bottom edge.
 export function Footer({ full = false }) {
   const { session } = useAccount()
+  const { pathname } = useLocation()
   if (!full) {
     return (
       <footer className="foot">
@@ -245,7 +246,17 @@ export function Footer({ full = false }) {
         <p className="m-0">© {new Date().getFullYear()} orbit by Void Century. Built for Innovista, problem 05.</p>
         <button type="button" className="link" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</button>
       </div>
-      <div className="bigfoot-word" aria-hidden="true">orbit</div>
+      <Link
+        to="/"
+        className="bigfoot-word"
+        aria-label="orbit, back to the top"
+        onClick={(e) => {
+          if (pathname === '/') e.preventDefault()
+          window.scrollTo({ top: 0, behavior: pathname === '/' ? 'smooth' : 'auto' })
+        }}
+      >
+        orbit
+      </Link>
     </footer>
   )
 }

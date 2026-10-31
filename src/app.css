@@ -438,7 +438,9 @@
   margin: 18px auto 0; max-width: var(--maxw); font-family: var(--font-dot); font-weight: 900; line-height: .72; letter-spacing: -.04em;
   font-size: clamp(120px, 27vw, 420px); text-align: center; user-select: none; height: .8em; overflow: hidden;
   background: linear-gradient(to bottom, rgba(241, 240, 236, .3), rgba(241, 240, 236, .03) 85%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  display: block; text-decoration: none; cursor: pointer; transition: filter .25s;
 }
+.bigfoot-word:hover, .bigfoot-word:focus-visible { filter: brightness(1.7); }
 @media (min-width: 900px) {
   .bigfoot-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
   .bigfoot-links { justify-self: end; width: min(100%, 560px); }

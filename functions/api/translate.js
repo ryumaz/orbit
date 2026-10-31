@@ -1,4 +1,5 @@
-// POST /api/translate { lang, texts: [...] } → { translations: { [english]: translated } }
+// POST /api/translate { lang, texts: [...up to 15] } → { translations: { [english]: translated } }
+// (15 keeps each call under the free plan's 50 lookups: one cache read and write per phrase)
 // Translates orbit's interface on Cloudflare Workers AI. A multilingual chat model
 // gets whole batches with context about the site, so short labels keep their meaning;
 // the m2m100 translation model is the fallback. Every phrase is cached at the edge for
@@ -75,7 +76,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     return new Response('Bad request', { status: 400 })
   }
   const lang = String(body.lang ?? '')
-  const texts = [...new Set((Array.isArray(body.texts) ? body.texts : []).filter((t) => typeof t === 'string' && t.trim() && t.length <= 600))].slice(0, 60)
+  const texts = [...new Set((Array.isArray(body.texts) ? body.texts : []).filter((t) => typeof t === 'string' && t.trim() && t.length <= 600))].slice(0, 15)
   if (!NAMES[lang] || !texts.length) return new Response('Bad request', { status: 400 })
 
   const cache = caches.default

@@ -138,10 +138,20 @@ export function startTranslating() {
     }
   }
 
-  async function flush() {
-    const batch = [...pending].slice(0, 60)
-    batch.forEach((p) => pending.delete(p))
-    if (!batch.length) return
+  // 15 phrases a request, up to 3 requests at a time; a hiccup is retried twice
+  let running = 0
+  function flush() {
+    while (running < 3 && pending.size) {
+      const batch = [...pending].slice(0, 15)
+      batch.forEach((p) => pending.delete(p))
+      running += 1
+      send(batch, 0).finally(() => {
+        running -= 1
+        flush()
+      })
+    }
+  }
+  async function send(batch, attempt) {
     setBusy(true)
     try {
       const res = await fetch('/api/translate', {
@@ -149,6 +159,7 @@ export function startTranslating() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ lang, texts: batch }),
       })
+      if (res.status === 404) throw Object.assign(new Error('off'), { off: true })
       if (!res.ok) throw new Error(String(res.status))
       const { translations } = await res.json()
       for (const p of batch) {
@@ -162,15 +173,21 @@ export function startTranslating() {
       } catch {
         /* storage full: still works for this visit */
       }
-    } catch {
-      // translation is down: stay in English rather than half-translate forever
-      failed = true
-      waiting.clear()
-      pending.clear()
-      window.dispatchEvent(new CustomEvent('orbit:i18n-failed'))
+    } catch (e) {
+      if (!e.off && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)))
+        setBusy(false)
+        return send(batch, attempt + 1)
+      }
+      if (e.off) {
+        // translation isn't set up: stay in English rather than keep asking
+        failed = true
+        waiting.clear()
+        pending.clear()
+        window.dispatchEvent(new CustomEvent('orbit:i18n-failed'))
+      } else batch.forEach((p) => waiting.delete(p)) // these few stay in English this visit
     }
     setBusy(false)
-    if (pending.size) flush()
   }
 
   let busyCount = 0

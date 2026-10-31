@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom'
 import App from './App'
 import Crash from './components/Crash'
 import { AccountProvider } from './lib/account'
+import { finishReturn } from './lib/oauth'
 import './index.css'
 
 // Hash routes (#/find) work from file:// and on any static host without rewrites.
@@ -11,6 +12,8 @@ import './index.css'
 if (/^\/u\/[a-z0-9_]{3,20}\/?$/i.test(location.pathname)) {
   history.replaceState(null, '', `/#${location.pathname.replace(/\/$/, '').toLowerCase()}`)
 }
+// back from Discord, GitHub, Google or a reset email
+finishReturn()
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Crash>

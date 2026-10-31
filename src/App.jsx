@@ -8,6 +8,7 @@ import Profile from './pages/Profile'
 import Sessions from './pages/Sessions'
 import Credits from './pages/Credits'
 import Join from './pages/Join'
+import Reset from './pages/Reset'
 import Dashboard from './pages/Dashboard'
 import Me from './pages/Me'
 import PublicProfile from './pages/PublicProfile'
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/join" element={<Join mode="signup" />} />
         <Route path="/login" element={<Join mode="login" />} />
+        <Route path="/reset" element={<RequireAccount><Reset /></RequireAccount>} />
         <Route path="/home" element={<RequireAccount><AppShell><Dashboard /></AppShell></RequireAccount>} />
         <Route path="/me" element={<RequireAccount><AppShell><Me /></AppShell></RequireAccount>} />
         <Route path="/account" element={<Navigate to="/home" replace />} />

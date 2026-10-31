@@ -1,23 +1,86 @@
 # orbit
 
-By team Void Century.
+**Teach one. Learn one.** A skill exchange where people teach each other for half an hour and pay with credits instead of money.
 
+**Live:** [orbit.voids.wtf](https://orbit.voids.wtf) · Admin portal: [orbit.voids.wtf/admin](https://orbit.voids.wtf/admin/) (admins only)
 
-## Team
+Built in 36 hours for **Innovista**, problem statement 05: *Micro-Mentorship & Skill Exchange Hub*.
 
-**Void Century**
+## Team: Void Century
 
-- Niraj Singh Mehta:  design, full-stack development and deployment
-- Udit saklani : Team leader ,  Testing And QA on mobile and desktop
-- Urvashi Bhatt: pitch
-- Naval Panda : Pitch
-- Mitali Loshali : Pitch
+| Name | Role |
+|---|---|
+| **Niraj Singh Mehta** | Design, full-stack development and deployment |
+| **Udit Saklani** | Team leader; testing and QA on mobile and desktop |
+| **Urvashi Bhatt** | Pitch |
+| **Naval Panda** | Pitch |
+| **Mitali Loshali** | Pitch |
 
-Peer micro-mentorship for students. Book twenty minutes in a shared editor with someone who has solved your exact problem, and pay with credits you earned by helping someone else.
+## The idea
 
-Built for Innovista (36-hour hackathon), problem statement 05: Micro-Mentorship & Skill Exchange Hub.
+Everyone is good at something: guitar, Valorant aim, calculus, cooking. orbit finds the person who already knows what you want to learn. You book them for 15 to 60 minutes and pay with credits you earned by teaching someone else what you know, and revising your own skill while you explain it. No money changes hands, and the credits only move when the class actually helped.
 
-## Run it
+## What it does
+
+**Joining**
+- Sign up with Google, GitHub, Discord or email; every new member gets 30 credits.
+- Pick a username, a photo, a country and the languages you speak.
+- List what you teach and what you want to learn, with a price per skill (harder skills can cost more).
+
+**Finding someone**
+- Search any skill, game or subject. Sort by best rated, lowest price or newest, filter by language.
+- Every teacher shows a rating, price, badges and a live online / idle / busy / offline dot.
+- Send a request with one line about what you need. The teacher gets a card and a chime on any page, and can accept right there.
+
+**The class room**
+- Video or voice calls straight between the two browsers (WebRTC), with screen share, fullscreen, and automatic quality for weak connections.
+- A shared whiteboard both people draw on live.
+- For coding skills, a shared code editor that runs JavaScript and Python in the browser and flags errors as you type.
+- A saved chat with photos, videos, PDFs and slides; files wait in a preview tray until you press Send.
+- A countdown in the header. When time is up the call ends and the learner is asked to release the credits or open a dispute.
+- Private notes you can save as a file, and a notice when the other person joins the room.
+
+**Credits you can trust**
+- Credits are held when the teacher accepts and only move when the learner says it worked.
+- 24 hours to open a dispute; with no dispute, the teacher is paid automatically.
+- Both people can agree to end early and split the credits.
+- Requests expire after 5 hours if nobody answers, and can be withdrawn before they're accepted.
+- Balances are never stored: they are summed from a ledger of every credit movement.
+- After a class, both sides rate each other with 1 to 5 stars.
+
+**Extras**
+- 14 badges (first class taught, Mentor, Five stars, Polyglot, Early orbiter…) with an "unlocked" card.
+- Status like Discord: online, idle, do not disturb (really mutes sounds and pop-ups) or invisible.
+- The whole site in 32 languages, translated by AI, including right-to-left Arabic, Urdu and Hebrew.
+- Vortex, a 3D robot helper that answers questions and passes messages to support.
+- Audit log of every step, support page, privacy policy and terms, account deletion with password check.
+- Works on phones.
+
+**orbit control (admin portal)**, a separate app with its own login
+- Overview of members, classes and credits; classes attended, completed and failed; ratings by skill.
+- Settle disputes (after reading the class chat), review reports, answer support messages.
+- Member panel: add or remove credits, suspend, make admin, clear a bio or photo.
+- Delete fake or abusive reviews; full searchable log of everything, downloadable as CSV.
+- A site-wide notice banner, and Discord alerts (with a role ping) for disputes and reports.
+
+## Tech stack
+
+| Part | What we used |
+|---|---|
+| Frontend | React 19, Vite 7, Tailwind CSS 4, React Router |
+| Code editor | CodeMirror 6; code runs in Web Workers, Python through Pyodide (WebAssembly) |
+| 3D and drawing | three.js for Vortex, HTML Canvas for the whiteboard |
+| Backend | Supabase: PostgreSQL, row level security, SQL functions and triggers, pg_cron, pg_net |
+| Accounts | Supabase Auth: email and password, Google, GitHub and Discord sign-in |
+| Live features | Supabase Realtime: notifications, chat, presence, whiteboard sync, call signalling |
+| Files | Supabase Storage, private bucket with short-lived links |
+| Calls | WebRTC, peer to peer, with an optional TURN relay |
+| Hosting | Cloudflare Pages, with Pages Functions for translation and the call relay |
+| AI | Cloudflare Workers AI (Llama 3.3 70B) for translation, cached at the edge |
+
+There is no server of our own to run: the rules that matter (moving credits, disputes, who can see what) live inside the database, so the website can't be used to cheat.
+
+## Run it locally
 
 Needs Node 20.19 or newer.
 
@@ -26,64 +89,40 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5530.
+- orbit: http://localhost:5530
+- orbit control: http://localhost:5530/admin/
 
-To get a version you can open with a double-click, run `npm run build` once. It writes `orbit.html` (one self-contained file) next to this README. Opening `index.html` directly does not work: that is the source entry, and it only says which file to open instead.
+`npm run build` builds both apps into `dist/` (orbit at `dist/index.html`, the admin portal at `dist/admin/index.html`) and also writes `orbit.html`, a single file you can open with a double-click.
 
-## Demo in two tabs
+## Deploying
 
-Each browser tab is one student (stored per tab), and both tabs share the same data, so a whole session can run between two windows:
+Cloudflare Pages builds the repo with `npm run build` and serves `dist/`. The project needs:
 
-1. On the home page, pick **Meera** in "Try it as a sample student".
-2. Open a second tab, go to the home page, and pick **Arjun**.
-3. In either tab, open **Sessions** and join the live room. Type in one tab and watch the other.
-4. As Meera, press **It works now**, then **Send 10 ¤**. Both tabs see the credits move, once.
-5. Check **Credits**: the balance is the sum of the ledger rows, shown on the page.
+- A **Workers AI binding** named `AI` (for translation). Without it, orbit stays in English.
+- Optional **call relay** secrets: `TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL` (any TURN provider), or `TURN_KEY_ID` and `TURN_KEY_API_TOKEN` (Cloudflare Realtime). Without them, calls stay peer to peer only.
 
-To test booking: as Meera, find someone on **Find help**, send a request, then switch the other tab to that person and accept it in **Sessions**. Accepting puts the credits on hold; confirming the session moves them.
+In Supabase, the site URL and redirect URLs point at the live domain, and the Google, GitHub and Discord providers are switched on.
 
-"Reset demo data" in the footer puts everything back to the starting sample data.
+## Database
 
-## How credits stay fair
+`supabase/migrations/` holds the whole schema in order: profiles and the credit ledger, skills and prices, sessions and escrow, reviews and the audit log, disputes, reports, chat and files, the admin tools, status and badges. Apply them in filename order in the Supabase SQL editor.
 
-- Every change is its own ledger row (who, how many, why, when). Balances are never stored; they are summed from the rows.
-- When a request is accepted, the learner's credits go on hold (a negative row), so they cannot be spent twice.
-- Only the learner can confirm a session works. That writes one `earn` row for the mentor. A second confirm is refused by the status check and by a check for an existing `earn` row for the same session.
-- Cancelling a running session writes a refund row.
-- The sample history is replayed through the same functions on first load, so every number on screen came from rows the system wrote.
+`supabase/tests/` holds SQL checks you can paste into the SQL editor; each one rolls itself back, so nothing is saved.
+
+The website only ships the publishable key. Every table has row level security; admin data comes from functions that answer only for accounts in the `admins` table, and they show names and handles, never emails.
 
 ## Where things are
 
 ```
 src/
-  lib/store.js     mock backend: sessions, ledger, rules (same shape the real API will have)
-  lib/seed.js      sample students, past sessions, starter code
-  lib/me.js        which student this tab is
-  glyph/           everything drawn from characters: hero hands, portraits, balance mosaic
-  components/      nav, footer, CodeMirror editor, hourglass
-  pages/           Home, Find, Profile, Sessions, Room, Credits
+  pages/        the screens: landing, find, profile, sessions, room, credits, settings, docs, support
+  components/   shell, chat, whiteboard, code editor, calls, badges, Vortex, dialogs
+  lib/          account, calls, presence, translation, code runner, Supabase client
+  admin/        orbit control, the admin portal
+functions/api/  Cloudflare functions: translate, turn
+supabase/       migrations and tests
+public/         the 3D robot model
 ```
-
-## Not built yet (backend phase)
-
-- Real accounts and a database. Today the data lives in the browser's localStorage, which is why two tabs in one browser share it.
-- Real-time over the network. The editor syncs between tabs of one browser; the plan is Yjs over WebSockets so two laptops can share a room.
-- Remote cursors, helpfulness ratings and bonus credits, session notes saved to the profile.
-
-## Design
-
-One-bit dither on true black, like an old print. The home page is a Three.js shader: two hands built from 3D shapes in GLSL, rendered once into a normal buffer, then lit every frame (the light follows the cursor), dithered with an 8x8 Bayer matrix, with film grain and a little chromatic aberration. Moving the cursor near the gap pulls the fingertips together; scrolling fades them out. It renders one texel per dither dot and pauses when the tab is hidden or the hero is off screen. Student portraits and the credit balance use the same dither. Amber appears only for credits and at the point where the hands meet. Type is Archivo (variable width) and Victor Mono. All sample people are made up.
-
-## Backend (Supabase)
-
-Accounts and credits run on Supabase (project `orbit`, org Void Century).
-
-- `supabase/migrations/` holds the schema: profiles, the credit ledger, row level security, and a signup trigger that gives every new member 30 welcome credits, once.
-- `supabase/tests/` holds a SQL check you can paste into the SQL editor. It rolls itself back.
-- Email sign-up logs you straight in (email confirmation is off).
-- The app only ships the publishable key. Members can read their own ledger but never write it.
-
-Offers, booking and live rooms still use the sample data in `src/lib/store.js` until their tables are added.
 
 ## Credits
 

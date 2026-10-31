@@ -35,7 +35,7 @@ export default function Welcome() {
   const Icon = PROVIDER_ICON[provider]
   const validHandle = /^[a-z0-9_]{3,20}$/.test(handle)
 
-  // is the username free? (asked a moment after typing stops)
+  // is the username available? (asked a moment after typing stops)
   useEffect(() => {
     setTaken(false)
     if (!validHandle || handle === profile.handle) return
@@ -113,7 +113,7 @@ export default function Welcome() {
               />
             </div>
             <p id="w-handle-note" className={`m-0 text-[11.5px] ${taken ? 'text-amber' : 'dim'}`} aria-live="polite">
-              {taken ? `@${handle} is taken. Try another.` : validHandle ? (handle === profile.handle ? 'This one is yours.' : `@${handle} is free.`) : '3 to 20 letters, numbers or _.'}
+              {taken ? `@${handle} is taken. Try another.` : validHandle ? (handle === profile.handle ? 'This one is yours.' : `@${handle} is available.`) : '3 to 20 letters, numbers or _.'}
             </p>
           </div>
 

@@ -10,6 +10,95 @@
       body {
         background: #000;
       }
+      /* boot screen: dots grow into sparks, the big one lands in the middle and the
+         small ones circle it, then the page fades in underneath */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background: #000;
+        transition: opacity 0.6s ease, visibility 0.6s;
+      }
+      #boot.is-done {
+        opacity: 0;
+        visibility: hidden;
+      }
+      #boot.is-done .boot-stage {
+        transform: scale(1.08);
+      }
+      .boot-stage {
+        position: relative;
+        width: 240px;
+        height: 240px;
+        transition: transform 0.6s ease;
+      }
+      .boot-stage svg {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        overflow: visible;
+        transform: translate(-50%, -50%) scale(0);
+        animation: boot-grow 0.7s cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+      }
+      .boot-core {
+        width: 124px;
+        height: 124px;
+        animation-delay: 0.85s !important;
+        filter: drop-shadow(0 0 18px rgba(155, 130, 255, 0.45));
+      }
+      .boot-ring {
+        position: absolute;
+        inset: 0;
+        animation: boot-spin 3.2s linear 0.9s infinite;
+      }
+      .boot-a { width: 44px; height: 44px; margin: -64px 0 0 -72px; animation-delay: 0.2s !important; }
+      .boot-b { width: 32px; height: 32px; margin: 66px 0 0 76px; animation-delay: 0.38s !important; }
+      .boot-c { width: 16px; height: 16px; margin: -84px 0 0 64px; animation-delay: 0.55s !important; }
+      .boot-d { width: 12px; height: 12px; margin: 56px 0 0 -86px; animation-delay: 0.66s !important; }
+      .boot-word {
+        margin-top: 2px;
+        text-align: center;
+        color: #fff;
+        font: 600 30px/1 'Doto', 'Martian Mono', monospace;
+        letter-spacing: 0.04em;
+        opacity: 0;
+        animation: boot-fade 0.6s ease 1.15s forwards;
+      }
+      .boot-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 13vh;
+        text-align: center;
+        color: #6f6c66;
+        font: 500 10px/1 'Martian Mono', ui-monospace, monospace;
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+        opacity: 0;
+        animation: boot-fade 0.5s ease 0.05s forwards;
+      }
+      .boot-dots {
+        display: inline-block;
+        width: 0;
+        overflow: hidden;
+        vertical-align: bottom;
+        animation: boot-dots 1.2s steps(4) infinite;
+      }
+      @keyframes boot-grow {
+        0% { transform: translate(-50%, -50%) scale(0.06); }
+        30% { transform: translate(-50%, -50%) scale(0.06); }
+        100% { transform: translate(-50%, -50%) scale(1); }
+      }
+      @keyframes boot-spin { to { transform: rotate(360deg); } }
+      @keyframes boot-fade { to { opacity: 1; } }
+      @keyframes boot-dots { to { width: 3.4em; } }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-stage svg { animation: none; transform: translate(-50%, -50%); }
+        .boot-ring, .boot-dots { animation: none; }
+        .boot-word, .boot-line { animation: none; opacity: 1; }
+      }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,6 +108,30 @@
     />
   </head>
   <body>
+    <div id="boot" role="status" aria-label="Loading orbit" translate="no">
+      <div>
+        <div class="boot-stage" aria-hidden="true">
+          <svg width="0" height="0">
+            <defs>
+              <linearGradient id="boot-grad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#9b82ff" />
+                <stop offset="1" stop-color="#ff9455" />
+              </linearGradient>
+              <path id="boot-spark" d="M0,-50 C5,-5 5,-5 50,0 C5,5 5,5 0,50 C-5,5 -5,5 -50,0 C-5,-5 -5,-5 0,-50Z" />
+            </defs>
+          </svg>
+          <div class="boot-ring">
+            <svg class="boot-a" viewBox="-50 -50 100 100"><use href="#boot-spark" fill="#fff" /></svg>
+            <svg class="boot-b" viewBox="-50 -50 100 100"><use href="#boot-spark" fill="#fff" /></svg>
+            <svg class="boot-c" viewBox="-50 -50 100 100"><use href="#boot-spark" fill="#fff" /></svg>
+            <svg class="boot-d" viewBox="-50 -50 100 100"><use href="#boot-spark" fill="#fff" /></svg>
+          </div>
+          <svg class="boot-core" viewBox="-50 -50 100 100"><use href="#boot-spark" fill="url(#boot-grad)" /></svg>
+        </div>
+        <div class="boot-word">orbit</div>
+      </div>
+      <div class="boot-line">Lining up your orbit<span class="boot-dots">...</span></div>
+    </div>
     <div id="root"></div>
     <div
       id="opened-source"
@@ -36,6 +149,8 @@
       setTimeout(function () {
         if (document.getElementById('root').firstChild) return
         var box = document.getElementById('opened-source')
+        var boot = document.getElementById('boot')
+        if (window.__bootError || location.protocol === 'file:') boot && boot.remove()
         if (window.__bootError) {
           // the built app ran but crashed: show the error and a way out
           box.innerHTML = '<h1 style="margin:0 0 16px;color:#fff;font-size:34px;line-height:1.05">orbit could not start.</h1>' +

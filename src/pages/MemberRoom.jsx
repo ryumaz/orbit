@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { classStart, untilText } from '../lib/clock'
+import { slotText, timeText } from '../lib/timetable'
 import CodeSpace, { startsInPython } from '../components/CodeSpace'
 import { Brand, Tracker } from '../components/Shell'
 import { Spark } from '../components/Spark'
@@ -83,9 +85,11 @@ export default function MemberRoom() {
 
   // opening the room starts the session
   const status = s?.status
+  const opensAt = s?.scheduled_at ? new Date(s.scheduled_at).getTime() - 10 * 60000 : 0
+  const canStart = status === 'accepted' && now >= opensAt
   useEffect(() => {
-    if (status === 'accepted') act('start_session', { sid: s.id })
-  }, [status]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (canStart) act('start_session', { sid: s.id })
+  }, [canStart]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -142,7 +146,7 @@ export default function MemberRoom() {
   }, [live.inCall])
 
   // when the booked time runs out, the call ends for both (each side hangs up on its own clock)
-  const bookedStart = s ? new Date(s.started_at ?? s.accepted_at ?? s.created_at).getTime() : 0
+  const bookedStart = s ? classStart(s) : 0
   const timeUp = Boolean(s) && ['accepted', 'live'].includes(s.status) && now - bookedStart >= s.minutes * 60000
   useEffect(() => {
     if (timeUp && liveRef.current.inCall) liveRef.current.leave()
@@ -171,8 +175,9 @@ export default function MemberRoom() {
   const done = status === 'completed'
   const ended = !['accepted', 'live'].includes(status)
   const length = s.minutes * 60000
-  const start = new Date(s.started_at ?? s.accepted_at ?? s.created_at).getTime()
-  const left = Math.max(0, length - (now - start))
+  const start = classStart(s)
+  const early = !ended && now < start // a booked class that hasn't begun yet
+  const left = Math.min(length, Math.max(0, length - (now - start)))
   const mins = Math.floor(left / 60000)
   const secs = String(Math.floor((left % 60000) / 1000)).padStart(2, '0')
 
@@ -224,7 +229,13 @@ export default function MemberRoom() {
           <MemberAvatar name={other.name} url={other.avatar_url} handle={other.handle} />
           <span>{first(other)} {here ? 'is here' : 'not here yet'}</span>
         </span>
-        {!ended && (
+        {early && (
+          <span className="room-timer-pill is-later" role="timer" title={`Booked for ${slotText(start)}`} aria-label={`Starts in ${untilText(start, now)}`}>
+            <b className="dot-num">{untilText(start, now)}</b>
+            <small>until {timeText(start)}</small>
+          </span>
+        )}
+        {!ended && !early && (
           <span className={`room-timer-pill ${left === 0 ? 'is-up' : left < 120000 ? 'is-low' : ''}`} title={`${s.minutes}-minute class`} role="timer" aria-label={left === 0 ? "Time's up" : `${mins} minutes ${secs} seconds left`}>
             <b className="dot-num">{mins}:{secs}</b>
             <small>{left === 0 ? "time's up" : 'left'}</small>

@@ -9,6 +9,7 @@ import { useConfirm } from '../components/Confirm'
 import { EndDialog, EndProposal } from '../components/EndEarly'
 import { DisputeDialog, HoldStatus } from '../components/Dispute'
 import { expiresAt, untilText } from '../lib/clock'
+import { slotText } from '../lib/timetable'
 
 const OPEN = ['requested', 'accepted', 'live', 'disputed']
 const first = (p) => p?.name.split(' ')[0] ?? 'They'
@@ -78,8 +79,9 @@ export default function MySessions() {
             }
             return (
               <article key={s.id} className="need card-hot">
-                <p className="need-kicker"><Spark /> {s.status === 'live' ? 'Room is live' : 'Room is ready'} · {s.cost} on hold · {s.minutes} min</p>
+                <p className="need-kicker"><Spark /> {s.status === 'live' ? 'Room is live' : s.scheduled_at && new Date(s.scheduled_at).getTime() > Date.now() + 600000 ? 'Booked' : 'Room is ready'} · {s.cost} on hold · {s.minutes} min</p>
                 <h3>{teaching ? `Teach ${first(other)} ${s.skill}` : `${first(other)} is teaching you ${s.skill}`}</h3>
+                <BookedFor s={s} />
                 {s.message && <p className="problem">“{s.message}”</p>}
                 <Tracker stage={stageOfReal(s)} />
                 <HoldStatus s={s} isLearner={!teaching} mentor={mentor} learner={learner} onDispute={() => setDisputeFor(s)} />
@@ -119,6 +121,7 @@ export default function MySessions() {
                   <Link to={`/u/${s.learner.handle}`} className="link">{s.learner.name}</Link> wants {s.minutes} min of {s.skill}
                 </h3>
               </div>
+              <BookedFor s={s} />
               {s.message && <p className="problem">“{s.message}”</p>}
               <div className="need-actions">
                 <button type="button" className="btn btn-light" onClick={() => run('accept_session', s, `Accepted. ${s.cost} credits from ${first(s.learner)} are on hold.`)}>Accept</button>
@@ -137,6 +140,7 @@ export default function MySessions() {
                 <div className="esc-top">
                   <div>
                     <h3>{s.skill} · {s.minutes} min with {s.mentor.name}</h3>
+                    <BookedFor s={s} />
                     <p>Waiting for {first(s.mentor)} to accept. Nothing charged yet. If there's no answer, it expires in {untilText(expiresAt(s))}.</p>
                   </div>
                   <div className="esc-amt"><b>{s.cost}</b><span>when accepted</span></div>
@@ -214,5 +218,17 @@ export default function MySessions() {
       )}
       {dialog}
     </>
+  )
+}
+
+// "Sat 2 Nov · 6:00 pm · in 2h 10m" for a class booked at a time
+function BookedFor({ s }) {
+  if (!s.scheduled_at) return null
+  const t = new Date(s.scheduled_at).getTime()
+  const soon = t > Date.now()
+  return (
+    <p className={`booked-for ${soon && t - Date.now() < 3600000 ? 'is-soon' : ''}`}>
+      <span aria-hidden="true">📅</span> {slotText(t)} <span className="dim">· India time{soon ? ` · in ${untilText(t)}` : ''}</span>
+    </p>
   )
 }

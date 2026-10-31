@@ -5,7 +5,7 @@ import { useAccount } from '../lib/account'
 import { BadgeMedal } from './Badges'
 
 // How long each kind stays on screen. Requests stay longer: they need an answer.
-const LIFE = { request: 25000, end: 25000, disputed: 25000, accepted: 12000, joined: 20000, badge: 12000, ticket: 20000, declined: 9000, paid: 9000, expired: 9000, resolved: 15000 }
+const LIFE = { request: 25000, end: 25000, disputed: 25000, accepted: 12000, joined: 20000, badge: 12000, ticket: 20000, soon: 60000, declined: 9000, paid: 9000, expired: 9000, resolved: 15000 }
 
 // In-app notification cards, on any page.
 export default function Toasts() {
@@ -55,7 +55,7 @@ function Toast({ t, onClose }) {
               <button type="button" className="btn btn-line btn-sm" onClick={() => go('/sessions')}>View</button>
             </>
           )}
-          {(t.kind === 'accepted' || t.kind === 'joined') && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/s/${t.s.id}`)}>Join the room</button>}
+          {(t.kind === 'accepted' || t.kind === 'joined' || t.kind === 'soon') && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/s/${t.s.id}`)}>Join the room</button>}
           {t.kind === 'end' && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/s/${t.s.id}`)}>Answer</button>}
           {t.kind === 'ticket' && <button type="button" className="btn btn-light btn-sm" onClick={() => go(`/s/${t.s.id}`)}>Open ticket</button>}
           {t.kind === 'badge' && <button type="button" className="btn btn-line btn-sm" onClick={() => go('/home#badges')}>See your badges</button>}

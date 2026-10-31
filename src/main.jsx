@@ -35,5 +35,20 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
+// the boot screen: play it in full once per visit, then just fade it as soon as the app is up
+const boot = document.getElementById('boot')
+if (boot) {
+  let seen = false
+  try {
+    seen = sessionStorage.getItem('orbit:booted') === '1'
+    sessionStorage.setItem('orbit:booted', '1')
+  } catch {}
+  const wait = Math.max(0, (seen ? 350 : 1900) - performance.now())
+  setTimeout(() => {
+    boot.classList.add('is-done')
+    setTimeout(() => boot.remove(), 700)
+  }, wait)
+}
+
 // another language than English: translate what's on screen as it appears
 requestAnimationFrame(() => startTranslating())

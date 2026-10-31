@@ -9,6 +9,7 @@ import PhotoCropper from '../components/PhotoCropper'
 import LogOut from '../components/LogOut'
 import NotifySetting from '../components/NotifySetting'
 import DiscordAlerts from '../components/DiscordAlerts'
+import ClassHours from '../components/ClassHours'
 import AccountSecurity from '../components/AccountSecurity'
 import LanguagePicker from '../components/LanguagePicker'
 import LineIcon from '../components/LineIcons'
@@ -65,6 +66,7 @@ const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: 
 const SECTIONS = [
   ['profile', 'Profile', 'Photo, name, username and your card'],
   ['skills', 'Teaching and learning', 'What you teach, your price, what you want to learn'],
+  ['hours', 'Class hours', 'When people can book you'],
   ['notifications', 'Notifications', 'Alerts here and on Discord'],
   ['language', 'Language', 'The language orbit shows you'],
   ['account', 'Account and security', 'Email, password and sign-in'],
@@ -211,6 +213,8 @@ export default function Me() {
             </form>
           )}
 
+          {current[0] === 'hours' && <ClassHours />}
+
           {current[0] === 'notifications' && (
             <div className="grid gap-4">
               <NotifySetting />
@@ -249,7 +253,7 @@ export default function Me() {
   )
 }
 
-const SECTION_ICON = { profile: 'user', skills: 'star', notifications: 'bell', language: 'globe', account: 'lock' }
+const SECTION_ICON = { profile: 'user', skills: 'star', hours: 'clock', notifications: 'bell', language: 'globe', account: 'lock' }
 
 // Type and press Enter, or tap a suggestion (they filter as you type). Tap a tag to remove it.
 function TagField({ id, value, onChange, placeholder, suggestions = SKILLS, max = 12 }) {

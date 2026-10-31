@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Spark } from './Spark'
 import { useAccount } from '../lib/account'
+import SlotPicker from './SlotPicker'
+import { slotText } from '../lib/timetable'
 
 export const LENGTHS = [15, 30, 45, 60]
 export const priceFor = (rate, minutes) => Math.ceil((rate * minutes) / 30)
@@ -21,6 +23,8 @@ export default function BookForm({ p, initialSkill }) {
   const [skill, setSkill] = useState(() => p.teaches.find((t) => t.toLowerCase() === initialSkill?.toLowerCase()) ?? p.teaches[0])
   const [minutes, setMinutes] = useState(30)
   const [message, setMessage] = useState('')
+  const [at, setAt] = useState(null) // a booked start time, or null for as soon as they can
+  const [picking, setPicking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
   const rate = rateFor(p, skill)
@@ -34,8 +38,8 @@ export default function BookForm({ p, initialSkill }) {
       <div role="status" className="card card-hot grid gap-3">
         <p className="m-0 text-[15px]">
           {s?.status === 'requested' || !s
-            ? `Request sent. ${first} sees it right away.`
-            : `${first} accepted. ${s.cost} credits are on hold.`}
+            ? `Request sent${s?.scheduled_at ? ` for ${slotText(s.scheduled_at)}` : ''}. ${first} sees it right away.`
+            : `${first} accepted${s.scheduled_at ? ` for ${slotText(s.scheduled_at)}` : ''}. ${s.cost} credits are on hold.`}
         </p>
         <p className="m-0 text-[12.5px] dim">
           {s?.status === 'requested' || !s
@@ -57,7 +61,7 @@ export default function BookForm({ p, initialSkill }) {
   const send = async (e) => {
     e.preventDefault()
     setBusy(true)
-    setResult(await act('request_session', { mentor_handle: p.handle, skill, minutes, message }))
+    setResult(await act('request_session', { mentor_handle: p.handle, skill, minutes, message, start_at: at ? new Date(at).toISOString() : null }))
     setBusy(false)
   }
 
@@ -90,6 +94,8 @@ export default function BookForm({ p, initialSkill }) {
         </div>
       </div>
 
+      <SlotPicker handle={p.handle} first={first} minutes={minutes} value={at} onChange={setAt} onPicking={setPicking} />
+
       <div className="grid gap-1.5">
         <label htmlFor="book-msg" className="label">What do you need? <span className="dim">· optional</span></label>
         <textarea
@@ -99,13 +105,13 @@ export default function BookForm({ p, initialSkill }) {
           maxLength={500}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder={`what you want to get out of it, and when suits you`}
+          placeholder={at ? 'what you want to get out of it' : 'what you want to get out of it, and when suits you'}
         />
       </div>
 
       {result?.error && <p role="alert" className="m-0 text-[12.5px] text-amber">{result.error}</p>}
 
-      <button type="submit" className="btn btn-light" disabled={busy || short}>
+      <button type="submit" className="btn btn-light" disabled={busy || short || (picking && !at)}>
         <Spark /> {busy ? 'Sending…' : `Send request · ${cost} credits`}
       </button>
       <p className="m-0 text-[11.5px] dim">

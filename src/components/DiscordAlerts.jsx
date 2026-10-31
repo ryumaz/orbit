@@ -6,6 +6,7 @@ const EVENTS = [
   ['accepted', 'A teacher accepts your request'],
   ['paid', 'You get paid for a class'],
   ['dispute', 'A learner opens a dispute'],
+  ['reminder', 'A booked class starts in 15 minutes'],
 ]
 
 // Your own Discord ping: paste a webhook from your server (or a private one) and pick

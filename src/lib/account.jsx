@@ -3,6 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, friendly } from './supabase'
 import { chime, systemNotify } from './notify'
 import { BADGE } from '../components/Badges'
+import { Spark } from '../components/Spark'
+import { slotText, timeText } from './timetable'
 
 const AccountContext = createContext(null)
 
@@ -183,11 +185,11 @@ export function AccountProvider({ children }) {
     for (const s of list) {
       const before = prev.get(s.id)
       if (s.mentor_id === uid && s.status === 'requested' && !before) {
-        fresh.push({ kind: 'request', s, who: s.learner, title: `${name(s.learner)} wants to learn ${s.skill}`, body: `${s.minutes} min · pays ${s.cost} credits${s.message ? ` · “${s.message}”` : ''}` })
+        fresh.push({ kind: 'request', s, who: s.learner, title: `${name(s.learner)} wants to learn ${s.skill}`, body: `${s.minutes} min · pays ${s.cost} credits${s.scheduled_at ? ` · ${slotText(s.scheduled_at)}` : ''}${s.message ? ` · “${s.message}”` : ''}` })
       }
       if (!before) continue
       if (s.learner_id === uid && before.status === 'requested' && s.status === 'accepted') {
-        fresh.push({ kind: 'accepted', s, who: s.mentor, title: `${name(s.mentor)} accepted`, body: `${s.skill} · ${s.cost} credits are on hold. Join the room when you're ready.` })
+        fresh.push({ kind: 'accepted', s, who: s.mentor, title: `${name(s.mentor)} accepted`, body: s.scheduled_at ? `${s.skill} on ${slotText(s.scheduled_at)} · ${s.cost} credits are on hold.` : `${s.skill} · ${s.cost} credits are on hold. Join the room when you're ready.` })
       }
       if (s.learner_id === uid && before.status === 'requested' && s.status === 'declined') {
         fresh.push({ kind: 'declined', s, who: s.mentor, title: `${name(s.mentor)} can't do ${s.skill} right now`, body: 'Nothing was charged. Try someone else who teaches it.' })
@@ -230,6 +232,37 @@ export function AccountProvider({ children }) {
       })
     }
   }, [data.sessions]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Booked classes: a card (and a system notification) 15 minutes before each one starts.
+  // Each class is announced once per device.
+  useEffect(() => {
+    if (!uid || !data.sessions) return
+    const timers = []
+    for (const s of data.sessions) {
+      if (s.status !== 'accepted' || !s.scheduled_at) continue
+      const at = new Date(s.scheduled_at).getTime()
+      const key = `orbit:reminded:${s.id}`
+      let shown = false
+      try {
+        shown = localStorage.getItem(key) === '1'
+      } catch {}
+      if (shown || at < Date.now()) continue
+      const wait = at - 15 * 60000 - Date.now()
+      if (wait > 2 ** 31 - 1) continue // too far off for a timer; a later reload picks it up
+      timers.push(setTimeout(() => {
+        try {
+          localStorage.setItem(key, '1')
+        } catch {}
+        const other = s.mentor_id === uid ? s.learner : s.mentor
+        const title = `${s.skill} with ${other?.name.split(' ')[0] ?? 'your partner'} starts at ${timeText(at)}`
+        const body = 'Open the room a few minutes early to check your camera and mic.'
+        chime()
+        setToasts((t) => [...t, { kind: 'soon', s, who: other, title, body, id: `soon-${s.id}` }].slice(-4))
+        systemNotify({ title, body, icon: other?.avatar_url, onClick: () => { location.hash = `#/s/${s.id}` } })
+      }, Math.max(0, wait)))
+    }
+    return () => timers.forEach(clearTimeout)
+  }, [uid, data.sessions])
 
   // Badges: checked after every reload. One this device hasn't seen yet gets a card
   // (the first visit on a device only takes note, so old badges don't all pop up at once).
@@ -338,7 +371,7 @@ export function RequireAccount({ children }) {
     if (account.session === null) navigate(pathname === '/home' ? '/login' : `/login?next=${encodeURIComponent(pathname)}`, { replace: true })
   }, [account.session, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
   if (account.error && !account.profile) return <p className="p-8 text-amber">{account.error}</p>
-  if (!account.live) return <p className="p-8 dim">Opening your account…</p>
+  if (!account.live) return <p className="mini-boot" role="status"><Spark className="mini-boot-spark" />Opening your account</p>
   // new members confirm their name and username first
   if (account.profile.onboarded === false && pathname !== '/welcome') {
     return <Navigate to={`/welcome${pathname !== '/home' ? `?next=${encodeURIComponent(pathname)}` : ''}`} replace />

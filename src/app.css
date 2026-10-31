@@ -844,3 +844,43 @@ select.input option { background: #111110; color: var(--color-chalk); }
 .act-cell.l4 { background: var(--spark); box-shadow: 0 0 6px rgba(255, 148, 85, .45); }
 .act-legend { display: flex; align-items: center; justify-content: flex-end; gap: 3px; font-size: 10px; }
 .act-legend span { margin: 0 4px; }
+
+/* ---------- small loader (account opening): the boot screen's spark, smaller ---------- */
+.mini-boot { min-height: 60vh; display: grid; place-content: center; justify-items: center; gap: 14px; margin: 0; color: var(--color-ash); font-size: 10px; letter-spacing: .38em; text-transform: uppercase; }
+.mini-boot-spark { width: 34px; height: 34px; fill: url(#spark-grad); animation: mini-boot 1.4s ease-in-out infinite; }
+@keyframes mini-boot { 0%, 100% { transform: scale(.75) rotate(0); opacity: .6; } 50% { transform: scale(1) rotate(45deg); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mini-boot-spark { animation: none; } }
+
+/* ---------- timetable: picking a time, setting class hours ---------- */
+.slots { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--color-raise); }
+.slot-days { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.slot-day { flex: 0 0 auto; display: grid; justify-items: center; gap: 2px; width: 50px; padding: 7px 0 6px; border-radius: 11px; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
+.slot-day small { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-ash); }
+.slot-day b { font-family: var(--font-dot); font-weight: 900; font-size: 19px; line-height: 1; }
+.slot-day i { font-style: normal; font-size: 9.5px; color: var(--color-violet); }
+.slot-day:hover:not(:disabled) { border-color: var(--line-strong); }
+.slot-day[aria-selected="true"] { background: var(--color-chalk); color: #000; border-color: var(--color-chalk); }
+.slot-day[aria-selected="true"] small, .slot-day[aria-selected="true"] i { color: #000; opacity: .65; }
+.slot-day:disabled { opacity: .3; cursor: default; }
+.slot-times { display: flex; flex-wrap: wrap; gap: 6px; max-height: 148px; overflow-y: auto; }
+.slot-times .chip { min-height: 32px; padding: 0 12px; font-size: 12px; }
+
+.hours { display: grid; gap: 2px; }
+.hours-day { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.hours-day:last-child { border-bottom: 0; }
+.hours-day > b { font-size: 12px; color: var(--color-ash); }
+.hours-day.is-on > b { color: var(--color-chalk); }
+.hours-ranges { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.hours-range { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 12px; }
+.hours-range.is-bad { border-color: var(--color-amber); }
+.hours-range select { appearance: none; border: 0; background: transparent; color: inherit; font: inherit; padding: 3px 2px; cursor: pointer; }
+.hours-range select option { background: #111; color: var(--color-chalk); }
+.hours-x { width: 24px; height: 24px; border: 0; border-radius: 7px; background: transparent; color: var(--color-ash); font-size: 16px; line-height: 1; cursor: pointer; }
+.hours-x:hover { background: var(--raise-2); color: var(--color-chalk); }
+
+.booked-for { margin: 0; font-size: 12.5px; }
+.booked-for.is-soon { color: var(--color-amber); }
+@media (max-width: 560px) {
+  .hours-day { grid-template-columns: 38px 1fr; }
+  .hours-day > .link { grid-column: 2; justify-self: start; }
+}

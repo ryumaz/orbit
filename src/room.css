@@ -236,3 +236,5 @@
 .runner-ask > span { color: var(--color-amber); }
 .runner-ask input { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255, 148, 85, .5); background: #000; color: var(--color-chalk); font: inherit; outline: none; }
 .runner-ask input:focus { border-color: var(--color-amber); }
+.room-timer-pill.is-later { border-style: dashed; }
+.room-timer-pill.is-later b { font-size: 16px; }

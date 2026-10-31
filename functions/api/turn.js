@@ -12,10 +12,25 @@
 const ALLOWED = [/^https:\/\/orbit\.voids\.wtf$/, /^https:\/\/([a-z0-9-]+\.)?orbit-34w\.pages\.dev$/, /^http:\/\/localhost:\d+$/]
 const json = (body) => Response.json(body, { headers: { 'cache-control': 'no-store' } })
 
+// A light per-visitor limit, kept per server instance: enough to stop a script from
+// hammering this endpoint. Real visitors never come close.
+const hits = new Map()
+function tooMany(request, max, windowMs) {
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown'
+  const now = Date.now()
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < windowMs)
+  recent.push(now)
+  hits.set(ip, recent)
+  if (hits.size > 5000) hits.clear()
+  return recent.length > max
+}
+const slowDown = (seconds) => new Response('Too many requests. Slow down a little.', { status: 429, headers: { 'retry-after': String(seconds), 'cache-control': 'no-store' } })
+
 export async function onRequestGet({ request, env }) {
   const fixed = env.TURN_URLS && env.TURN_USERNAME && env.TURN_CREDENTIAL
   const cloudflare = env.TURN_KEY_ID && env.TURN_KEY_API_TOKEN
   if (!fixed && !cloudflare) return new Response('Not set up', { status: 404 })
+  if (tooMany(request, 30, 60000)) return slowDown(60) // a call needs one or two
 
   // only orbit's own pages get relay passwords
   const origin = request.headers.get('origin') ?? new URL(request.headers.get('referer') ?? 'null', 'https://x').origin

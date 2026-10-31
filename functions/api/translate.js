@@ -20,6 +20,20 @@ const NAMES = {
 }
 const ALLOWED = [/^https:\/\/orbit\.voids\.wtf$/, /^https:\/\/([a-z0-9-]+\.)?orbit-34w\.pages\.dev$/, /^http:\/\/localhost:\d+$/]
 
+// A light per-visitor limit, kept per server instance: enough to stop a script from
+// hammering this endpoint. Real visitors never come close.
+const hits = new Map()
+function tooMany(request, max, windowMs) {
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown'
+  const now = Date.now()
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < windowMs)
+  recent.push(now)
+  hits.set(ip, recent)
+  if (hits.size > 5000) hits.clear()
+  return recent.length > max
+}
+const slowDown = (seconds) => new Response('Too many requests. Slow down a little.', { status: 429, headers: { 'retry-after': String(seconds), 'cache-control': 'no-store' } })
+
 async function hash(text) {
   const d = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text))
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('')
@@ -68,6 +82,7 @@ async function mtOne(env, lang, text) {
 
 export async function onRequestPost({ request, env, waitUntil }) {
   if (!env.AI) return new Response('Not set up', { status: 404 })
+  if (tooMany(request, 150, 60000)) return slowDown(30) // a first visit in a new language needs a few dozen
   const origin = request.headers.get('origin') ?? ''
   if (origin !== new URL(request.url).origin && !ALLOWED.some((re) => re.test(origin))) return new Response('Forbidden', { status: 403 })
 

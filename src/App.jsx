@@ -10,6 +10,7 @@ import Join from './pages/Join'
 import Reset from './pages/Reset'
 import Welcome from './pages/Welcome'
 import Support from './pages/Support'
+import Lost from './pages/Lost'
 import Docs from './pages/Docs'
 import Dashboard from './pages/Dashboard'
 import Me from './pages/Me'
@@ -64,19 +65,9 @@ export default function App() {
         {/* the old sample marketplace pages */}
         <Route path="/people/:id" element={<Navigate to="/find" replace />} />
         <Route path="/room/:id" element={<Navigate to="/sessions" replace />} />
-        <Route path="*" element={<AppShell><NotFound /></AppShell>} />
+        <Route path="*" element={<Lost />} />
       </Routes>
     </>
-  )
-}
-
-function NotFound() {
-  return (
-    <div className="view-head py-24">
-      <h1 className="page-title">Nothing lives here.</h1>
-      <p>Check the address, or start from the search.</p>
-      <Link to="/find" className="btn btn-light self-start">Find help</Link>
-    </div>
   )
 }
 

@@ -15,6 +15,10 @@ import './index.css'
 if (/^\/(u\/[a-z0-9_]{3,20}|docs\/(privacy|terms)|privacy|terms|support)\/?$/i.test(location.pathname)) {
   history.replaceState(null, '', `/#${location.pathname.replace(/\/$/, '').toLowerCase()}`)
 }
+// any other real path (orbit.voids.wtf/whatever) gets the 404 page instead of the landing page
+else if (/^https?:$/.test(location.protocol) && !/^\/(index\.html|orbit\.html)?$/.test(location.pathname) && !location.pathname.startsWith('/admin')) {
+  history.replaceState(null, '', `/#/lost?from=${encodeURIComponent(location.pathname)}`)
+}
 // back from Discord, GitHub, Google or a reset email
 finishReturn()
 createRoot(document.getElementById('root')).render(

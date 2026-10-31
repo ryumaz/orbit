@@ -5,7 +5,11 @@ const MAX = 25 * 1024 * 1024
 const ACCEPT = 'image/*,video/mp4,video/webm,video/quicktime,audio/*,.pdf,.txt,.csv,.zip,.ppt,.pptx,.doc,.docx,.xls,.xlsx'
 const first = (p) => p?.name?.split(' ')[0] ?? 'them'
 const size = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`)
-const kindOf = (type = '') => (type.startsWith('image/') ? 'image' : type.startsWith('video/') ? 'video' : type.startsWith('audio/') ? 'audio' : 'file')
+// text messages have no file type (null), so default it here, not in the signature
+const kindOf = (t) => {
+  const type = t ?? ''
+  return type.startsWith('image/') ? 'image' : type.startsWith('video/') ? 'video' : type.startsWith('audio/') ? 'audio' : 'file'
+}
 const BADGE = { pdf: 'PDF', ppt: 'PPT', pptx: 'PPT', doc: 'DOC', docx: 'DOC', xls: 'XLS', xlsx: 'XLS', zip: 'ZIP', txt: 'TXT', csv: 'CSV' }
 
 // The session's chat, saved in the database so it's there on any device and after a

@@ -422,8 +422,7 @@
 .bigfoot { position: relative; overflow: hidden; margin-top: 72px; border-top: 1px solid var(--line); padding: 56px var(--gutter) 0; }
 .bigfoot-top { max-width: var(--maxw); margin-inline: auto; display: grid; gap: 40px; grid-template-columns: minmax(0, 1fr); }
 .bigfoot-brand { display: grid; gap: 22px; align-content: start; }
-.bigfoot-mark { width: 58px; height: 58px; flex: none; display: grid; place-items: center; border-radius: 16px; background: var(--spark); color: #000; }
-.bigfoot-mark .spark-svg { width: 26px; height: 26px; color: #000; fill: #000; }
+.bigfoot-mark { width: 76px; height: 58px; flex: none; display: grid; place-items: center; border-radius: 16px; background: #000; border: 1px solid var(--line-strong); box-shadow: 0 0 40px -8px rgba(155, 130, 255, .45); }
 .bigfoot-line { margin: 0; font-size: clamp(20px, 2.2vw, 26px); font-weight: 600; letter-spacing: -.04em; line-height: 1.12; }
 .bigfoot-social { display: inline-flex; align-items: center; gap: 9px; height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--color-chalk); text-decoration: none; font-size: 13px; transition: background .15s, border-color .15s; }
 .bigfoot-social:hover { background: rgba(255, 255, 255, .09); border-color: var(--line-strong); }
@@ -824,3 +823,8 @@ select.input option { background: #111110; color: var(--color-chalk); }
 .update-x { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: var(--color-ash); font-size: 17px; cursor: pointer; }
 .update-x:hover { background: rgba(255, 255, 255, .08); color: var(--color-chalk); }
 @media (max-width: 959px) { .update-notice { bottom: calc(var(--tabs-h, 64px) + var(--safe-b, 0px) + 14px); } }
+
+/* the dotted planet logo */
+.orbit-mark { display: block; flex: none; overflow: visible; }
+.brand .orbit-mark { filter: drop-shadow(0 0 6px rgba(155, 130, 255, .35)); }
+.brand { white-space: nowrap; }

@@ -102,6 +102,29 @@ export default function PublicProfile() {
                 )}
               </section>
 
+              {/* booking first; hours, activity, badges and reviews below it */}
+              {mine ? (
+                <>
+                  <div className="card text-[12.5px]">
+                    This is your public page. Anyone with the link sees exactly this.{' '}
+                    <Link to="/me" className="link">Edit your profile</Link>
+                  </div>
+                  <ShareProfile handle={p.handle} name={p.name} />
+                </>
+              ) : account.session ? (
+                account.live ? (
+                  <>
+                    <BookForm p={p} initialSkill={params.get('skill')} />
+                  </>
+                ) : <p className="dim">Opening…</p>
+              ) : (
+                <div className="card card-hot grid gap-3">
+                  <p className="m-0 text-[15px]">Learn from {first} on orbit.</p>
+                  <p className="m-0 text-[12.5px] dim">Make a free account and get 30 credits to start. Teach what you know to earn more.</p>
+                  <Link to={`/join?next=/u/${p.handle}`} className="btn btn-light self-start"><Spark /> Join and learn from {first}</Link>
+                </div>
+              )}
+
               {p.teaches.length > 0 && <WeekHours handle={p.handle} first={first} />}
 
               {p.learns.length > 0 && (
@@ -143,28 +166,11 @@ export default function PublicProfile() {
                 </dl>
               )}
 
-              {mine ? (
+              {!mine && account.live && (
                 <>
-                  <div className="card text-[12.5px]">
-                    This is your public page. Anyone with the link sees exactly this.{' '}
-                    <Link to="/me" className="link">Edit your profile</Link>
-                  </div>
-                  <ShareProfile handle={p.handle} name={p.name} />
+                  <button type="button" className="link self-start text-[11.5px] dim" onClick={() => setReporting(true)}>Report {first}</button>
+                  {reporting && <ReportDialog handle={p.handle} name={p.name} onClose={() => setReporting(false)} />}
                 </>
-              ) : account.session ? (
-                account.live ? (
-                  <>
-                    <BookForm p={p} initialSkill={params.get('skill')} />
-                    <button type="button" className="link self-start text-[11.5px] dim" onClick={() => setReporting(true)}>Report {first}</button>
-                    {reporting && <ReportDialog handle={p.handle} name={p.name} onClose={() => setReporting(false)} />}
-                  </>
-                ) : <p className="dim">Opening…</p>
-              ) : (
-                <div className="card card-hot grid gap-3">
-                  <p className="m-0 text-[15px]">Learn from {first} on orbit.</p>
-                  <p className="m-0 text-[12.5px] dim">Make a free account and get 30 credits to start. Teach what you know to earn more.</p>
-                  <Link to={`/join?next=/u/${p.handle}`} className="btn btn-light self-start"><Spark /> Join and learn from {first}</Link>
-                </div>
               )}
             </div>
           </div>

@@ -4,27 +4,35 @@ import ParticleHero from '../glyph/ParticleHero'
 import Burst from '../glyph/Burst'
 import Halftone from '../glyph/Halftone'
 import { Brand, Footer } from '../components/Shell'
-import { Spark, initials } from '../components/Spark'
-import { useStore, PEOPLE, getPerson, balanceOf, helpedCount, levelOf } from '../lib/store'
-import { useMe, setMe } from '../lib/me'
-import { freeStatus } from '../lib/time'
+import { Spark } from '../components/Spark'
+import { MemberAvatar } from '../components/ProfileCard'
+import { SparkRating } from '../components/SparkStars'
+import { priceFor } from '../components/BookForm'
 import { useAccount } from '../lib/account'
+import { useMembers } from '../lib/members'
+import { useRecent, useStats } from '../lib/pulse'
 import '../landing.css'
 
-const first = (id) => getPerson(id).name.split(' ')[0]
+const firstName = (name) => name?.split(' ')[0] ?? ''
 const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
+// What people can learn here, for the ticker when there aren't many sessions yet.
+const EXAMPLES = ['Guitar chords', 'Valorant aim', 'Sourdough', 'Calculus', 'Spanish', 'Figma', 'Chess openings', 'Python', 'Public speaking', 'Biryani', 'Yoga basics', 'Photography']
+
 export default function Home() {
-  const s = useStore()
-  const me = useMe()
   const { state } = useLocation()
   const { session } = useAccount()
+  const { members } = useMembers()
 
   useEffect(() => {
     if (state?.to) requestAnimationFrame(() => document.getElementById(state.to)?.scrollIntoView({ block: 'start' }))
   }, [state])
 
-  const top = useMemo(() => [...PEOPLE].sort((a, b) => helpedCount(s, b.id) - helpedCount(s, a.id))[0], [s])
+  // the member people trust most: best rating with the most reviews, else the newest teacher
+  const top = useMemo(
+    () => [...members].sort((a, b) => (b.reviews > 0) - (a.reviews > 0) || Number(b.rating ?? 0) - Number(a.rating ?? 0) || b.reviews - a.reviews)[0] ?? null,
+    [members],
+  )
 
   return (
     <div className="landing">
@@ -34,7 +42,7 @@ export default function Home() {
           <button type="button" onClick={() => jump('how')}>How it works</button>
           <button type="button" onClick={() => jump('topics')}>Topics</button>
           <button type="button" onClick={() => jump('escrow')}>Credits</button>
-          <button type="button" onClick={() => jump('students')}>Try it</button>
+          <button type="button" onClick={() => jump('numbers')}>Community</button>
         </nav>
         <div className="lnav-auth">
           {session ? (
@@ -50,87 +58,64 @@ export default function Home() {
 
       <main>
         <section className="hero">
-          <ParticleHero leftNote="that's you. stuck at 2 am." rightNote={`that's ${first(top.id)}. fixed this exact bug last week.`} />
+          <ParticleHero leftNote="that's you. curious about something new." rightNote={top ? `that's ${firstName(top.name)}. teaches ${top.teaches[0]}.` : "that's someone who already knows it."} />
           <div className="hero-fade" aria-hidden="true" />
           <div className="hero-meta" aria-hidden="true">
-            <span>help desk / room 0042 / live</span>
-            <span className="hero-meta-right">help <i>✦</i> earn <i>✦</i> ask</span>
+            <span>skill exchange / person to person / live</span>
+            <span className="hero-meta-right">teach <i>✦</i> earn <i>✦</i> learn</span>
           </div>
           <div className="hero-copy">
             <h1 className="hero-word">orbit<span className="spark-text">.</span></h1>
             <div className="hero-sub">
-              <p>Someone a year ahead of you already fixed the bug you're stuck on. Book twenty minutes in a shared editor with them, and pay with credits you earned helping someone else.</p>
+              <p>Someone out there already knows what you want to learn: guitar, Valorant aim, sourdough, calculus, a new language. Book them for half an hour and pay with credits you earned teaching what you know.</p>
               <div className="flex flex-wrap gap-2.5">
-                <Link to="/find" className="btn btn-light">Find help</Link>
+                <Link to="/find" className="btn btn-light">Find someone to learn from</Link>
                 <button type="button" className="btn btn-line" onClick={() => jump('how')}>See how credits work</button>
               </div>
             </div>
           </div>
         </section>
 
-        <Ticker />
+        <Ticker members={members} />
 
         <section className="lsection statement">
-          <Reveal text="Every week, somebody in your college fixes the exact bug you're stuck on tonight. orbit turns that into a fair trade: help for twenty minutes, earn credits, spend them when it's your turn." />
-          <p className="scribble statement-note">no favours. no "bro can you check this". just credits.</p>
+          <Reveal text="Everyone is good at something. One friend plays guitar, another cooks a perfect biryani, another carries ranked games. orbit turns that into a fair trade: teach for half an hour, earn credits, spend them learning anything you like." />
+          <p className="scribble statement-note">no money. no favours. just credits.</p>
         </section>
 
         <section className="lsection" id="how">
           <div className="section-head">
-            <h2>One session helped earns you one session asked.</h2>
-            <p>The whole thing is a loop. You give twenty minutes before you take twenty, so nobody just takes.</p>
+            <h2>Teach once, learn once.</h2>
+            <p>The whole thing is a loop. You give a little of what you know, and that pays for learning what you don't.</p>
           </div>
           <ol className="steps">
-            <Step shape="hand" n="1" title="Help someone who's stuck" body="Pick a request in something you know. One shared editor, twenty minutes, both of you typing." />
-            <Step shape="spark" n="2" title="Earn credits when it works" body="Credits wait on hold until they say it works. Then they're yours, and they move exactly once." />
-            <Step shape="ask" n="3" title="Spend them when it's your turn" body="Search by topic, language and who's free right now. New here? You start with 30 credits." />
+            <Step shape="hand" n="1" title="Teach what you know" body="Add what you can teach and set your price. People book you for 15 to 60 minutes, by video, voice or in person." />
+            <Step shape="spark" n="2" title="Earn when it helped" body="Credits wait on hold until the learner says it worked. Then they're yours, and they move exactly once." />
+            <Step shape="ask" n="3" title="Spend them on anything" body="Search by skill and language, book someone, learn something new. Everyone starts with 30 credits." />
           </ol>
         </section>
 
-        <Topics />
+        <Topics members={members} />
 
         <Escrow mentor={top} />
 
         <Trust top={top} />
 
-        <section className="lsection" id="students">
-          <div className="section-head">
-            <h2>Try it as a sample student.</h2>
-            <p>Each browser tab can be a different person. Pick one here, open a second tab as someone else, and run a whole session between them.</p>
-          </div>
-          <div className="students">
-            {PEOPLE.map((p) => {
-              const helped = helpedCount(s, p.id)
-              const on = p.id === me
-              return (
-                <button key={p.id} type="button" aria-pressed={on} onClick={() => setMe(p.id)} className="student">
-                  <span className="avatar avatar-lg">{initials(p.name)}</span>
-                  <span className="student-name">{p.name}</span>
-                  <span className="student-meta">Level {levelOf(helped)} · teaches {p.skills[0][0]}</span>
-                  <span className="student-bal"><span className="dot-num">{balanceOf(s, p.id)}</span><Spark /></span>
-                </button>
-              )
-            })}
-          </div>
-          <p role="status" className="students-status">
-            This tab is <b>{getPerson(me).name}</b>.{' '}
-            <Link to="/sessions" className="link">Open their sessions</Link>
-          </p>
-        </section>
+        <Numbers />
 
         <section className="join">
           <Burst />
           <div className="join-copy">
-            <h2>Someone already fixed it.</h2>
-            <p>Type what's broken, see who's free right now, and be back to building in twenty minutes.</p>
+            <h2>Someone already knows it.</h2>
+            <p>Say what you want to learn, see who teaches it, and book them in a minute. Your first 30 credits are on us.</p>
             <div className="flex flex-wrap items-center gap-4">
               <Link to={session ? '/home' : '/join'} className="btn btn-light"><Spark /> {session ? 'Open your dashboard' : 'Join and get 30 credits'}</Link>
-              <Link to="/find" className="link">Or try the demo first</Link>
+              <Link to="/find" className="link">Or browse who teaches</Link>
             </div>
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer full />
     </div>
   )
 }
@@ -146,21 +131,23 @@ function Step({ shape, n, title, body }) {
   )
 }
 
-function Ticker() {
-  const s = useStore()
-  const items = s.sessions
-    .filter((x) => x.status === 'completed')
-    .sort((a, b) => b.completedAt - a.completedAt)
-    .slice(0, 10)
-    .map((x) => ({ id: x.id, who: first(x.mentorId), what: `helped ${first(x.learnerId)} with ${x.skill}`, n: x.cost }))
+// Recent sessions when there are some; otherwise what members teach, then examples.
+function Ticker({ members }) {
+  const recent = useRecent()
+  const items = useMemo(() => {
+    const done = recent.map((r, i) => ({ key: `s${i}`, who: firstName(r.name), what: `taught ${r.skill}`, tail: `+${r.cost}` }))
+    const offers = members.flatMap((m) => m.teaches.slice(0, 2).map((k) => ({ key: `${m.handle}-${k}`, who: firstName(m.name), what: `teaches ${k}`, tail: `${m.rate}/30 min` })))
+    const list = [...done, ...offers].slice(0, 14)
+    return list.length >= 6 ? list : [...list, ...EXAMPLES.map((k) => ({ key: k, who: 'Learn', what: k.toLowerCase(), tail: '' }))].slice(0, 14)
+  }, [recent, members])
   const row = (hidden) =>
     items.map((t) => (
-      <span key={`${hidden}-${t.id}`} className="tick" aria-hidden={hidden || undefined}>
-        <Spark /> <b>{t.who}</b> {t.what} <span className="plus">+{t.n}</span>
+      <span key={`${hidden}-${t.key}`} className="tick" aria-hidden={hidden || undefined}>
+        <Spark /> <b>{t.who}</b> {t.what} {t.tail && <span className="plus">{t.tail}</span>}
       </span>
     ))
   return (
-    <div className="ticker" aria-label="Recent sessions">
+    <div className="ticker" aria-label="What people teach on orbit">
       <div className="ticker-track">
         {row(false)}
         {row(true)}
@@ -194,92 +181,83 @@ function Reveal({ text }) {
   )
 }
 
-function Topics() {
-  const s = useStore()
-  const me = useMe()
+function Topics({ members }) {
   const topics = useMemo(() => {
     const map = new Map()
-    PEOPLE.forEach((p) =>
-      p.skills.forEach(([k, lvl]) => {
-        if (!map.has(k)) map.set(k, [])
-        map.get(k).push({ p, lvl })
-      }),
-    )
-    return [...map.entries()]
-      .map(([skill, list]) => {
-        const free = list.filter(({ p }) => freeStatus(p).when === 'now')
-        const asking = s.sessions.filter((x) => x.skill === skill && x.status === 'requested').length
-        return { skill, list, free: free.length, asking, cost: Math.min(...list.map(({ p }) => p.cost)) }
-      })
-      .sort((a, b) => b.list.length - a.list.length || b.free - a.free)
+    for (const m of members) {
+      for (const k of m.teaches) {
+        const key = k.toLowerCase()
+        if (!map.has(key)) map.set(key, { skill: k, list: [] })
+        map.get(key).list.push(m)
+      }
+    }
+    return [...map.values()]
+      .map((t) => ({ ...t, cost: Math.min(...t.list.map((m) => priceFor(m.rate, 30))), rated: t.list.filter((m) => m.reviews > 0).length }))
+      .sort((a, b) => b.list.length - a.list.length || b.rated - a.rated)
       .slice(0, 12)
-  }, [s])
+  }, [members])
   const [pick, setPick] = useState(null)
   const sel = topics.find((t) => t.skill === pick) ?? topics[0]
 
   return (
     <section className="lsection" id="topics">
       <div className="section-head">
-        <h2>Pick what's broken. See who's free.</h2>
-        <p>Every topic shows who can help, who's free right now and what twenty minutes costs. Tap one to see the people.</p>
+        <h2>Pick a skill. Meet who teaches it.</h2>
+        <p>Every skill here is taught by a real member. Each one shows how many people teach it and what half an hour costs. Tap one to see them.</p>
       </div>
-      <div className="market">
-        <div className="topic-grid">
-          {topics.map((t) => (
-            <button
-              key={t.skill}
-              type="button"
-              aria-pressed={t.skill === sel.skill}
-              onClick={() => setPick(t.skill)}
-              className={`topic ${t.free ? 'hot' : ''}`}
-            >
-              <span className="topic-name">{t.skill}</span>
-              <span className="topic-meta">
-                {t.list.length} {t.list.length === 1 ? 'mentor' : 'mentors'}
-                <br />
-                {t.free ? `${t.free} free now` : 'none free now'}
-              </span>
-              <span className="topic-price"><span className="dot-num">{t.cost}</span><Spark /></span>
-            </button>
-          ))}
+      {!sel ? (
+        <div className="market-empty">
+          <p className="scribble m-0">the first teachers are joining now.</p>
+          <p className="m-0 dim">Be one of them: <Link to="/join" className="link">join</Link> and add what you can teach.</p>
         </div>
-        <aside className="topic-card" aria-live="polite">
-          <p className="dim text-[11px] m-0">{sel.list.length} can help · {sel.asking} asking right now</p>
-          <h3>{sel.skill}</h3>
-          <div className="topic-from">
-            <span className="dot-num spark-text">{sel.cost}</span>
-            <span className="dim text-xs">credits and up, for twenty minutes</span>
+      ) : (
+        <div className="market">
+          <div className="topic-grid">
+            {topics.map((t) => (
+              <button key={t.skill} type="button" aria-pressed={t.skill === sel.skill} onClick={() => setPick(t.skill)} className="topic">
+                <span className="topic-name">{t.skill}</span>
+                <span className="topic-meta">
+                  {t.list.length} {t.list.length === 1 ? 'teacher' : 'teachers'}
+                  {t.rated > 0 && <><br />{t.rated} rated</>}
+                </span>
+                <span className="topic-price"><span className="dot-num">{t.cost}</span><Spark /></span>
+              </button>
+            ))}
           </div>
-          <ul className="topic-people">
-            {sel.list
-              .filter(({ p }) => p.id !== me)
-              .sort((a, b) => b.lvl - a.lvl)
-              .slice(0, 4)
-              .map(({ p }) => {
-                const f = freeStatus(p)
-                return (
-                  <li key={p.id}>
-                    <span className="avatar">{initials(p.name)}</span>
-                    <Link to={`/people/${p.id}`}>{p.name}</Link>
-                    <span className={f.when === 'now' ? 'pill pill-live' : 'dim text-[11px]'}>{f.when === 'now' ? 'Free now' : f.text.replace('Free ', '')}</span>
+          <aside className="topic-card" aria-live="polite">
+            <p className="dim text-[11px] m-0">{sel.list.length} {sel.list.length === 1 ? 'person teaches' : 'people teach'} this</p>
+            <h3>{sel.skill}</h3>
+            <div className="topic-from">
+              <span className="dot-num spark-text">{sel.cost}</span>
+              <span className="dim text-xs">credits and up, for half an hour</span>
+            </div>
+            <ul className="topic-people">
+              {[...sel.list]
+                .sort((a, b) => Number(b.rating ?? 0) - Number(a.rating ?? 0))
+                .slice(0, 4)
+                .map((m) => (
+                  <li key={m.handle}>
+                    <MemberAvatar name={m.name} url={m.avatar_url} />
+                    <Link to={`/u/${m.handle}?skill=${encodeURIComponent(sel.skill)}`}>{m.name}</Link>
+                    {m.reviews > 0 ? <SparkRating value={Number(m.rating)} size={10} /> : <span className="dim text-[11px]">new</span>}
                   </li>
-                )
-              })}
-          </ul>
-          <Link to={`/find?q=${encodeURIComponent(sel.skill)}`} className="btn btn-light btn-block">Find help with {sel.skill}</Link>
-          <p className="scribble topic-note">{sel.free ? 'someone is free. go.' : 'nobody free. ask anyway.'}</p>
-        </aside>
-      </div>
-      <p className="legend"><Spark /> = 1 credit. Sessions are twenty minutes; each mentor sets their price.</p>
+                ))}
+            </ul>
+            <Link to={`/find?q=${encodeURIComponent(sel.skill)}`} className="btn btn-light btn-block">Learn {sel.skill}</Link>
+            <p className="scribble topic-note">{sel.list.length > 1 ? 'pick whoever feels right.' : 'say hi. they bite less than you think.'}</p>
+          </aside>
+        </div>
+      )}
+      <p className="legend"><Spark /> = 1 credit. Sessions run 15 to 60 minutes; each teacher sets their own price.</p>
     </section>
   )
 }
 
 const ESC = [
-  ['Request sent', 'You say what is broken in one line. Nothing charged.'],
+  ['Request sent', 'You say what you want to learn in one line. Nothing charged.'],
   ['Credits held', 'Dev accepts. 10 credits leave your wallet, but not to Dev yet.'],
-  ['In the room', 'One editor, two cursors, twenty minutes.'],
-  ['It works now', 'You say it is fixed. Only you can.'],
+  ['In the room', 'Video or voice, a shared whiteboard, the clock running.'],
+  ['It worked', 'You say it helped. Only you can.'],
   ['Credits sent', 'Dev gets paid. Once. Done.'],
 ]
 const LEDGER = [[30, 0, 40], [20, 10, 40], [20, 10, 40], [20, 10, 40], [20, 0, 50]]
@@ -303,13 +281,13 @@ function Escrow({ mentor }) {
     }
   }, [])
   const [you, held, them] = LEDGER[stage]
-  const name = mentor ? first(mentor.id) : 'Dev'
+  const name = mentor ? firstName(mentor.name) : 'Sam'
   return (
     <section className="escrow" id="escrow" ref={ref} style={{ '--p': p }}>
       <div className="escrow-sticky">
         <div className="section-head escrow-head">
-          <h2>Credits wait on hold until it works.</h2>
-          <p>Nobody gets paid for help that didn't help. Scroll to follow one session from ask to paid.</p>
+          <h2>Credits wait on hold until it helped.</h2>
+          <p>Nobody gets paid for a lesson that didn't help. Scroll to follow one session from request to paid.</p>
         </div>
         <div className="track-wrap">
           <ol className="track">
@@ -331,16 +309,13 @@ function Escrow({ mentor }) {
           <div className="wallet-col"><span>On hold</span><b className="dot-num spark-text">{held}</b></div>
           <div className="wallet-col"><span>{name}'s wallet</span><b className="dot-num">{them}</b></div>
         </div>
-        <p className="escrow-foot">Cancel a running session and the held credits come straight back. Press "It works now" twice and nothing happens the second time.</p>
+        <p className="escrow-foot">Want to stop early? You both agree on a fair split, and the rest comes back to you. Press "It worked" twice and nothing happens the second time.</p>
       </div>
     </section>
   )
 }
 
 function Trust({ top }) {
-  const s = useStore()
-  const helped = helpedCount(s, top.id)
-  const earned = s.ledger.filter((r) => r.userId === top.id && r.type === 'earn').reduce((a, r) => a + r.amount, 0)
   return (
     <section className="lsection" id="trust">
       <div className="section-head">
@@ -348,21 +323,31 @@ function Trust({ top }) {
         <p>Balances aren't stored anywhere. They're added up from a ledger where every row is one change and no row is ever edited.</p>
       </div>
       <div className="trust-grid">
-        <article className="idcard" aria-label={`${top.name}'s card`}>
-          <div className="idcard-top"><span>Most helpful this month</span><Spark /></div>
-          <Halftone shape="bust" bg="#000" cells={34} className="idcard-portrait" />
-          <h3>{top.name}</h3>
-          <p className="quote">{top.quote}</p>
-          <dl className="idcard-stats">
-            <div><dt>Level</dt><dd>{levelOf(helped)}</dd></div>
-            <div><dt>Helped</dt><dd>{helped}</dd></div>
-            <div><dt>Earned</dt><dd>{earned}</dd></div>
-          </dl>
-          <p className="scribble card-note">the person you want.</p>
-        </article>
+        {top ? (
+          <article className="idcard" aria-label={`${top.name}'s card`}>
+            <div className="idcard-top"><span>{top.reviews > 0 ? 'Top rated right now' : 'Newest teacher'}</span><Spark /></div>
+            {top.avatar_url ? <img src={top.avatar_url} alt="" className="idcard-portrait idcard-photo" /> : <Halftone shape="bust" bg="#000" cells={34} className="idcard-portrait" />}
+            <h3><Link to={`/u/${top.handle}`}>{top.name}</Link></h3>
+            {top.bio && <p className="quote">{top.bio}</p>}
+            <dl className="idcard-stats">
+              <div><dt>Rating</dt><dd>{top.reviews > 0 ? Number(top.rating).toFixed(1) : 'new'}</dd></div>
+              <div><dt>Reviews</dt><dd>{top.reviews}</dd></div>
+              <div><dt>Teaches</dt><dd>{top.teaches.length}</dd></div>
+            </dl>
+            <p className="scribble card-note">the person you want.</p>
+          </article>
+        ) : (
+          <article className="idcard" aria-label="Your card">
+            <div className="idcard-top"><span>Could be you</span><Spark /></div>
+            <Halftone shape="bust" bg="#000" cells={34} className="idcard-portrait" />
+            <h3>Your name here</h3>
+            <p className="quote">teach one thing, learn another.</p>
+            <p className="scribble card-note">the first teacher.</p>
+          </article>
+        )}
         <ol className="ladder">
-          <li><span className="ladder-n dot-num">1</span><div><h3>Held when they accept</h3><p>Your credits leave your spendable balance the moment a mentor says yes, so you can't promise them twice.</p></div></li>
-          <li><span className="ladder-n dot-num">2</span><div><h3>Sent only when it works</h3><p>Only the person who asked can press "It works now". The mentor can't pay themselves.</p></div></li>
+          <li><span className="ladder-n dot-num">1</span><div><h3>Held when they accept</h3><p>Your credits leave your spendable balance the moment a teacher says yes, so you can't promise them twice.</p></div></li>
+          <li><span className="ladder-n dot-num">2</span><div><h3>Sent only when it helped</h3><p>Only the learner can press "It worked". The teacher can't pay themselves.</p></div></li>
           <li><span className="ladder-n dot-num">3</span><div><h3 className="spark-text w-max">Never twice</h3><p>A session moves credits once. A second confirm is refused by the session status and by a check for an existing payment row.</p></div></li>
         </ol>
       </div>
@@ -372,10 +357,36 @@ function Trust({ top }) {
           <tr><th scope="row">You send a request</th><td>Nothing yet</td></tr>
           <tr><th scope="row">They decline, or you withdraw</th><td>Nothing</td></tr>
           <tr><th scope="row">They accept</th><td>−cost, on hold</td></tr>
-          <tr><th scope="row">You press "It works now"</th><td>+cost to them</td></tr>
-          <tr><th scope="row">Either of you cancels mid-session</th><td>+cost back to you</td></tr>
+          <tr><th scope="row">You press "It worked"</th><td>+cost to them</td></tr>
+          <tr><th scope="row">You both agree to end early</th><td>The split you agreed</td></tr>
         </tbody>
       </table>
+    </section>
+  )
+}
+
+function Numbers() {
+  const s = useStats()
+  const cells = [
+    ['members', 'Members'],
+    ['teachers', 'Teaching something'],
+    ['sessions_done', 'Sessions finished'],
+    ['credits_earned', 'Credits earned teaching'],
+  ]
+  return (
+    <section className="lsection" id="numbers">
+      <div className="section-head">
+        <h2>Live from the database.</h2>
+        <p>Not a mock-up: these numbers are counted from orbit's real accounts and ledger every time this page opens.</p>
+      </div>
+      <dl className="numbers">
+        {cells.map(([k, label]) => (
+          <div key={k} className="number">
+            <dt>{label}</dt>
+            <dd className="dot-num">{s ? s[k].toLocaleString() : '·'}</dd>
+          </div>
+        ))}
+      </dl>
     </section>
   )
 }

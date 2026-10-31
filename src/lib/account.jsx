@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase, friendly } from './supabase'
 import { chime, systemNotify } from './notify'
 
@@ -221,9 +221,11 @@ export const useAccount = () => useContext(AccountContext)
 export function RequireAccount({ children }) {
   const account = useAccount()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  // after logging in, come back here
   useEffect(() => {
-    if (account.session === null) navigate('/login', { replace: true })
-  }, [account.session, navigate])
+    if (account.session === null) navigate(pathname === '/home' ? '/login' : `/login?next=${encodeURIComponent(pathname)}`, { replace: true })
+  }, [account.session, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
   if (account.error && !account.profile) return <p className="p-8 text-amber">{account.error}</p>
   if (!account.live) return <p className="p-8 dim">Opening your account…</p>
   return children

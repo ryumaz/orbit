@@ -1,10 +1,9 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Link, Navigate, Routes, Route, useLocation } from 'react-router-dom'
 import { AppShell } from './components/Shell'
 import { SparkDefs } from './components/Spark'
 import Home from './pages/Home'
 import Find from './pages/Find'
-import Profile from './pages/Profile'
 import Sessions from './pages/Sessions'
 import Credits from './pages/Credits'
 import Join from './pages/Join'
@@ -18,10 +17,8 @@ import Activity from './pages/Activity'
 import { RequireAccount } from './lib/account'
 import IncomingCall from './components/IncomingCall'
 import Toasts from './components/Toasts'
+import Orbi from './components/Orbi'
 import './app.css'
-
-// the room carries the code editor, so it loads only when someone opens a room
-const Room = lazy(() => import('./pages/Room'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -38,6 +35,7 @@ export default function App() {
       <ScrollToTop />
       <IncomingCall />
       <Toasts />
+      <Orbi />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/join" element={<Join mode="signup" />} />
@@ -51,17 +49,11 @@ export default function App() {
         <Route path="/review/:id" element={<RequireAccount><Review /></RequireAccount>} />
         <Route path="/activity" element={<RequireAccount><AppShell><Activity /></AppShell></RequireAccount>} />
         <Route path="/find" element={<AppShell><Find /></AppShell>} />
-        <Route path="/people/:id" element={<AppShell><Profile /></AppShell>} />
-        <Route path="/sessions" element={<AppShell><Sessions /></AppShell>} />
-        <Route path="/credits" element={<AppShell><Credits /></AppShell>} />
-        <Route
-          path="/room/:id"
-          element={
-            <Suspense fallback={<p className="p-8 dim">Opening the room…</p>}>
-              <Room />
-            </Suspense>
-          }
-        />
+        <Route path="/sessions" element={<RequireAccount><AppShell><Sessions /></AppShell></RequireAccount>} />
+        <Route path="/credits" element={<RequireAccount><AppShell><Credits /></AppShell></RequireAccount>} />
+        {/* the old sample marketplace pages */}
+        <Route path="/people/:id" element={<Navigate to="/find" replace />} />
+        <Route path="/room/:id" element={<Navigate to="/sessions" replace />} />
         <Route path="*" element={<AppShell><NotFound /></AppShell>} />
       </Routes>
     </>

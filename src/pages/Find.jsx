@@ -1,74 +1,55 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Spark, initials } from '../components/Spark'
+import { Spark } from '../components/Spark'
 import { MemberAvatar, CARD_COLORS } from '../components/ProfileCard'
 import { SparkRating } from '../components/SparkStars'
-import { useStore, PEOPLE, helpedCount, levelOf } from '../lib/store'
-import { useMe } from '../lib/me'
 import { useAccount } from '../lib/account'
 import { useMembers, memberHit } from '../lib/members'
-import { freeStatus, WHEN_RANK, joinAnd } from '../lib/time'
+import { joinAnd } from '../lib/time'
+import { priceFor } from '../components/BookForm'
 
-const WHEN = [
-  ['now', 'Right now'],
-  ['today', 'Today'],
-  ['week', 'This week'],
-]
 const SHOWN_LANGS = 6
+const SORTS = [
+  ['best', 'Best rated'],
+  ['cheap', 'Lowest price'],
+  ['new', 'Newest'],
+]
 
 export default function Find() {
-  const s = useStore()
-  const me = useMe()
   const account = useAccount()
-  const { members } = useMembers()
+  const { members, loading } = useMembers()
   const [params] = useSearchParams()
   const [query, setQuery] = useState(() => params.get('q') ?? '')
   const [langs, setLangs] = useState([])
   const [allLangs, setAllLangs] = useState(false)
-  const [when, setWhen] = useState('')
-  const [above, setAbove] = useState(false)
-  const myLevel = levelOf(helpedCount(s, me))
+  const [sort, setSort] = useState('best')
   const myHandle = account.live ? account.profile.handle : null
   const q = query.trim().toLowerCase()
 
   // languages people here actually speak, most common first
   const langOptions = useMemo(() => {
     const count = new Map()
-    for (const l of [...members.flatMap((m) => m.langs), ...PEOPLE.flatMap((p) => p.langs)]) count.set(l, (count.get(l) ?? 0) + 1)
+    for (const l of members.flatMap((m) => m.langs)) count.set(l, (count.get(l) ?? 0) + 1)
     return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([l]) => l)
   }, [members])
   const visibleLangs = allLangs ? langOptions : [...new Set([...langOptions.slice(0, SHOWN_LANGS), ...langs])]
 
-  // real members first; availability filters do not apply to them yet
-  const real = useMemo(
-    () =>
-      members
-        .map((m) => ({ m, hit: memberHit(m, q) }))
-        .filter(({ m, hit }) => hit !== undefined && (!langs.length || m.langs.some((l) => langs.includes(l))))
-        .sort((a, b) => (a.m.handle === myHandle) - (b.m.handle === myHandle)),
-    [members, q, langs, myHandle],
-  )
-
-  const results = useMemo(() => {
-    return PEOPLE.filter((p) => p.id !== me)
-      .map((p) => {
-        const helped = helpedCount(s, p.id)
-        const hit = q ? p.skills.find(([k]) => k.toLowerCase().includes(q) || q.includes(k.toLowerCase())) : null
-        return { p, helped, level: levelOf(helped), free: freeStatus(p), hit: hit?.[0] ?? null, q }
-      })
-      .filter((r) => {
-        if (r.q && !r.hit && !r.p.name.toLowerCase().includes(r.q)) return false
-        if (langs.length && !r.p.langs.some((l) => langs.includes(l))) return false
-        if (when && WHEN_RANK[r.free.when] > WHEN_RANK[when]) return false
-        if (above && r.level <= myLevel) return false
-        return true
-      })
-      .sort((a, b) => WHEN_RANK[a.free.when] - WHEN_RANK[b.free.when] || b.level - a.level)
-  }, [s, me, q, langs, when, above, myLevel])
+  // you last; then by the chosen order
+  const real = useMemo(() => {
+    const order = {
+      best: (a, b) => Number(b.m.rating ?? 0) - Number(a.m.rating ?? 0) || b.m.reviews - a.m.reviews,
+      cheap: (a, b) => a.m.rate - b.m.rate,
+      new: (a, b) => new Date(b.m.created_at) - new Date(a.m.created_at),
+    }[sort]
+    return members
+      .map((m) => ({ m, hit: memberHit(m, q) }))
+      .filter(({ m, hit }) => hit !== undefined && (!langs.length || m.langs.some((l) => langs.includes(l))))
+      .sort((a, b) => (a.m.handle === myHandle) - (b.m.handle === myHandle) || order(a, b))
+  }, [members, q, langs, myHandle, sort])
 
   const toggleLang = (l) => setLangs((xs) => (xs.includes(l) ? xs.filter((x) => x !== l) : [...xs, l]))
-  const clear = () => { setQuery(''); setLangs([]); setWhen(''); setAbove(false) }
-  const total = real.length + results.length
+  const clear = () => { setQuery(''); setLangs([]) }
+  const total = real.length
 
   return (
     <>
@@ -97,43 +78,34 @@ export default function Find() {
             </button>
           )}
         </div>
-        <div role="group" aria-label="Free" className="filter-row">
-          <span className="label">Free</span>
-          {WHEN.map(([k, label]) => (
-            <button key={k} type="button" className="chip" aria-pressed={when === k} onClick={() => setWhen(when === k ? '' : k)}>{label}</button>
+        <div role="group" aria-label="Sort" className="filter-row">
+          <span className="label">Sort</span>
+          {SORTS.map(([k, label]) => (
+            <button key={k} type="button" className="chip" aria-pressed={sort === k} onClick={() => setSort(k)}>{label}</button>
           ))}
-          <button type="button" className="chip" aria-pressed={above} onClick={() => setAbove(!above)}>Above my level</button>
         </div>
       </div>
 
       <div className="block-head mb-4">
         <h2 role="status">{total === 1 ? '1 person can teach you' : `${total} people can teach you`}</h2>
-        {(query || langs.length || when || above) ? <button type="button" className="link" onClick={clear}>Clear</button> : null}
+        {(query || langs.length) ? <button type="button" className="link" onClick={clear}>Clear</button> : null}
       </div>
 
-      {total === 0 && (
+      {loading && <p className="dim">Looking for teachers…</p>}
+      {!loading && total === 0 && (
         <div className="empty">
-          <p className="scribble m-0">nobody yet. try a broader word.</p>
-          <p className="m-0">Loosen a filter, or search the skill or game name instead of the problem.</p>
+          <p className="scribble m-0">{q ? 'nobody teaches that yet.' : 'no teachers yet.'}</p>
+          <p className="m-0">
+            {q ? 'Try a broader word, or the skill or game name. ' : ''}
+            Know it yourself? <Link to={account.live ? '/me' : '/join'} className="link">Add it to what you teach</Link> and earn credits.
+          </p>
         </div>
       )}
 
       {real.length > 0 && (
-        <section aria-label="Members" className="mb-10">
-          <p className="label mb-3 mt-0">Members</p>
-          <div className="mentors">
-            {real.map(({ m, hit }) => <MemberCard key={m.handle} m={m} hit={hit} you={m.handle === myHandle} />)}
-          </div>
-        </section>
-      )}
-
-      {results.length > 0 && (
-        <section aria-label="Sample mentors">
-          {real.length > 0 && <p className="label mb-3 mt-0">Sample mentors</p>}
-          <div className="mentors">
-            {results.map((r) => <MentorCard key={r.p.id} {...r} />)}
-          </div>
-        </section>
+        <div className="mentors">
+          {real.map(({ m, hit }) => <MemberCard key={m.handle} m={m} hit={hit} you={m.handle === myHandle} />)}
+        </div>
       )}
     </>
   )
@@ -150,7 +122,14 @@ function MemberCard({ m, hit, you }) {
           <small>@{m.handle}{m.city && ` · ${m.city}`}</small>
           {m.reviews > 0 && <small className="flex items-center gap-1.5"><SparkRating value={Number(m.rating)} size={11} /> {Number(m.rating).toFixed(1)} · {m.reviews}</small>}
         </h3>
-        <span className="pill pill-quiet">{you ? 'You' : 'Member'}</span>
+        {you ? (
+          <span className="pill pill-quiet">You</span>
+        ) : (
+          <div className="mentor-price">
+            <b className="spark-text">{priceFor(m.rate, 30)}</b>
+            <span>per 30 min</span>
+          </div>
+        )}
       </div>
       {m.bio && <p className="m-0 font-[family-name:var(--font-hand)] text-[22px] leading-none opacity-80">“{m.bio}”</p>}
       <div className="tags">
@@ -159,36 +138,6 @@ function MemberCard({ m, hit, you }) {
       {m.langs.length > 0 && <div className="mentor-meta"><span>Speaks {joinAnd(m.langs)}</span></div>}
       <Link to={`/u/${m.handle}${!you && hit ? `?skill=${encodeURIComponent(hit)}` : ''}`} className="btn btn-light btn-sm">
         <Spark /> {you ? 'See your public page' : `Learn ${hit ?? m.teaches[0]} from ${m.name.split(' ')[0]}`}
-      </Link>
-    </article>
-  )
-}
-
-function MentorCard({ p, helped, level, free, hit }) {
-  const skill = hit ?? p.skills[0][0]
-  return (
-    <article className={`mentor card ${free.when === 'now' ? 'card-hot' : ''}`}>
-      <div className="mentor-head">
-        <span className="avatar avatar-lg">{initials(p.name)}</span>
-        <h3>
-          <Link to={`/people/${p.id}`}>{p.name}</Link>
-          <small>Level {level} · helped {helped} {helped === 1 ? 'time' : 'times'}</small>
-        </h3>
-        <div className="mentor-price">
-          <b className="spark-text">{p.cost}</b>
-          <span>per 20 min</span>
-        </div>
-      </div>
-      <p className="m-0 font-[family-name:var(--font-hand)] text-[22px] leading-none opacity-80">“{p.quote}”</p>
-      <div className="tags">
-        {p.skills.map(([k]) => <span key={k} className={`tag ${k === hit ? 'hit' : ''}`}>{k}</span>)}
-      </div>
-      <div className="mentor-meta">
-        <span>Speaks {joinAnd(p.langs)}</span>
-        <span className={free.when === 'now' ? 'pill pill-live' : ''}>{free.text}</span>
-      </div>
-      <Link to={`/people/${p.id}?skill=${encodeURIComponent(skill)}#request`} className="btn btn-light btn-sm">
-        <Spark /> Ask about {skill}
       </Link>
     </article>
   )

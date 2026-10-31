@@ -1,12 +1,9 @@
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { useStore, balanceOf, heldOf, getPerson, resetDemo } from '../lib/store'
-import { useMe } from '../lib/me'
 import { useAccount } from '../lib/account'
 import Icon from './Icons'
-import { Spark, initials } from './Spark'
+import { Spark } from './Spark'
 import { MemberAvatar } from './ProfileCard'
 import LogOut from './LogOut'
-import { useConfirm } from './Confirm'
 
 export function Brand({ compact = false }) {
   return (
@@ -17,11 +14,6 @@ export function Brand({ compact = false }) {
   )
 }
 
-const DEMO_NAV = [
-  ['/sessions', 'sessions', 'Sessions'],
-  ['/find', 'find', 'Find help'],
-  ['/credits', 'credits', 'Credits'],
-]
 const LIVE_NAV = [
   ['/home', 'home', 'Home'],
   ['/find', 'find', 'Learn something'],
@@ -30,30 +22,29 @@ const LIVE_NAV = [
   ['/activity', 'activity', 'Activity'],
   ['/me', 'me', 'You'],
 ]
-// pages that still run on the sample marketplace
-const SAMPLE = ['/find', '/people']
+const GUEST_NAV = [['/find', 'find', 'Learn something']]
+
+// Team links in the footer. Discord shows once an invite link is set here.
+export const SOCIAL = { github: 'https://github.com/ryumaz', discord: '' }
+
+// opens Orbi, the help assistant, from anywhere ("human" goes straight to the team form)
+export const openHelp = (mode = 'ai') => window.dispatchEvent(new CustomEvent('orbit:help', { detail: { mode } }))
 
 // Sidebar on desktop, top bar and thumb-reach tab bar on phones.
-// Logged in, it shows the member's real name and balance; logged out, the demo student.
+// Logged in, it shows the member's name and balance; logged out, a way in.
 export function AppShell({ children }) {
-  const s = useStore()
-  const me = useMe()
   const account = useAccount()
   const { pathname } = useLocation()
   const live = account.live
-  const person = getPerson(me)
-  const name = live ? account.profile.name : person.name
-  const incoming = live
-    ? account.sessions.filter((x) => x.mentor_id === account.user.id && x.status === 'requested').length
-    : s.sessions.filter((x) => x.mentorId === me && x.status === 'requested').length
-  const balance = live ? account.balance : balanceOf(s, me)
+  const name = live ? account.profile.name : 'Guest'
+  const incoming = live ? account.sessions.filter((x) => x.mentor_id === account.user.id && x.status === 'requested').length : 0
+  const balance = live ? account.balance : 0
   const held = live
     ? account.sessions.filter((x) => x.learner_id === account.user.id && ['accepted', 'live'].includes(x.status)).reduce((a, x) => a + x.cost, 0)
-    : heldOf(s, me)
-  const youTo = live ? '/me' : `/people/${me}`
-  const nav = live ? LIVE_NAV : [...DEMO_NAV, [youTo, 'me', 'You']]
-  const title = pathname.startsWith('/people') ? 'Profile' : nav.find(([to]) => pathname.startsWith(to))?.[2] ?? ''
-  const sample = live && SAMPLE.some((p) => pathname.startsWith(p))
+    : 0
+  const nav = live ? LIVE_NAV : GUEST_NAV
+  const title = nav.find(([to]) => pathname.startsWith(to))?.[2] ?? ''
+  const next = encodeURIComponent(pathname)
 
   return (
     <div className="shell">
@@ -68,23 +59,30 @@ export function AppShell({ children }) {
             </NavLink>
           ))}
         </nav>
-        <Link to="/find" className="btn btn-light btn-block">
-          <Spark />
-          {live ? 'Learn something' : 'Ask for help'}
-        </Link>
+        {live ? (
+          <Link to="/find" className="btn btn-light btn-block">
+            <Spark />
+            Learn something
+          </Link>
+        ) : (
+          <Link to={`/join?next=${next}`} className="btn btn-light btn-block">
+            <Spark />
+            Join and get 30 credits
+          </Link>
+        )}
         <div className="side-foot">
-          <p className="m-0">
-            <b className="dot-num text-xl">{balance}</b> credits <span className="dim">· {held} on hold</span>
-          </p>
           {live ? (
-            <p className="m-0 dim">
-              {name} · <LogOut />
-            </p>
+            <>
+              <p className="m-0">
+                <b className="dot-num text-xl">{balance}</b> credits <span className="dim">· {held} on hold</span>
+              </p>
+              <p className="m-0 dim">
+                {name} · <LogOut />
+              </p>
+            </>
           ) : (
             <p className="m-0 dim">
-              You are {person.name.replace(/\.$/, '')}.{' '}
-              <Link to="/" state={{ to: 'students' }} className="link">Switch</Link>
-              {account.session === null && <> · <Link to="/login" className="link">Log in</Link></>}
+              Have an account? <Link to={`/login?next=${next}`} className="link">Log in</Link>
             </p>
           )}
         </div>
@@ -98,34 +96,40 @@ export function AppShell({ children }) {
           <span className="top-who">{name}</span>
           <span className="top-title">{title}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Link to="/credits" className="top-balance" aria-label={`${balance} credits`}>
-              <span className="dot-num">{balance}</span>
-              <Spark />
-            </Link>
-            <Link to={youTo} className="top-avatar" aria-label={`Your profile, ${name}`}>
-              {live ? <MemberAvatar name={name} url={account.profile.avatar_url} /> : <span className="avatar">{initials(name)}</span>}
-            </Link>
+            {live ? (
+              <>
+                <Link to="/credits" className="top-balance" aria-label={`${balance} credits`}>
+                  <span className="dot-num">{balance}</span>
+                  <Spark />
+                </Link>
+                <Link to="/me" className="top-avatar" aria-label={`Your profile, ${name}`}>
+                  <MemberAvatar name={name} url={account.profile.avatar_url} />
+                </Link>
+              </>
+            ) : (
+              <Link to={`/login?next=${next}`} className="btn btn-line btn-sm">Log in</Link>
+            )}
           </div>
         </header>
         <main className="main view-in" key={pathname}>
-          {sample && (
-            <p className="sample-note">
-              <span className="pill pill-quiet">sample</span>
-              Real members are listed first; the rest are sample mentors while orbit grows.
-            </p>
-          )}
           {children}
         </main>
-        <Footer live={live} />
+        <Footer />
       </div>
 
       <nav className="tabs" aria-label="Main">
+        <NavLink to={live ? '/home' : '/'} end>
+          <Icon name="home" />
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/find" end>
+          <Icon name="find" />
+          <span>Find</span>
+        </NavLink>
+        <Link to="/find" className="tab-ask" aria-label="Learn something">
+          <Spark />
+        </Link>
         {live ? (
-          <NavLink to="/home">
-            <Icon name="home" />
-            <span>Home</span>
-          </NavLink>
-        ) : (
           <NavLink to="/sessions">
             <span className="relative">
               <Icon name="sessions" />
@@ -133,52 +137,97 @@ export function AppShell({ children }) {
             </span>
             <span>Sessions</span>
           </NavLink>
-        )}
-        <NavLink to="/find" end>
-          <Icon name="find" />
-          <span>Find</span>
-        </NavLink>
-        <Link to="/find" className="tab-ask" aria-label={live ? 'Learn something' : 'Ask for help'}>
-          <Spark />
-        </Link>
-        {live ? (
-          <NavLink to="/sessions">
-            <Icon name="sessions" />
-            <span>Sessions</span>
-          </NavLink>
         ) : (
-          <NavLink to="/credits">
+          <NavLink to="/join">
             <Icon name="credits" />
-            <span>Credits</span>
+            <span>Join</span>
           </NavLink>
         )}
-        <NavLink to={youTo}>
+        <NavLink to={live ? '/me' : `/login?next=${next}`}>
           <Icon name="me" />
-          <span>You</span>
+          <span>{live ? 'You' : 'Log in'}</span>
         </NavLink>
       </nav>
     </div>
   )
 }
 
-export function Footer({ live = false }) {
-  const [confirm, dialog] = useConfirm()
+function GitHubMark() {
   return (
-    <footer className="foot">
-      <p className="m-0">
-        orbit by Void Century. Built in 36 hours for Innovista, problem 05.{' '}
-        {live ? 'Your account and credits are real; the mentors are sample data.' : 'Every person here is sample data.'}
-      </p>
-      <button
-        type="button"
-        className="link"
-        onClick={() => {
-          confirm({ title: 'Reset the demo?', body: 'Every sample balance, request and session goes back to the start. Your real account is not touched.', yes: 'Reset demo' }).then((ok) => ok && resetDemo())
-        }}
-      >
-        Reset demo data
-      </button>
-      {dialog}
+    <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  )
+}
+
+function DiscordMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+      <path d="M20.32 4.37a19.8 19.8 0 00-4.89-1.52.07.07 0 00-.08.04c-.21.38-.44.87-.61 1.25a18.27 18.27 0 00-5.49 0 12.64 12.64 0 00-.62-1.25.08.08 0 00-.08-.04 19.74 19.74 0 00-4.88 1.52.07.07 0 00-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 00.03.06 19.9 19.9 0 005.99 3.03.08.08 0 00.08-.03c.46-.63.87-1.3 1.23-1.99a.08.08 0 00-.04-.11 13.1 13.1 0 01-1.87-.89.08.08 0 01-.01-.13c.13-.09.25-.19.37-.29a.07.07 0 01.08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 01.08.01c.12.1.25.2.37.29a.08.08 0 01-.01.13c-.6.35-1.22.65-1.87.89a.08.08 0 00-.04.11c.36.7.77 1.36 1.23 1.99a.08.08 0 00.08.03 19.84 19.84 0 006-3.03.08.08 0 00.03-.06c.5-5.18-.84-9.67-3.55-13.66a.06.06 0 00-.03-.03zM8.02 15.33c-1.18 0-2.16-1.09-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.09-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.95 2.42-2.16 2.42z" />
+    </svg>
+  )
+}
+
+// Inside the app: one quiet line. On the landing page (full): links, team, and a
+// giant dotted wordmark sinking into the bottom edge.
+export function Footer({ full = false }) {
+  const { session } = useAccount()
+  if (!full) {
+    return (
+      <footer className="foot">
+        <p className="m-0">orbit by Void Century · teach one, learn one.</p>
+        <button type="button" className="link" onClick={() => openHelp()}>Need help? Ask Orbi</button>
+      </footer>
+    )
+  }
+  const col = (title, links) => (
+    <div className="bigfoot-col">
+      <h3>{title}</h3>
+      <ul>{links.map(([label, el]) => <li key={label}>{el}</li>)}</ul>
+    </div>
+  )
+  return (
+    <footer className="bigfoot">
+      <div className="bigfoot-top">
+        <div className="bigfoot-brand">
+          <div className="flex items-center gap-4">
+            <span className="bigfoot-mark" aria-hidden="true"><Spark /></span>
+            <p className="bigfoot-line">Teach one.<br />Learn one.</p>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <a href={SOCIAL.github} target="_blank" rel="noreferrer" className="bigfoot-social"><GitHubMark /> GitHub</a>
+            {SOCIAL.discord && <a href={SOCIAL.discord} target="_blank" rel="noreferrer" className="bigfoot-social is-discord"><DiscordMark /> Discord</a>}
+          </div>
+        </div>
+        <nav className="bigfoot-links" aria-label="Footer">
+          {col('Explore', [
+            ['Learn something', <Link to="/find">Learn something</Link>],
+            ['How it works', <Link to="/" state={{ to: 'how' }}>How it works</Link>],
+            ['Credits', <Link to="/" state={{ to: 'escrow' }}>How credits work</Link>],
+            ['Community', <Link to="/" state={{ to: 'numbers' }}>Community</Link>],
+          ])}
+          {col('Account', session
+            ? [
+                ['Dashboard', <Link to="/home">Dashboard</Link>],
+                ['Profile', <Link to="/me">Your profile</Link>],
+                ['Sessions', <Link to="/sessions">Sessions</Link>],
+                ['Activity', <Link to="/activity">Activity</Link>],
+              ]
+            : [
+                ['Join', <Link to="/join">Join, get 30 credits</Link>],
+                ['Log in', <Link to="/login">Log in</Link>],
+              ])}
+          {col('Help', [
+            ['Ask Orbi', <button type="button" onClick={() => openHelp()}>Ask Orbi</button>],
+            ['Contact', <button type="button" onClick={() => openHelp('human')}>Talk to the team</button>],
+          ])}
+        </nav>
+      </div>
+      <div className="bigfoot-bottom">
+        <p className="m-0">© {new Date().getFullYear()} orbit by Void Century. Built for Innovista, problem 05.</p>
+        <button type="button" className="link" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</button>
+      </div>
+      <div className="bigfoot-word" aria-hidden="true">orbit</div>
     </footer>
   )
 }

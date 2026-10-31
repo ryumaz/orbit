@@ -420,11 +420,6 @@ export default function Orbi() {
       <div
         className={`orbi-dock ${onLeft ? 'is-left' : ''} ${high ? 'is-high' : ''}`}
         ref={launchRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onClickCapture={swallowClick}
       >
         {thought && !open && (
           <div className="orbi-thought" role="status">
@@ -439,6 +434,11 @@ export default function Orbi() {
           aria-label={open ? 'Close Vortex' : "Ask Vortex, orbit's helper"}
           title="Ask Vortex · hold and drag to move me"
           onClick={onClick}
+          onClickCapture={swallowClick}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
         >
           <canvas ref={canvasRef} className="orbi-canvas" aria-hidden="true" />
           <span className="orbi-fallback" aria-hidden="true"><RobotFace /></span>

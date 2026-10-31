@@ -8,6 +8,7 @@ import { EyeIcon, PROVIDER_ICON } from '../components/AuthIcons'
 import { supabase, friendly } from '../lib/supabase'
 import { PROVIDERS, enabledProviders, safeNext, sendReset, signInWith } from '../lib/oauth'
 import { useAccount } from '../lib/account'
+import LanguagePicker from '../components/LanguagePicker'
 
 const COPY = {
   signup: { kicker: 'New here', title: 'Make your account', sub: 'Get 30 credits to start. Spend them learning anything, earn more by teaching.' },
@@ -81,7 +82,10 @@ export default function Join({ mode }) {
       <Ridges />
       <header className="signin-top">
         <Brand />
-        <Link to="/" className="link text-[12px]">← Home</Link>
+        <span className="flex items-center gap-4">
+          <LanguagePicker />
+          <Link to="/" className="link text-[12px]">← Home</Link>
+        </span>
       </header>
 
       <main className="signin-card">

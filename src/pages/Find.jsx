@@ -97,7 +97,7 @@ export default function Find() {
           <p className="scribble m-0">{q ? 'nobody teaches that yet.' : 'no teachers yet.'}</p>
           <p className="m-0">
             {q ? 'Try a broader word, or the skill or game name. ' : ''}
-            Know it yourself? <Link to={account.live ? '/me' : '/join'} className="link">Add it to what you teach</Link> and earn credits.
+            Know it yourself? <Link to={account.live ? '/me/skills' : '/join'} className="link">Add it to what you teach</Link> and earn credits.
           </p>
         </div>
       )}
@@ -118,7 +118,7 @@ function MemberCard({ m, hit, you }) {
       <div className="mentor-head">
         <MemberAvatar name={m.name} url={m.avatar_url} large />
         <h3>
-          <Link to={`/u/${m.handle}`}>{m.name}</Link>
+          <Link to={`/u/${m.handle}`} translate="no">{m.name}</Link>
           <small>@{m.handle}{m.city && ` · ${m.city}`}</small>
           {m.reviews > 0 && <small className="flex items-center gap-1.5"><SparkRating value={Number(m.rating)} size={11} /> {Number(m.rating).toFixed(1)} · {m.reviews}</small>}
         </h3>
@@ -132,7 +132,7 @@ function MemberCard({ m, hit, you }) {
         )}
       </div>
       {m.bio && <p className="m-0 font-[family-name:var(--font-hand)] text-[22px] leading-none opacity-80">“{m.bio}”</p>}
-      <div className="tags">
+      <div className="tags" translate="no">
         {m.teaches.map((k) => <span key={k} className={`tag ${k === hit ? 'hit' : ''}`}>{k}</span>)}
       </div>
       {m.langs.length > 0 && <div className="mentor-meta"><span>Speaks {joinAnd(m.langs)}</span></div>}

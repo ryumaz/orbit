@@ -45,7 +45,7 @@ const GROUPS = [
     title: 'Stay in the loop',
     sub: 'Never miss a booking, and never get stuck.',
     items: [
-      ['bell', 'Booking notifications', 'A card and a chime when someone books you, accepts or pays, even from another tab.', '/me'],
+      ['bell', 'Booking notifications', 'A card and a chime when someone books you, accepts or pays, even from another tab.', '/me/notifications'],
       ['robot', 'Vortex, your helper', 'Ask the little robot in the corner anything about orbit, or pass a message to the team.', 'help'],
       ['key', 'Sign in your way', 'Email and password, or GitHub and Discord in one click. Ready in under a minute.', '/join'],
     ],

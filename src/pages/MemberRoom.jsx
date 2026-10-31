@@ -279,7 +279,7 @@ function Person({ p, role, here, hot }) {
     <div className="room-person">
       <span className={hot ? 'room-hot-wrap' : ''}><MemberAvatar name={p.name} url={p.avatar_url} large /></span>
       <span className="grid">
-        <b>{p.name}</b>
+        <b translate="no">{p.name}</b>
         <span className="dim text-[11px]">
           {role} · <span className={here ? 'text-chalk' : ''}>{here ? 'in the room' : 'not here yet'}</span>
         </span>

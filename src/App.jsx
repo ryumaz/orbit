@@ -44,7 +44,7 @@ export default function App() {
         <Route path="/reset" element={<RequireAccount><Reset /></RequireAccount>} />
         <Route path="/welcome" element={<RequireAccount><Welcome /></RequireAccount>} />
         <Route path="/home" element={<RequireAccount><AppShell><Dashboard /></AppShell></RequireAccount>} />
-        <Route path="/me" element={<RequireAccount><AppShell><Me /></AppShell></RequireAccount>} />
+        <Route path="/me/:section?" element={<RequireAccount><AppShell><Me /></AppShell></RequireAccount>} />
         <Route path="/account" element={<Navigate to="/home" replace />} />
         <Route path="/u/:handle" element={<PublicProfile />} />
         <Route path="/s/:id" element={<RequireAccount><MemberRoom /></RequireAccount>} />

@@ -4,10 +4,12 @@ import Icon from './Icons'
 import { Spark } from './Spark'
 import { MemberAvatar } from './ProfileCard'
 import LogOut from './LogOut'
+import AccountMenu from './AccountMenu'
+import LanguagePicker from './LanguagePicker'
 
 export function Brand({ compact = false }) {
   return (
-    <Link to="/" className="brand" aria-label="orbit home">
+    <Link to="/" className="brand" aria-label="orbit home" translate="no">
       <Spark className="brand-spark" />
       {!compact && <span>orbit<em> / void century</em></span>}
     </Link>
@@ -20,7 +22,7 @@ const LIVE_NAV = [
   ['/sessions', 'sessions', 'Sessions'],
   ['/credits', 'credits', 'Credits'],
   ['/activity', 'activity', 'Activity'],
-  ['/me', 'me', 'You'],
+  ['/me', 'me', 'Settings'],
 ]
 const GUEST_NAV = [['/find', 'find', 'Learn something']]
 
@@ -105,15 +107,14 @@ export function AppShell({ children }) {
           <span className="top-who">{name}</span>
           <span className="top-title">{title}</span>
           <div className="ml-auto flex items-center gap-2">
+            <LanguagePicker />
             {live ? (
               <>
                 <Link to="/credits" className="top-balance" aria-label={`${balance} credits`}>
                   <span className="dot-num">{balance}</span>
                   <Spark />
                 </Link>
-                <Link to="/me" className="top-avatar" aria-label={`Your profile, ${name}`}>
-                  <MemberAvatar name={name} url={account.profile.avatar_url} />
-                </Link>
+                <AccountMenu />
               </>
             ) : (
               <Link to={`/login?next=${next}`} className="btn btn-line btn-sm">Log in</Link>
@@ -185,7 +186,10 @@ export function Footer({ full = false }) {
     return (
       <footer className="foot">
         <p className="m-0">orbit by Void Century · teach one, learn one.</p>
-        <button type="button" className="link" onClick={() => openHelp()}>Need help? Ask Vortex</button>
+        <span className="flex flex-wrap items-center gap-4">
+          <LanguagePicker up />
+          <button type="button" className="link" onClick={() => openHelp()}>Need help? Ask Vortex</button>
+        </span>
       </footer>
     )
   }
@@ -233,6 +237,7 @@ export function Footer({ full = false }) {
         </nav>
       </div>
       <div className="bigfoot-bottom">
+        <LanguagePicker full up />
         <p className="m-0">© {new Date().getFullYear()} orbit by Void Century. Built for Innovista, problem 05.</p>
         <button type="button" className="link" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</button>
       </div>

@@ -146,7 +146,7 @@ function TagBlock({ id, title, tags, empty, find = false }) {
         <Link to="/me" className="link text-[11px]">Edit</Link>
       </div>
       {tags.length ? (
-        <div className="tags">
+        <div className="tags" translate="no">
           {tags.map((t) =>
             find ? (
               <Link key={t} to={`/find?q=${encodeURIComponent(t)}`} className="tag hit">{t}</Link>

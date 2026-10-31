@@ -28,8 +28,8 @@ export default function ProfileCard({ name, bio, city, teaches = [], avatarUrl, 
       ) : (
         <Halftone shape="bust" bg="#000" cells={34} className="idcard-portrait" />
       )}
-      <h3>{name || 'Your name'}</h3>
-      <p className="quote">{bio || 'one line about you'}</p>
+      <h3 translate="no">{name || 'Your name'}</h3>
+      <p className="quote" translate={bio ? 'no' : undefined}>{bio || 'one line about you'}</p>
       {stats.length > 0 && (
         <dl className="idcard-stats">
           {stats.map(([k, v]) => (
@@ -47,7 +47,7 @@ export function MemberAvatar({ name, url, large = false }) {
   return url ? (
     <img src={url} alt="" className={`avatar avatar-photo ${large ? 'avatar-lg' : ''}`} />
   ) : (
-    <span className={`avatar ${large ? 'avatar-lg' : ''}`}>{initials}</span>
+    <span className={`avatar ${large ? 'avatar-lg' : ''}`} translate="no">{initials}</span>
   )
 }
 

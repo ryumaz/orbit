@@ -180,7 +180,7 @@ export function Chat({ live, me, other }) {
   }, [live.messages.length])
   return (
     <div className="chat">
-      <ol ref={list} className="chat-list" aria-live="polite" aria-label="Messages">
+      <ol ref={list} className="chat-list" translate="no" aria-live="polite" aria-label="Messages">
         {live.messages.length === 0 && <li className="chat-empty">Say hi. {first(other)} sees messages instantly.</li>}
         {live.messages.map((m) => (
           <li key={m.id} className={m.from === me ? 'mine' : ''}>

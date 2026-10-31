@@ -12,6 +12,7 @@ import { useAccount } from '../lib/account'
 import { useMembers } from '../lib/members'
 import { useRecent, useStats } from '../lib/pulse'
 import { Community, Faq, Features } from './HomeMore'
+import LanguagePicker from '../components/LanguagePicker'
 import '../landing.css'
 
 const firstName = (name) => name?.split(' ')[0] ?? ''
@@ -68,6 +69,7 @@ export default function Home() {
           <button type="button" onClick={() => jump('faq')}>FAQ</button>
         </nav>
         <div className="lnav-auth">
+          <LanguagePicker />
           {session ? (
             <Link to="/home" className="btn btn-light btn-sm">Dashboard</Link>
           ) : (
@@ -267,7 +269,7 @@ function Topics({ members }) {
                 .map((m) => (
                   <li key={m.handle}>
                     <MemberAvatar name={m.name} url={m.avatar_url} />
-                    <Link to={`/u/${m.handle}?skill=${encodeURIComponent(sel.skill)}`}>{m.name}</Link>
+                    <Link to={`/u/${m.handle}?skill=${encodeURIComponent(sel.skill)}`} translate="no">{m.name}</Link>
                     {m.reviews > 0 ? <SparkRating value={Number(m.rating)} size={10} /> : <span className="dim text-[11px]">new</span>}
                   </li>
                 ))}

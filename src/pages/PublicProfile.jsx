@@ -75,7 +75,7 @@ export default function PublicProfile() {
             <div className="stack">
               <div className="grid gap-2">
                 <p className="greet-date m-0">@{p.handle} · on orbit since {since}</p>
-                <h1 className="page-title m-0">{p.name}</h1>
+                <h1 className="page-title m-0" translate="no">{p.name}</h1>
                 {p.reviews > 0 ? (
                   <a href="#reviews" onClick={(e) => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }) }} className="rating-line">
                     <SparkRating value={Number(p.rating)} size={15} /> <b>{Number(p.rating).toFixed(1)}</b> <span className="dim">· {p.reviews} {p.reviews === 1 ? 'review' : 'reviews'}</span>
@@ -89,7 +89,7 @@ export default function PublicProfile() {
               <section className="block" aria-labelledby="h-teaches">
                 <div className="block-head"><h2 id="h-teaches">{first} can teach you</h2></div>
                 {p.teaches.length ? (
-                  <div className="tags">{p.teaches.map((t) => <span key={t} className="tag hit">{t}</span>)}</div>
+                  <div className="tags" translate="no">{p.teaches.map((t) => <span key={t} className="tag hit">{t}</span>)}</div>
                 ) : (
                   <p className="empty m-0">Nothing listed yet.</p>
                 )}
@@ -98,7 +98,7 @@ export default function PublicProfile() {
               {p.learns.length > 0 && (
                 <section className="block" aria-labelledby="h-learns">
                   <div className="block-head"><h2 id="h-learns">{first} wants to learn</h2></div>
-                  <div className="tags">{p.learns.map((t) => <span key={t} className="tag">{t}</span>)}</div>
+                  <div className="tags" translate="no">{p.learns.map((t) => <span key={t} className="tag">{t}</span>)}</div>
                   <p className="m-0 text-[12px] dim">Know one of these? You could swap: teach {first} and learn from them.</p>
                 </section>
               )}

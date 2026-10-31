@@ -9,11 +9,12 @@ import { useAccount } from '../lib/account'
 import { supabase, friendly } from '../lib/supabase'
 import { safeNext } from '../lib/oauth'
 import { refreshMembers } from '../lib/members'
+import LanguagePicker from '../components/LanguagePicker'
 
 const PROVIDER_NAME = { discord: 'Discord', github: 'GitHub', google: 'Google', email: 'email' }
 const GOALS = [
   ['learn', 'Learn something', '/find'],
-  ['teach', 'Teach something', '/me'],
+  ['teach', 'Teach something', '/me/skills'],
   ['both', 'A bit of both', '/home'],
 ]
 const cleanHandle = (v) => v.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20)
@@ -68,6 +69,7 @@ export default function Welcome() {
       <Ridges />
       <header className="signin-top">
         <Brand />
+        <LanguagePicker />
       </header>
       <main className="signin-card">
         <form className="signin-form" onSubmit={submit} aria-labelledby="welcome-title">

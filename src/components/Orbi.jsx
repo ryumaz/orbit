@@ -272,7 +272,7 @@ export default function Orbi() {
             <>
               <ol className="orbi-log" ref={listRef} aria-live="polite">
                 {log.map((m, i) => (
-                  <li key={i} className={`orbi-msg is-${m.from}`}>
+                  <li key={i} className={`orbi-msg is-${m.from}`} translate={m.from === 'you' ? 'no' : undefined}>
                     <p>{m.text}</p>
                     {m.actions?.length > 0 && (
                       <div className="orbi-actions">

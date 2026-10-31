@@ -5,6 +5,7 @@ import App from './App'
 import Crash from './components/Crash'
 import { AccountProvider } from './lib/account'
 import { finishReturn } from './lib/oauth'
+import { startTranslating } from './lib/i18n'
 import './index.css'
 
 // Hash routes (#/find) work from file:// and on any static host without rewrites.
@@ -25,3 +26,6 @@ createRoot(document.getElementById('root')).render(
     </Crash>
   </StrictMode>,
 )
+
+// another language than English: translate what's on screen as it appears
+requestAnimationFrame(() => startTranslating())

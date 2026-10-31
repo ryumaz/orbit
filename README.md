@@ -30,7 +30,9 @@ Everyone is good at something: guitar, Valorant aim, calculus, cooking. orbit fi
 **Finding someone**
 - Search any skill, game or subject. Sort by best rated, lowest price or newest, filter by language.
 - Every teacher shows a rating, price, badges and a live online / idle / busy / offline dot.
+- Book **as soon as they can**, or **pick a time**: teachers set weekly working hours, and learners choose a start time from a two-week calendar. Times someone already booked disappear for everyone else.
 - Send a request with one line about what you need. The teacher gets a card and a chime on any page, and can accept right there.
+- 15 minutes before a booked class, both people get a reminder in orbit and on Discord.
 
 **The class room**
 - Video or voice calls straight between the two browsers (WebRTC), with screen share, fullscreen, and automatic quality for weak connections.
@@ -44,15 +46,22 @@ Everyone is good at something: guitar, Valorant aim, calculus, cooking. orbit fi
 - Credits are held when the teacher accepts and only move when the learner says it worked.
 - 24 hours to open a dispute; with no dispute, the teacher is paid automatically.
 - Both people can agree to end early and split the credits.
+- Disputes work like support tickets: a staff member claims it, both people give their side in a shared thread, and staff decide the split after reading the class chat.
 - Requests expire after 5 hours if nobody answers, and can be withdrawn before they're accepted.
 - Balances are never stored: they are summed from a ledger of every credit movement.
 - After a class, both sides rate each other with 1 to 5 stars.
+
+**Your profile**
+- An activity graph like GitHub's: one square per day for a year, with your streak; hover a day to see what you taught and learned.
+- Personal Discord alerts: paste your own Discord webhook to hear about new requests, accepted classes, payments, disputes and class reminders, even when orbit is closed.
 
 **Extras**
 - 14 badges (first class taught, Mentor, Five stars, Polyglot, Early orbiter…) with an "unlocked" card.
 - Status like Discord: online, idle, do not disturb (really mutes sounds and pop-ups) or invisible.
 - The whole site in 32 languages, translated by AI, including right-to-left Arabic, Urdu and Hebrew.
-- Vortex, a 3D robot helper that answers questions and passes messages to support.
+- Vortex, a 3D robot helper you can drag anywhere on the screen. It answers questions about orbit, chats with AI for anything else, and passes messages to support.
+- A loading screen with orbit's spark, a custom 404 page, and an "orbit was updated" bar when a new version goes live.
+- Rate limits on requests, chat messages, file uploads and the AI, so nobody can spam others.
 - Audit log of every step, support page, privacy policy and terms, account deletion with password check.
 - Works on phones.
 
@@ -76,7 +85,8 @@ Everyone is good at something: guitar, Valorant aim, calculus, cooking. orbit fi
 | Files | Supabase Storage, private bucket with short-lived links |
 | Calls | WebRTC, peer to peer, with an optional TURN relay |
 | Hosting | Cloudflare Pages, with Pages Functions for translation and the call relay |
-| AI | Cloudflare Workers AI (Llama 3.3 70B) for translation, cached at the edge |
+| AI | Cloudflare Workers AI: Llama 3.3 70B for translation (cached at the edge), Llama 3.1 8B for Vortex's chat |
+| Alerts | Discord webhooks sent from the database (pg_net), for admins and for members |
 
 There is no server of our own to run: the rules that matter (moving credits, disputes, who can see what) live inside the database, so the website can't be used to cheat.
 
@@ -98,14 +108,14 @@ npm run dev
 
 Cloudflare Pages builds the repo with `npm run build` and serves `dist/`. The project needs:
 
-- A **Workers AI binding** named `AI` (for translation). Without it, orbit stays in English.
+- A **Workers AI binding** named `AI` (for translation and Vortex's AI chat). Without it, orbit stays in English and Vortex answers from what it already knows.
 - Optional **call relay** secrets: `TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL` (any TURN provider), or `TURN_KEY_ID` and `TURN_KEY_API_TOKEN` (Cloudflare Realtime). Without them, calls stay peer to peer only.
 
 In Supabase, the site URL and redirect URLs point at the live domain, and the Google, GitHub and Discord providers are switched on.
 
 ## Database
 
-`supabase/migrations/` holds the whole schema in order: profiles and the credit ledger, skills and prices, sessions and escrow, reviews and the audit log, disputes, reports, chat and files, the admin tools, status and badges. Apply them in filename order in the Supabase SQL editor.
+`supabase/migrations/` holds the whole schema in order: profiles and the credit ledger, skills and prices, sessions and escrow, reviews and the audit log, disputes and dispute tickets, reports, chat and files, the admin tools, status and badges, rate limits, the activity graph, Discord alerts, and working hours with booked times and reminders. Apply them in filename order in the Supabase SQL editor.
 
 `supabase/tests/` holds SQL checks you can paste into the SQL editor; each one rolls itself back, so nothing is saved.
 
@@ -119,7 +129,7 @@ src/
   components/   shell, chat, whiteboard, code editor, calls, badges, Vortex, dialogs
   lib/          account, calls, presence, translation, code runner, Supabase client
   admin/        orbit control, the admin portal
-functions/api/  Cloudflare functions: translate, turn
+functions/api/  Cloudflare functions: translate, turn (call relay), vortex (AI chat)
 supabase/       migrations and tests
 public/         the 3D robot model
 ```

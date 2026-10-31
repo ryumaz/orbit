@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAccount } from '../lib/account'
 import { supabase, friendly } from '../lib/supabase'
 import { answer, STARTERS } from '../lib/orbiBrain'
+import { createMind, pick, SECTION_THOUGHTS, PAGE_THOUGHTS, IDLE_THOUGHTS, DRAG_THOUGHTS } from '../lib/orbiMind'
+import { mountRobot } from '../lib/robot3d'
 
-// Orbi: orbit's helper, bottom right on every page except the rooms.
+// Orbi: orbit's helper, a little 3D robot on every page except the rooms (the same
+// robot as Vortex on voids.wtf). It floats, watches your cursor, can be dragged to
+// either side, and thinks out loud now and then (lib/orbiMind.js).
 // "Ask Orbi" answers from lib/orbiBrain.js; "Talk to the team" files a support request.
-const SEEN = 'orbit:orbi-seen'
 const TOPICS = [
   ['account', 'Account or login'],
   ['credits', 'Credits'],
@@ -40,19 +43,43 @@ export function RobotFace({ size = 44 }) {
   )
 }
 
+const POS_KEY = 'orbit:orbi-pos'
+const EDGE = 8
+
+function loadPos() {
+  try {
+    return JSON.parse(localStorage.getItem(POS_KEY)) ?? null
+  } catch {
+    return null
+  }
+}
+
 export default function Orbi() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const account = useAccount()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState('ai')
-  const [hint, setHint] = useState(false)
+  const [thought, setThought] = useState(null) // the speech bubble next to the robot
   const [log, setLog] = useState([])
   const [chips, setChips] = useState(STARTERS)
   const [text, setText] = useState('')
   const [typing, setTyping] = useState(false)
+  const [has3d, setHas3d] = useState(false)
+  const [pos, setPos] = useState(loadPos) // { side, y } once dragged; null = default corner
+  const [dragAt, setDragAt] = useState(null) // { x, y } while dragging
+  const [panelBox, setPanelBox] = useState(null)
   const listRef = useRef(null)
   const inputRef = useRef(null)
+  const launchRef = useRef(null)
+  const canvasRef = useRef(null)
+  const robot = useRef({ open: false, spin: 0, side: 'right' })
+  const mindRef = useRef(null)
+  mindRef.current ??= createMind()
+  const mind = mindRef.current
+  const thoughts = useRef({ count: 0, last: 0, seen: new Set() })
+  const drag = useRef(null)
+  const justDragged = useRef(false)
   const hidden = /^\/(s|room)\//.test(pathname)
 
   const first = account.live ? account.profile.name.split(' ')[0] : ''
@@ -66,8 +93,93 @@ export default function Orbi() {
       : 0,
     waiting: account.live ? account.sessions.filter((x) => x.mentor_id === account.user.id && x.status === 'requested').length : 0,
   }
+  const openRef = useRef(open)
+  openRef.current = open
+  robot.current.open = open
+  robot.current.side = pos?.side ?? 'right'
 
-  // opened from anywhere: the footer, a help link
+  // ---------- the 3D body ----------
+  useEffect(() => {
+    if (hidden || !canvasRef.current) return
+    let stop = () => {}
+    // after the page has settled, so it never slows the first paint
+    const t = setTimeout(() => {
+      stop = mountRobot(canvasRef.current, robot.current, () => setHas3d(true))
+    }, 1200)
+    return () => {
+      clearTimeout(t)
+      stop()
+      setHas3d(false)
+    }
+  }, [hidden])
+
+  // ---------- thinking out loud ----------
+  const think = (line, force = false) => {
+    if (!line) return
+    const th = thoughts.current
+    if (!force && (mind.quiet || openRef.current || th.count >= 4 || Date.now() - th.last < 45000)) return
+    th.count += 1
+    th.last = Date.now()
+    setThought({ text: line, at: Date.now() })
+  }
+  useEffect(() => {
+    if (!thought) return
+    const t = setTimeout(() => setThought(null), 7000)
+    return () => clearTimeout(t)
+  }, [thought])
+
+  // first visit: an offer of help; later visits: welcome back (or a late-night remark)
+  useEffect(() => {
+    const t = setTimeout(() => think(mind.visits <= 1 ? "Hi, I'm Orbi. Need a hand? Click me." : mind.arrival(ctx)), mind.visits <= 1 ? 5000 : 9000)
+    return () => clearTimeout(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // notices the landing page sections and app pages, once each per visit
+  useEffect(() => {
+    const seen = thoughts.current.seen
+    const page = Object.keys(PAGE_THOUGHTS).find((p) => pathname.startsWith(p))
+    if (page && !seen.has(page)) {
+      seen.add(page)
+      const t = setTimeout(() => think(PAGE_THOUGHTS[page]), 2500)
+      return () => clearTimeout(t)
+    }
+    if (pathname !== '/' || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting || seen.has(e.target.id)) return
+          seen.add(e.target.id)
+          setTimeout(() => think(SECTION_THOUGHTS[e.target.id]), 1200)
+        }),
+      { threshold: 0.45 },
+    )
+    const t = setTimeout(() => Object.keys(SECTION_THOUGHTS).forEach((id) => document.getElementById(id) && io.observe(document.getElementById(id))), 500)
+    return () => {
+      clearTimeout(t)
+      io.disconnect()
+    }
+  }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // wanders off in thought when you go quiet for a while
+  useEffect(() => {
+    let t
+    const reset = () => {
+      clearTimeout(t)
+      t = setTimeout(() => {
+        think(pick(IDLE_THOUGHTS))
+        reset()
+      }, 75000)
+    }
+    const evs = ['pointermove', 'keydown', 'scroll', 'touchstart']
+    evs.forEach((ev) => window.addEventListener(ev, reset, { passive: true }))
+    reset()
+    return () => {
+      clearTimeout(t)
+      evs.forEach((ev) => window.removeEventListener(ev, reset))
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------- open / close ----------
   useEffect(() => {
     const onHelp = (e) => {
       setMode(e.detail?.mode === 'human' ? 'human' : 'ai')
@@ -77,48 +189,118 @@ export default function Orbi() {
     return () => window.removeEventListener('orbit:help', onHelp)
   }, [])
 
-  // say hi once, a few seconds into the first visit
-  useEffect(() => {
-    let seen = true
-    try {
-      seen = Boolean(localStorage.getItem(SEEN))
-    } catch {
-      /* private mode */
-    }
-    if (seen) return
-    const t = setTimeout(() => setHint(true), 5000)
-    return () => clearTimeout(t)
-  }, [])
-  const dismissHint = () => {
-    setHint(false)
-    try {
-      localStorage.setItem(SEEN, '1')
-    } catch {
-      /* ignore */
-    }
-  }
-
   useEffect(() => {
     if (!open) return
-    dismissHint()
-    if (!log.length) setLog([{ from: 'orbi', text: `Hi${first ? ` ${first}` : ''}! I'm Orbi, orbit's helper. What can I help with?` }])
+    setThought(null)
+    if (!log.length) setLog([{ from: 'orbi', text: mind.greeting(ctx) }])
     const onKey = (e) => e.key === 'Escape' && setOpen(false)
     window.addEventListener('keydown', onKey)
-    setTimeout(() => inputRef.current?.focus(), 60)
+    setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 60)
     return () => window.removeEventListener('keydown', onKey)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The chat sits above or below the robot, on its side of the screen, always on screen.
+  useLayoutEffect(() => {
+    if (!open) return
+    const place = () => {
+      const r = launchRef.current?.getBoundingClientRect()
+      if (!r) return
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const w = Math.min(390, vw - 16)
+      const h = Math.min(600, vh - r.height - 32)
+      const left = r.left + r.width / 2 < vw / 2
+      let y = r.top - 8 - h >= 8 ? r.top - 8 - h : r.bottom + 8
+      if (y + h > vh - 8) y = Math.max(8, (vh - h) / 2)
+      let x = left ? r.left : r.right - w
+      x = Math.min(Math.max(8, x), vw - w - 8)
+      setPanelBox({ left: x, top: y, width: w, height: h })
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [open, pos])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
   }, [log, typing])
 
+  // ---------- drag to move: snaps to the nearest side and remembers the spot ----------
+  const launchStyle = () => {
+    if (dragAt) return { left: dragAt.x, top: dragAt.y, right: 'auto', bottom: 'auto' }
+    if (!pos) return undefined
+    const h = launchRef.current?.offsetHeight ?? 112
+    const top = Math.min(Math.max(EDGE, pos.y * window.innerHeight), window.innerHeight - h - EDGE)
+    return pos.side === 'left' ? { left: EDGE, right: 'auto', top, bottom: 'auto' } : { right: EDGE, left: 'auto', top, bottom: 'auto' }
+  }
+  const onDown = (e) => {
+    if (e.button !== 0) return
+    const r = launchRef.current.getBoundingClientRect()
+    drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, moved: false }
+    try {
+      launchRef.current.setPointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+  }
+  const onMove = (e) => {
+    const d = drag.current
+    if (!d || e.pointerId !== d.id) return
+    const dx = e.clientX - d.sx
+    const dy = e.clientY - d.sy
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < 6) return
+      d.moved = true
+      setThought(null)
+    }
+    const r = launchRef.current
+    setDragAt({
+      x: Math.min(Math.max(EDGE, d.ox + dx), window.innerWidth - r.offsetWidth - EDGE),
+      y: Math.min(Math.max(EDGE, d.oy + dy), window.innerHeight - r.offsetHeight - EDGE),
+    })
+  }
+  const onUp = (e) => {
+    const d = drag.current
+    if (!d || e.pointerId !== d.id) return
+    drag.current = null
+    if (!d.moved) return
+    justDragged.current = true
+    setTimeout(() => (justDragged.current = false), 0)
+    const r = launchRef.current.getBoundingClientRect()
+    const next = { side: r.left + r.width / 2 < window.innerWidth / 2 ? 'left' : 'right', y: r.top / window.innerHeight }
+    setDragAt(null)
+    setPos(next)
+    try {
+      localStorage.setItem(POS_KEY, JSON.stringify(next))
+    } catch {
+      /* ignore */
+    }
+    robot.current.spin = 0.18
+    if (!thoughts.current.dragged) {
+      thoughts.current.dragged = true
+      think(pick(DRAG_THOUGHTS), true)
+    }
+  }
+  const onClick = () => {
+    if (justDragged.current) return
+    setOpen(!open)
+    const dizzy = mind.poked()
+    if (dizzy) {
+      robot.current.spin = 0.55
+      if (open) setLog((l) => [...l, { from: 'orbi', text: dizzy }])
+      else think(dizzy, true)
+    }
+  }
+
+  // ---------- answering ----------
   const ask = (q) => {
     const question = q.trim().slice(0, 300)
     if (!question || typing) return
     setText('')
     setLog((l) => [...l, { from: 'you', text: question }])
     setTyping(true)
-    const reply = answer(question, ctx)
+    const own = mind.reply(question, ctx)
+    const reply = own ? { text: own } : answer(question, ctx)
     setTimeout(() => {
       setTyping(false)
       setLog((l) => [...l, { from: 'orbi', text: reply.text, actions: reply.actions }])
@@ -135,26 +317,17 @@ export default function Orbi() {
   }
 
   if (hidden) return null
+  const side = pos?.side ?? 'right'
 
   return (
-    <div className="orbi">
-      {hint && !open && (
-        <div className="orbi-hint" role="status">
-          <button type="button" className="orbi-hint-text" onClick={() => setOpen(true)}>Hi, I'm Orbi. Need a hand?</button>
-          <button type="button" className="orbi-hint-x" aria-label="Dismiss" onClick={dismissHint}>×</button>
-        </div>
-      )}
-
+    <div className={`orbi is-${side} ${dragAt ? 'is-dragging' : ''}`}>
       {open && (
-        <section className="orbi-panel" role="dialog" aria-label="Orbi, orbit's helper">
+        <section className="orbi-panel" role="dialog" aria-label="Orbi, orbit's helper" style={panelBox ?? undefined}>
           <header className="orbi-head">
-            <div className="orbi-stage" aria-hidden="true">
-              <RobotFace size={92} />
-              <span className="orbi-shadow" />
-            </div>
+            <span className="orbi-avatar" aria-hidden="true"><RobotFace size={34} /></span>
             <div className="orbi-title">
               <b>Orbi</b>
-              <span>orbit's helper · usually instant</span>
+              <span>orbit's helper · feeling {mind.mood()}</span>
             </div>
             <button type="button" className="orbi-x" aria-label="Close Orbi" onClick={() => setOpen(false)}>×</button>
           </header>
@@ -197,19 +370,35 @@ export default function Orbi() {
           ) : (
             <TeamForm account={account} />
           )}
+          <p className="orbi-credit">
+            3D robot: <a href="https://sketchfab.com/mshayan02" target="_blank" rel="noreferrer">"Futuristic flying animated Robot" by Shayan</a>, CC BY 4.0
+          </p>
         </section>
       )}
 
-      <button
-        type="button"
-        className={`orbi-launch ${open ? 'is-open' : ''}`}
-        aria-expanded={open}
-        aria-label={open ? 'Close Orbi' : 'Open Orbi, orbit\'s helper'}
-        title="Ask Orbi"
-        onClick={() => setOpen(!open)}
-      >
-        <RobotFace />
-      </button>
+      <div className="orbi-dock" ref={launchRef} style={launchStyle()}>
+        {thought && !open && (
+          <div className="orbi-thought" role="status">
+            <button type="button" className="orbi-thought-text" onClick={() => setOpen(true)}>{thought.text}</button>
+            <button type="button" className="orbi-thought-x" aria-label="Dismiss" onClick={() => setThought(null)}>×</button>
+          </div>
+        )}
+        <button
+          type="button"
+          className={`orbi-launch ${open ? 'is-open' : ''} ${has3d ? 'has-3d' : ''}`}
+          aria-expanded={open}
+          aria-label={open ? 'Close Orbi' : "Open Orbi, orbit's helper"}
+          title="Click for help · drag to move me"
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          onClick={onClick}
+        >
+          <canvas ref={canvasRef} className="orbi-canvas" aria-hidden="true" />
+          <span className="orbi-fallback" aria-hidden="true"><RobotFace /></span>
+        </button>
+      </div>
     </div>
   )
 }

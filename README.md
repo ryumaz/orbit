@@ -11,6 +11,7 @@ By team Void Century.
 - Udit saklani : Team leader ,  Testing And QA on mobile and desktop
 - Urvashi Bhatt: pitch
 - Naval Panda : Pitch
+- Mitali Loshali : Pitch
 
 Peer micro-mentorship for students. Book twenty minutes in a shared editor with someone who has solved your exact problem, and pay with credits you earned by helping someone else.
 

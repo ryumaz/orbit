@@ -34,12 +34,11 @@ export function AccountProvider({ children }) {
   const load = useCallback(async () => {
     if (!uid) return setData({ uid, loading: false })
     await sweep().catch(() => {})
-    const [p, l, s, rv, adm] = await Promise.all([
+    const [p, l, s, rv] = await Promise.all([
       supabase.from('profiles').select('name, handle, bio, langs, teaches, learns, city, avatar_url, card_color, rate, skill_rates, created_at, onboarded').eq('id', uid).single(),
       supabase.from('ledger').select('id, amount, type, note, session_id, created_at').order('created_at'),
       supabase.from('sessions').select(SESSION_FIELDS).order('created_at', { ascending: false }).limit(100),
       supabase.from('reviews').select('session_id, stars').eq('reviewer_id', uid),
-      supabase.rpc('is_admin'),
     ])
     const rows = l.data ?? []
     setData({
@@ -51,7 +50,6 @@ export function AccountProvider({ children }) {
       balance: rows.reduce((a, r) => a + r.amount, 0),
       sessions: s.data ?? [],
       myReviews: rv.data ?? [],
-      isAdmin: adm.data === true,
     })
   }, [uid])
 
@@ -254,7 +252,6 @@ export function AccountProvider({ children }) {
     ledger: data.ledger ?? [],
     balance: data.balance ?? 0,
     sessions: data.sessions ?? [],
-    isAdmin: data.isAdmin ?? false,
     reviewed: new Set((data.myReviews ?? []).map((r) => r.session_id)),
     myReviews: data.myReviews ?? [],
     loading,

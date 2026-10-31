@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html','orbit.html')\"",
+    "build": "vite build && vite build -c vite.admin.config.js && node -e \"require('fs').copyFileSync('dist/index.html','orbit.html')\"",
     "preview": "vite preview"
   },
   "dependencies": {

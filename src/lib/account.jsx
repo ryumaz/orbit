@@ -100,12 +100,33 @@ export function AccountProvider({ children }) {
     activeCall.current = sid
     if (sid) setIncomingCall((c) => (c?.sid === sid ? null : c))
   }, [])
+  // the session room I have open right now: no "joined the room" card for that one
+  const openRoom = useRef(null)
+  const setOpenRoom = useCallback((sid) => {
+    openRoom.current = sid
+    if (sid) setToasts((t) => t.filter((x) => !(x.kind === 'joined' && x.s.id === sid)))
+  }, [])
+  const lastJoined = useRef({}) // sid -> when I was last told, so a refresh doesn't announce twice
   const sessionsRef = useRef([])
   sessionsRef.current = data.sessions ?? []
   useEffect(() => {
     if (!uid) return
     const ch = supabase
       .channel(`orbit-inbox-${uid}`)
+      .on('broadcast', { event: 'joined' }, ({ payload }) => {
+        const s = sessionsRef.current.find((x) => x.id === payload.sid)
+        if (!s || ![s.mentor_id, s.learner_id].includes(payload.from) || payload.from === uid) return
+        const mentorJoined = s.mentor_id === payload.from
+        if (!['accepted', 'live'].includes(s.status) || openRoom.current === s.id) return
+        if (Date.now() - (lastJoined.current[s.id] ?? 0) < 120000) return
+        lastJoined.current[s.id] = Date.now()
+        const who = mentorJoined ? s.mentor : s.learner
+        const title = `${who?.name.split(' ')[0] ?? 'Someone'} joined the room`
+        const body = `${s.skill} · they're waiting for you.`
+        chime()
+        setToasts((t) => [...t.filter((x) => !(x.kind === 'joined' && x.s.id === s.id)), { kind: 'joined', s, who, title, body, id: `joined-${s.id}-${Date.now()}` }].slice(-4))
+        systemNotify({ title, body, icon: who?.avatar_url, onClick: () => { location.hash = `#/s/${s.id}` } })
+      })
       .on('broadcast', { event: 'ring' }, ({ payload }) => {
         const s = sessionsRef.current.find((x) => x.id === payload.sid)
         const otherId = s && (s.mentor_id === uid ? s.learner_id : s.mentor_id)
@@ -245,6 +266,7 @@ export function AccountProvider({ children }) {
     toasts,
     dismissToast: (id) => setToasts((t) => t.filter((x) => x.id !== id)),
     setActiveCall,
+    setOpenRoom,
     declined,
     toInbox,
     signOut: () => supabase.auth.signOut(),

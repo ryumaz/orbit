@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Editor from '../components/Editor'
 import { Brand, Tracker } from '../components/Shell'
@@ -24,7 +24,7 @@ const CODE = /code|coding|program|python|java|react|sql|c\+\+|c#|javascript|type
 // a timer, and the one button that pays the mentor.
 export default function MemberRoom() {
   const { id } = useParams()
-  const { user, profile, sessions, act, toInbox, declined, reviewed, setActiveCall } = useAccount()
+  const { user, profile, sessions, act, toInbox, declined, reviewed, setActiveCall, setOpenRoom } = useAccount()
   const navigate = useNavigate()
   const [ending, setEnding] = useState(false)
   const [disputing, setDisputing] = useState(false)
@@ -34,6 +34,8 @@ export default function MemberRoom() {
   const s = sessions.find((x) => x.id === Number(id))
   const uid = user.id
   const live = useLiveRoom({ roomId: s ? `m${s.id}` : null, selfId: uid, selfName: profile.name })
+  const liveRef = useRef(live)
+  liveRef.current = live
   const [now, setNow] = useState(() => Date.now())
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
@@ -80,6 +82,21 @@ export default function MemberRoom() {
     setActiveCall(live.inCall && s ? s.id : null)
     return () => setActiveCall(null)
   }, [live.inCall, s?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // opening the room tells the other person (on any orbit page) that I'm here,
+  // unless they're already in it; while it's open, their "joined" cards are skipped
+  const openSid = s && ['accepted', 'live'].includes(s.status) ? s.id : null
+  useEffect(() => {
+    setOpenRoom(openSid)
+    return () => setOpenRoom(null)
+  }, [openSid]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!openSid || !live.ready) return
+    const t = setTimeout(() => {
+      if (!liveRef.current.peers[otherKey]) toInbox(otherKey, 'joined', { sid: openSid })
+    }, 1500) // presence has synced by then
+    return () => clearTimeout(t)
+  }, [openSid, live.ready]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // each new call starts a fresh ring (an earlier decline doesn't count)
   useEffect(() => {

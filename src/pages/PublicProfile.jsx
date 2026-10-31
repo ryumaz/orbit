@@ -11,6 +11,7 @@ import { useAccount } from '../lib/account'
 import ReportDialog from '../components/ReportDialog'
 import { joinAnd } from '../lib/time'
 import { BadgeShelf, useBadges } from '../components/Badges'
+import ActivityGraph from '../components/ActivityGraph'
 import { STATUS_LABEL, useStatusOf } from '../lib/presence'
 
 // A member's public page, the link they share: orbit.voids.wtf/u/<handle>.
@@ -108,6 +109,7 @@ export default function PublicProfile() {
                 </section>
               )}
 
+              <ActivityGraph handle={p.handle} title={`${first}'s activity`} />
               <ProfileBadges handle={p.handle} first={first} />
 
               {reviews.length > 0 && (

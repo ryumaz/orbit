@@ -8,6 +8,7 @@ import { useAccount, sessionView } from '../lib/account'
 import { MemberAvatar } from '../components/ProfileCard'
 import { stamp } from '../lib/time'
 import { BADGES, BadgeShelf } from '../components/Badges'
+import ActivityGraph from '../components/ActivityGraph'
 
 function greeting() {
   const h = new Date().getHours()
@@ -122,6 +123,8 @@ export default function Dashboard() {
           <ShareProfile handle={profile.handle} name={profile.name} title="Share your profile with friends" />
           <TagBlock id="h-teach" title="You teach" tags={profile.teaches} empty="Nothing yet. What could you explain to someone in twenty minutes?" />
           <TagBlock id="h-learn" title="You want to learn" tags={profile.learns} empty="Nothing yet. Add a few and orbit will show who can teach them." find />
+
+          <ActivityGraph handle={profile.handle} title="Your activity" />
 
           <section className="block" id="badges" aria-labelledby="h-badges">
             <div className="block-head">

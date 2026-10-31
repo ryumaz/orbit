@@ -8,6 +8,7 @@ import { uploadAvatar, removeAvatar } from '../lib/avatar'
 import PhotoCropper from '../components/PhotoCropper'
 import LogOut from '../components/LogOut'
 import NotifySetting from '../components/NotifySetting'
+import DiscordAlerts from '../components/DiscordAlerts'
 import AccountSecurity from '../components/AccountSecurity'
 import LanguagePicker from '../components/LanguagePicker'
 import LineIcon from '../components/LineIcons'
@@ -64,7 +65,7 @@ const tidy = (f) => ({ ...f, name: f.name.trim(), handle: f.handle.trim(), bio: 
 const SECTIONS = [
   ['profile', 'Profile', 'Photo, name, username and your card'],
   ['skills', 'Teaching and learning', 'What you teach, your price, what you want to learn'],
-  ['notifications', 'Notifications', 'Booking alerts on this device'],
+  ['notifications', 'Notifications', 'Alerts here and on Discord'],
   ['language', 'Language', 'The language orbit shows you'],
   ['account', 'Account and security', 'Email, password and sign-in'],
 ]
@@ -210,7 +211,12 @@ export default function Me() {
             </form>
           )}
 
-          {current[0] === 'notifications' && <NotifySetting />}
+          {current[0] === 'notifications' && (
+            <div className="grid gap-4">
+              <NotifySetting />
+              <DiscordAlerts />
+            </div>
+          )}
 
           {current[0] === 'language' && (
             <section className="block grid gap-3" aria-label="Language">
